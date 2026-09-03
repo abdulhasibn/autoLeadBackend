@@ -1,0 +1,14 @@
+dist/
+node_modules/
+coverage/
+pnpm-lock.yaml
+.scratch/
+
+# Pre-existing project docs — out of scope for this boilerplate pass
+docs/
+CONTEXT.md
+PRD.md
+
+# Agent / editor tooling (not application source)
+.agents/
+.cursor/

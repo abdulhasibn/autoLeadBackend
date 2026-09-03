@@ -1,0 +1,144 @@
+---
+description: TypeScript naming conventions, Value Object / Entity patterns, SOLID compliance, and constructor injection rules for AutoLead source files.
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Code Quality Standards
+
+## File Naming
+
+All source files use **kebab-case** with a mandatory layer suffix:
+
+| Suffix | Example |
+|---|---|
+| `.entity.ts` | `vehicle.entity.ts` |
+| `.value-object.ts` | `vehicle-vin.value-object.ts` |
+| `.use-case.ts` | `create-vehicle.use-case.ts` |
+| `.repository.ts` | `vehicle.repository.ts` (interface) |
+| `.queries.ts` | `vehicle.queries.ts` (query interface) |
+| `.controller.ts` | `vehicle.controller.ts` |
+| `.routes.ts` | `vehicle.routes.ts` |
+| `.schemas.ts` | `vehicle.schemas.ts` (Zod) |
+| `.dto.ts` | `vehicle.dto.ts` |
+| `.mapper.ts` | `vehicle.mapper.ts` |
+| `.policy.ts` | `create-vehicle.policy.ts` |
+
+## Symbol Naming
+
+- **Classes, Interfaces, Types, Enums:** `PascalCase` — `Vehicle`, `VehicleRepository`, `VehicleStatus`
+- **Variables, functions, methods, parameters:** `camelCase` — `findById`, `vehicleId`
+- **Constants (compile-time fixed):** `SCREAMING_SNAKE_CASE` — `MAX_LISTING_PHOTOS`
+- **Enum members:** `SCREAMING_SNAKE_CASE` — `VehicleStatus.LISTED`
+- **Private class fields:** `camelCase` with no underscore prefix — `private readonly vehicleId: VehicleId`
+
+## Branded Domain ID Types
+
+Every domain ID is a branded string — prevents accidental `vehicleId` / `ownerId` swaps at compile time:
+
+```ts
+// ✅ correct — define in the owning feature's domain/
+type VehicleId = Brand<string, 'VehicleId'>;
+type OwnerId = Brand<string, 'OwnerId'>;
+
+function toVehicleId(raw: string): VehicleId {
+  return raw as VehicleId;
+}
+```
+
+Never use plain `string` for domain identifiers in function signatures or entity fields.
+
+## Value Object Pattern
+
+Value Objects must be impossible to instantiate in an invalid state:
+
+```ts
+// ✅ correct
+class VehicleVin {
+  private constructor(readonly value: string) {}
+
+  static create(input: string): VehicleVin {
+    const trimmed = input.trim();
+    if (!trimmed) throw new Error('VIN cannot be empty');
+    if (trimmed.length !== 17) throw new Error('VIN must be 17 characters');
+    return new VehicleVin(trimmed);
+  }
+}
+
+// ❌ wrong — public constructor, mutable field, no validation
+class VehicleVin {
+  constructor(public value: string) {}
+}
+```
+
+Rules:
+- `private constructor` always
+- `static create()` as the only factory — throw `Error` on invalid input
+- All fields `readonly`
+- No mutator methods; produce a new instance for changes
+- Zod schemas must delegate to `create()` via `superRefine`, never re-implement the rule
+
+## Entity Pattern
+
+Entities carry identity and enforce lifecycle invariants:
+
+```ts
+class Vehicle {
+  private constructor(
+    readonly id: VehicleId,
+    private status: VehicleStatus,
+  ) {}
+
+  static reconstitute(data: VehicleData): Vehicle { /* from persistence */ }
+  static create(cmd: CreateVehicleCommand): Vehicle { /* new instance */ }
+
+  list(): void {
+    if (this.status === VehicleStatus.LISTED) throw new AlreadyListedError();
+    this.status = VehicleStatus.LISTED;
+  }
+}
+```
+
+Rules:
+- Must enforce state transitions — never expose raw setters that bypass invariants
+- Must not be a pure data container (if there are no invariants, use a DTO instead)
+- Must not import Express, Supabase, Pino, or infrastructure packages
+
+## Constructor Injection
+
+```ts
+// ✅ correct — explicit dependencies, mockable in tests
+class CreateVehicleUseCase {
+  constructor(
+    private readonly vehicleRepo: VehicleRepository,
+    private readonly clock: Clock,
+    private readonly idGen: IdGenerator,
+  ) {}
+}
+
+// ❌ wrong — hidden dependency, impossible to unit test
+class CreateVehicleUseCase {
+  private readonly vehicleRepo = new SupabaseVehicleRepository();
+}
+```
+
+- All required collaborators in the constructor
+- No `new ConcreteImplementation()` inside use cases, services, or other use cases
+- `process.env` must not be read inside any class — pass `config: AppConfig` instead
+
+## TypeScript Strictness
+
+- **No `any`** — use `unknown` and narrow with type guards.
+- **No non-null assertion (`!`)** without a guard comment explaining the guarantee.
+- **No implicit returns** from async functions — always `return` or `throw`.
+- `tsconfig.json` must have `"strict": true` and `"noUncheckedIndexedAccess": true`.
+
+## SOLID Quick-Reference
+
+| Principle | Rule for this project |
+|---|---|
+| **S** Single Responsibility | One use case = one business command or query. One controller action = one use-case call. |
+| **O** Open/Closed | New provider → new adapter implementing existing port. New status type → new Value Object / strategy, not a growing `switch`. |
+| **L** Liskov Substitution | A repository implementation must honor every guarantee the interface declares. |
+| **I** Interface Segregation | Command repos and query interfaces are always separate. |
+| **D** Dependency Inversion | Use cases depend on `VehicleRepository` (interface), never on `SupabaseVehicleRepository` (class). Wire the concrete in `composition.ts`. |

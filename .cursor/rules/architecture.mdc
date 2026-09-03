@@ -1,0 +1,55 @@
+---
+description: Enforce Clean Architecture from docs/architecture.md. Do not invent alternate layering.
+globs: src/**/*.ts,docs/architecture.md,docs/adr/**/*.md
+alwaysApply: false
+---
+
+# Architecture Enforcement
+
+**Authoritative source:** `docs/architecture.md`. This rule only enforces it.
+
+If implementation conflicts with `docs/architecture.md`, change the implementation—not the architecture (or supersede via ADR).
+
+Consult by section: §2 Principles · §4 Layers · §5 Dependency Rule · §6–7 Folders · §9 Responsibilities · §10 Repositories · §12 DB access · §14 Validation · §16 Checklist · §17 Rule of Thumb.
+
+## Must follow
+
+- Consult `docs/architecture.md` before introducing new layers, modules, or architectural abstractions.
+- When unsure where new code belongs, use the placement guidance in §17 instead of guessing.
+- Obey the Dependency Rule (§2.2, §5): dependencies point inward; Domain depends on nothing outer.
+- Place code by layer ownership (§4, §9, §17): Presentation / Application / Domain / Infrastructure.
+- Keep business logic out of Presentation (§4.1, §9).
+- Keep framework and infrastructure types out of Domain (§4.3, §5).
+- Access Supabase and provider SDKs only in Infrastructure (§4.4, §12).
+- Depend on repository/query interfaces—never concrete adapters—from Application (§10, §11).
+- Segregate command repos from query interfaces; do not mix in one fat port (§2.12, §10).
+- Map persistence rows before leaving Infrastructure; never return raw persistence models (§10).
+- Respect feature boundaries: no cross-feature `infrastructure/` imports (§6–7).
+- Wire concretes only in feature `composition.ts` / composition root (§7, §11).
+
+## Hard reject
+
+- Dependency Rule violation (e.g. Domain → Application/Infrastructure; Presentation → Infrastructure).
+- Business logic in controllers, routes, or Zod schemas.
+- Domain importing Express, Supabase, Pino, env, or any provider SDK.
+- Supabase/SQL (or `.from(...)`) outside Infrastructure.
+- Use case importing a concrete repository/adapter class or SDK types.
+- Bypassing repository/query ports (direct DB/SDK from Application/Presentation).
+- Returning unmapped persistence rows or table-shaped types across boundaries.
+- Cross-feature infrastructure coupling.
+- Anemic Domain (invalid-state VOs; entities as data bags with no invariants).
+- Duplicating a Domain VO rule in Zod instead of delegating (§14).
+- Creating new architectural patterns that contradict `docs/architecture.md` without an approved ADR.
+
+## Review checklist
+
+- ✓ Correct layer ownership (§4, §9, §17)
+- ✓ Dependency direction respected (§5)
+- ✓ Repository/query interfaces used (§10)
+- ✓ No framework leakage into Domain (§4.3, §5)
+- ✓ DTOs at boundaries (§4.2, §9)
+- ✓ Business rules in Domain/Application (§4.2–4.3)
+- ✓ Persistence only in Infrastructure (§4.4, §12)
+- ✓ No deviation from `docs/architecture.md` without an ADR
+
+When this rule and `docs/architecture.md` appear to differ, treat `docs/architecture.md` as authoritative.

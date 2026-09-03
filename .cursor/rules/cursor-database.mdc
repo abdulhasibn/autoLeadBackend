@@ -1,0 +1,108 @@
+---
+description: Supabase database access rules — infra-only client, RLS as defense-in-depth, soft-delete predicates, row mapping.
+globs: src/**/*.ts,supabase/**/*
+alwaysApply: false
+---
+
+# Supabase Access Rules
+
+This project uses `@supabase/supabase-js` directly — there is no ORM. All database access goes through Supabase repository and query implementations in `src/infrastructure/`.
+
+## Client Placement
+
+- The Supabase client is constructed **once** in `src/infrastructure/supabase/` and injected into repositories.
+- No code outside `src/infrastructure/` may import `createClient` or hold a `SupabaseClient` instance.
+- `service_role` key: server-side only, never reachable from presentation or domain code.
+- `anon` key: used only for auth flows, never for data access that requires authorization.
+
+```ts
+// ✅ correct — client constructed in infrastructure, injected into repos
+export function createSupabaseInfraClient(config: SupabaseConfig) {
+  return createClient(config.url, config.serviceRoleKey, { auth: { persistSession: false } });
+}
+
+// ❌ wrong — Supabase client inside a use case
+import { createClient } from '@supabase/supabase-js';
+class CreateVehicleUseCase {
+  private db = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
+}
+```
+
+## RLS — Defense-in-Depth, Not Primary Authorization
+
+Row Level Security is a safety net, not a substitute for application-layer authorization:
+
+- Application use cases and policies are the **authoritative** authorization boundary.
+- RLS provides defense-in-depth against service-role mistakes or direct Supabase access outside the API.
+- Enable RLS on every table in the public schema.
+- Index every column referenced in an RLS policy.
+
+## Ownership Predicates
+
+When a feature introduces ownership or scope rules (e.g. filtering by salesperson, dealership, or owner), repositories MUST require those as explicit arguments and apply them in every query:
+
+```ts
+// ✅ correct — scope is an explicit param, not inferred from context
+async listBySalesperson(salespersonId: SalespersonId, page: Pagination) {
+  return this.db
+    .from('leads')
+    .select('...')
+    .eq('salesperson_id', salespersonId)
+    .is('deleted_at', null)
+    .range(page.offset, page.offset + page.limit - 1);
+}
+
+// ❌ wrong — missing scope predicate
+async listLeads(page: Pagination) {
+  return this.db.from('leads').select('*');
+}
+```
+
+## Soft Delete Predicates
+
+All mutable business entities use `deleted_at timestamptz NULL` (null = live). See ADR-0005.
+
+```ts
+// ✅ correct — repository always excludes soft-deleted rows by default
+const { data } = await this.db
+  .from('vehicles')
+  .select('*')
+  .is('deleted_at', null);
+
+// ❌ wrong — boolean soft-delete flag
+.eq('is_deleted', false)
+```
+
+Recovery queries (admin-only) must explicitly opt in to `deleted_at IS NOT NULL`.
+
+## Row Mapping
+
+Repositories must never return raw Supabase rows to the application layer:
+
+- Command-side repositories: map rows → domain entities via `*.mapper.ts` before returning
+- Query-side interfaces: map rows → read-model DTOs shaped for the specific screen/report
+- API responses must be serialized from DTOs — no raw database row shapes in HTTP responses
+
+## Transactions
+
+Multi-record writes that require atomicity must use a transaction port. A sequence of separate `.from()` calls is NOT a transaction.
+
+```ts
+// ✅ correct — atomic via DB function
+await this.db.rpc('create_vehicle_with_expenses_txn', { vehicle_data, expenses });
+
+// ❌ wrong — two separate calls described as a "transaction"
+await this.db.from('vehicles').insert(...);
+await this.db.from('vehicle_expenses').insert(...);
+```
+
+## Error Translation
+
+Every Supabase/PostgreSQL error must be caught and re-thrown as a typed infrastructure error before leaving the repository. Raw `PostgrestError` objects must not propagate to the application layer. See `error-handling.mdc`.
+
+## Migrations
+
+- Schema changes are forward-only SQL migration files — never hand-edit applied migrations.
+- Every migration must add indexes for foreign keys, status/date filters, and pagination access paths.
+- Destructive changes require a compatibility plan in the migration file header comment.
+- Partial unique indexes for soft-deletable tables use `WHERE deleted_at IS NULL`.

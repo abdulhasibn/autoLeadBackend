@@ -1,0 +1,101 @@
+---
+description: Typed error classes per layer, translation boundaries, and presentation error-handler rules for AutoLead.
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Error Handling Rules
+
+Errors become more transport-specific as they move outward. Each layer creates errors in its own vocabulary and translates them for the next layer.
+
+```
+Zod ValidationError  →  Domain Error  →  Infrastructure Error  →  Application Error  →  HTTP Response
+```
+
+## Domain Errors
+
+Thrown by **entities and value objects** when an invariant or state transition is invalid. Defined in the owning feature's `domain/` or `domain/errors/` (if shared across features).
+
+```ts
+// feature-specific — lives in features/vehicles/domain/
+export class VehicleNotListedError extends Error {
+  readonly code = 'VEHICLE_NOT_LISTED';
+  constructor(readonly vehicleId: VehicleId) {
+    super(`Vehicle ${vehicleId} is not listed`);
+  }
+}
+
+export class DuplicateVinError extends Error {
+  readonly code = 'DUPLICATE_VIN';
+}
+```
+
+Rules:
+- Always extend `Error` and set a stable `code` string
+- Carry the minimum context needed to log or map (ids, not raw DB rows)
+- Must not reference HTTP status codes
+
+## Infrastructure Errors
+
+Created by **repository implementations and adapters** when a provider or database operation fails. Defined in `domain/errors/` (consumed by every feature's application layer).
+
+```ts
+// src/domain/errors/
+export class NotFoundError extends Error { readonly code = 'NOT_FOUND'; }
+export class ConflictError extends Error { readonly code = 'CONFLICT'; }
+export class UniqueViolationError extends Error { readonly code = 'UNIQUE_VIOLATION'; }
+export class TransientDatabaseFailureError extends Error { readonly code = 'DB_TRANSIENT'; }
+export class DatabaseUnavailableError extends Error { readonly code = 'DB_UNAVAILABLE'; }
+```
+
+Rules:
+- Repositories must catch Supabase/PostgreSQL errors and rethrow as one of the typed classes above
+- Must not expose SQL state codes, table names, or raw provider error messages to callers
+- Must preserve correlation context (`requestId`) on the translated error
+
+## Application Errors
+
+Created or translated by **use cases** when a valid lower-level result cannot satisfy the business operation. Defined in the owning feature's `application/`.
+
+```ts
+export class ForbiddenActionError extends Error { readonly code = 'FORBIDDEN'; }
+export class LeadAlreadyAssignedError extends Error { readonly code = 'LEAD_ALREADY_ASSIGNED'; }
+```
+
+## Presentation Error Handler
+
+The global error handler in `src/presentation/http/errors/` is the **only** place that maps errors to HTTP responses.
+
+```ts
+// Stable HTTP mappings
+NotFoundError              → 404
+ConflictError              → 409
+UniqueViolationError       → 409
+ForbiddenActionError       → 403
+ZodValidationError         → 422
+VehicleNotListedError      → 422
+DatabaseUnavailableError   → 503
+unknown / untyped          → 500
+```
+
+Rules:
+- Unknown errors → log at `error` level with full diagnostic; respond with a generic `{ error: 'Internal server error' }` — **no stack traces, SQL, or provider details in the response body**
+- Known client errors (`4xx`) → log at `warn` level
+- A request must produce exactly one response — errors must not be silently swallowed
+
+## Never Swallow Errors
+
+```ts
+// ❌ wrong — silent catch
+try {
+  await this.vehicleRepo.save(vehicle);
+} catch (_) {}
+
+// ✅ correct
+} catch (err) {
+  logger.error({ err, vehicleId: vehicle.id, requestId }, 'Failed to save vehicle');
+  throw new TransientDatabaseFailureError({ cause: err });
+}
+```
+
+Every `catch` block must either rethrow (possibly wrapped) or, in a background job, log at `error` level and record the failure for retry/dead-letter processing.

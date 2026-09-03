@@ -1,0 +1,27 @@
+node_modules/
+dist/
+coverage/
+.pnpm-store/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+.env
+.env.local
+.env.*.local
+.env.integration
+
+.DS_Store
+*.swp
+
+.vscode/*
+!.vscode/extensions.json
+
+# Local agent / deploy scratch (may contain secrets)
+.scratch/
+
+# Vercel CLI project link
+.vercel/
+
+# Supabase CLI local cache
+supabase/.temp/

@@ -1,0 +1,84 @@
+---
+description: Vitest testing conventions — domain/use-case isolation, fake implementations, injectable time and IDs, no infra in unit tests.
+globs: src/**/tests/**/*.ts,**/*.test.ts,**/*.spec.ts
+alwaysApply: false
+---
+
+# Testing Rules
+
+## Runner and File Location
+
+- Test runner: **Vitest**
+- Test files live in `features/<name>/tests/` under `domain/`, `application/`, `infrastructure/`, or `presentation/` subdirs.
+- Test file naming: `.test.ts` (e.g. `create-vehicle.use-case.test.ts`)
+
+## Unit Tests Must Not Touch Infrastructure
+
+Domain and use-case tests must **not** import Express, `@supabase/supabase-js`, Pino, or any network/database client:
+
+```ts
+// ✅ correct — pure in-memory fake, no infrastructure
+class InMemoryVehicleRepository implements VehicleRepository {
+  private store = new Map<VehicleId, Vehicle>();
+
+  async findById(id: VehicleId) { return this.store.get(id) ?? null; }
+  async save(v: Vehicle) { this.store.set(v.id, v); }
+}
+
+// ❌ wrong — real Supabase client in a unit test
+import { createClient } from '@supabase/supabase-js';
+```
+
+## Structure — one `describe` per use case, one `it` per scenario
+
+```ts
+describe('CreateVehicleUseCase', () => {
+  let useCase: CreateVehicleUseCase;
+  let vehicleRepo: InMemoryVehicleRepository;
+  let clock: FakeClock;
+
+  beforeEach(() => {
+    vehicleRepo = new InMemoryVehicleRepository();
+    clock = new FakeClock(new Date('2026-01-01T00:00:00Z'));
+    useCase = new CreateVehicleUseCase(vehicleRepo, clock);
+  });
+
+  it('creates a vehicle when VIN is unique', async () => { /* ... */ });
+  it('throws DuplicateVinError when VIN already exists', async () => { /* ... */ });
+});
+```
+
+## Injectable Time and IDs
+
+Never use `Date.now()`, `new Date()`, or `crypto.randomUUID()` inline in use cases, entities, or domain services:
+
+```ts
+// ✅ correct — injectable clock and id generator
+interface Clock { now(): Date; }
+interface IdGenerator { generate(): string; }
+
+class FakeClock implements Clock {
+  constructor(private current: Date) {}
+  now() { return this.current; }
+  advance(ms: number) { this.current = new Date(this.current.getTime() + ms); }
+}
+
+// ❌ wrong — wall-clock directly in use case
+const now = new Date(); // not injectable, makes tests non-deterministic
+```
+
+## HTTP Tests
+
+- Use **Supertest** for controller/route integration tests
+- HTTP tests must validate transport concerns (status codes, response shape, error serialization)
+- HTTP tests must **not** be the only coverage for a business rule — that rule must have a use-case unit test too
+- HTTP tests may use an in-memory fake of the composition root, or a full test server with real use cases and fake repositories
+
+## Test Coverage Priorities
+
+1. **Domain / Value Object unit tests** — every invariant, every invalid-state rejection
+2. **Use-case unit tests** — every scenario (happy path, each error branch, authorization failure)
+3. **Repository integration tests** — against a real or Docker Supabase; test SQL predicates, pagination, soft-delete filters
+4. **HTTP integration tests** — happy path per endpoint, auth rejection, validation rejection
+
+Do not write tests that only assert `expect(result).toBeDefined()` — test the actual output shape or the thrown error type.

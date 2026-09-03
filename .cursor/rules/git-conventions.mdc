@@ -1,0 +1,66 @@
+---
+description: Git commit message format for AutoLead — conventional commits, 72-char subject limit, imperative mood.
+alwaysApply: true
+---
+
+# Git Commit Conventions
+
+## Format
+
+```
+<type>(<scope>): <subject>
+
+[optional body]
+```
+
+- **Subject line** (first line): `type(scope): subject` — total ≤ 72 characters
+- **Blank line** between subject and body (when body is present)
+- **Body lines**: each line wraps at 72 characters; explains *why*, not *what*
+
+## Types
+
+| Type | When to use |
+|---|---|
+| `feat` | New feature or user-facing behaviour |
+| `fix` | Bug fix |
+| `refactor` | Code change that neither adds a feature nor fixes a bug |
+| `test` | Adding or updating tests |
+| `docs` | Documentation or spec changes only |
+| `chore` | Tooling, deps, build scripts, config (no production code) |
+| `perf` | Performance improvement |
+| `db` | Schema migration or database-level change |
+
+## Scopes
+
+Use the feature module name or a cross-cutting label:
+
+**Cross-cutting:** `infra` · `arch` · `config` · `ci` · `shared`
+
+**Feature modules** (add as they land): `auth` · `vehicles` · `owners` · `leads` · `inventory` · `sales`
+
+Omit scope only when the change is truly global (e.g. `chore: upgrade pnpm to 11.x`).
+
+## Subject Rules
+
+- Imperative mood — "add", "fix", "remove", not "added", "fixed", "removed"
+- No period at the end
+- No capitalisation of first word after the colon (unless a proper noun)
+- Describe the effect, not the mechanism: "add vehicle listing guard" not "add if-check to use case"
+
+## Examples
+
+```
+# ✅ Good
+feat(vehicles): add vehicle listing status guard
+fix(leads): prevent duplicate lead assignment
+refactor(infra): extract VehicleVin into value object
+test(shared): add unit tests for CalendarDate
+docs(arch): add ADR-0001 for logical CQRS
+db(vehicles): add index on status and created_at
+chore: upgrade pnpm to 11.10.0
+
+# ❌ Bad
+Fixed the bug                          ← no type/scope, past tense, vague
+feat: Added vehicle listing guard.     ← past tense, trailing period
+WIP                                    ← not a valid commit to push
+```
