@@ -1,10 +1,11 @@
 import cors from 'cors';
-import express, { type Express } from 'express';
+import express, { type Express, type RequestHandler } from 'express';
 import helmet from 'helmet';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { JSON_BODY_LIMIT } from '../config/constants';
 import type { AppConfig } from '../config/environment';
+import { composeAuth } from '../features/auth/composition';
 import { createLogger } from '../infrastructure/logging/logger';
 import { createRequestLoggerMiddleware } from '../infrastructure/logging/request-logger.middleware';
 import type { Database } from '../infrastructure/supabase/database.types';
@@ -22,6 +23,7 @@ export interface AppDependencies {
   readonly config: AppConfig;
   readonly logger: Logger;
   readonly supabaseClient: SupabaseClient<Database>;
+  readonly bearerMiddleware: RequestHandler;
   readonly app: Express;
 }
 
@@ -33,8 +35,10 @@ export interface AppDependencies {
 export function composeApp(config: AppConfig): AppDependencies {
   const logger = createLogger(config);
   const supabaseClient = createSupabaseInfraClient(config);
-  const _authClient = createSupabaseAuthClient(config);
-  void _authClient;
+  const authClient = createSupabaseAuthClient(config);
+
+  // Feature compositions
+  const auth = composeAuth(supabaseClient, authClient);
 
   const app = express();
 
@@ -44,10 +48,10 @@ export function composeApp(config: AppConfig): AppDependencies {
   app.use(createServerTimingMiddleware());
   app.use(createRequestLoggerMiddleware(logger));
 
-  app.use(createRouter());
+  app.use(createRouter({ authRouter: auth.router }));
 
   app.use(notFoundMiddleware);
-  app.use(createErrorHandlerMiddleware(logger, []));
+  app.use(createErrorHandlerMiddleware(logger, [auth.errorMapper]));
 
-  return { config, logger, supabaseClient, app };
+  return { config, logger, supabaseClient, bearerMiddleware: auth.bearerMiddleware, app };
 }
