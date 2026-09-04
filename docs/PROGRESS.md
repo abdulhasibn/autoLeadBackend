@@ -4,7 +4,7 @@
 
 ## Current stage
 
-**Stage:** **Stint 1 Identity** — full DB schema landed on hosted Supabase; auth feature next.
+**Stage:** **Stint 2 Auth** — auth feature module complete; users feature next.
 
 | Area | Status |
 |------|--------|
@@ -16,7 +16,7 @@
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Local dev only — not committed |
-| Auth feature (`src/features/auth`) | Not started |
+| Auth feature (`src/features/auth`) | Done — OTP, bearer middleware, /auth/me |
 | Users / roles (`src/features/users`) | Not started |
 | Owners (`src/features/owners`) | Not started |
 | Vehicles (`src/features/vehicles`) | Not started |
@@ -45,12 +45,27 @@
 
 ## Next up
 
-1. Enable Custom Access Token Hook in hosted dashboard (Auth → Hooks → `private.custom_access_token_hook`).
-2. Wire local `.env` with service-role + anon keys.
-3. Auth feature module (`src/features/auth`) — OTP / session, Bearer middleware, `/auth/me`.
-4. Users feature — staff CRUD + role assignment (Admin).
+1. Users feature — staff CRUD + role assignment (Admin) (`src/features/users`).
+2. Enable Custom Access Token Hook in hosted dashboard (Auth → Hooks → `private.custom_access_token_hook`) if not already done.
+3. Wire local `.env` with service-role + anon keys if not already done.
 
 ## Log
+
+### 2026-09-04 — Auth feature module (`src/features/auth`)
+
+- `Phone` value object (E.164, private ctor, static create).
+- `AuthenticatedContext` in `src/domain/shared/` for cross-feature use.
+- Ports: `IAuthProvider` (OTP send/verify), `ITokenVerifier` (JWT → context), `IAuthQueries` (profile lookup).
+- Use cases: `SendOtpUseCase`, `VerifyOtpUseCase`, `GetMeUseCase`.
+- `SupabaseAuthAdapter` (anon client): OTP via `signInWithOtp` + `verifyOtp`; token via `getUser`.
+- `SupabaseAuthQueries` (service-role client): profile lookup from `public.users`.
+- `bearer.middleware.ts` (Presentation): validates JWT via `ITokenVerifier`, attaches `req.auth`.
+- `OtpVerificationError` → 401 via feature error mapper registered in composition.
+- Routes: `POST /auth/otp/send`, `POST /auth/otp/verify`, `GET /auth/me`.
+- Express `Request` augmented with `req.auth?: AuthenticatedContext` via declaration merging.
+- Updated `composition-root.ts` and `routes.ts` to wire auth feature.
+- 21 unit tests: `Phone` VO (9), `SendOtpUseCase` (4), `VerifyOtpUseCase` (4), `GetMeUseCase` (2) — all pass.
+- Deferred: custom access token hook dashboard enablement, `.env` wiring, RLS feature policies.
 
 ### 2026-09-03 — Architecture skills (orient, follow-architecture, compliance)
 
