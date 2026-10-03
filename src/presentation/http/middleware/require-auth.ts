@@ -1,9 +1,6 @@
 import { AuthenticationRequiredError } from '../../../domain/errors/authentication-required.error';
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
 
-// Ensure the Express.Request augmentation is loaded for every consumer.
-import '../express-auth.d';
-
 /**
  * Narrows `req.auth` to a guaranteed `AuthenticatedContext`.
  * Call this at the top of any controller action that requires authentication.

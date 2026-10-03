@@ -3,8 +3,6 @@ import type { RequestHandler } from 'express';
 import { AuthenticationRequiredError } from '../../../../domain/errors/authentication-required.error';
 import type { AuthenticateActorUseCase } from '../../application/use-cases/authenticate-actor.use-case';
 
-import '../../../../presentation/http/express-auth.d';
-
 /**
  * Parses the Authorization header, resolves the actor (JWT identity + live
  * roles from user_roles), and attaches AuthenticatedContext to req.auth.
