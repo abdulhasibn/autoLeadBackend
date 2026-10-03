@@ -20,6 +20,10 @@ class FakeAuthQueries implements IAuthQueries {
   async findProfile(userId: UserId): Promise<UserProfileDto | null> {
     return this.store.get(userId) ?? null;
   }
+
+  async findLiveRoles(): Promise<ReadonlyArray<string>> {
+    return [];
+  }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -47,7 +51,7 @@ describe('GetMeUseCase', () => {
     useCase = new GetMeUseCase(fakeQueries);
   });
 
-  it('returns the user profile with roles merged from the JWT context', async () => {
+  it('returns the user profile with roles from the authenticated context', async () => {
     fakeQueries.seed(PROFILE);
 
     const result = await useCase.execute(CTX);

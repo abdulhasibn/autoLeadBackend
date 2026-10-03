@@ -48,7 +48,8 @@ Table users {
   deleted_at timestamptz
 
   indexes {
-    (phone) [unique, name: 'users_phone_active_uidx', note: 'WHERE deleted_at IS NULL']
+    (phone) [unique, name: 'users_phone_active_uidx', note: 'WHERE deleted_at IS NULL AND phone IS NOT NULL']
+    (email) [unique, name: 'users_email_active_uidx', note: 'WHERE deleted_at IS NULL AND email IS NOT NULL']
     (showroom_id) [name: 'users_showroom_id_idx']
   }
 }

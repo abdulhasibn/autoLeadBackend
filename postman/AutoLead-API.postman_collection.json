@@ -1,0 +1,428 @@
+{
+  "info": {
+    "name": "AutoLead API",
+    "description": "AutoLead backend — used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only).\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login (saves `accessToken`) → Me / Users / Owners. Refresh rotates the session.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Response time under 5s', function () {",
+          "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "email",
+      "value": "admin@example.com"
+    },
+    {
+      "key": "password",
+      "value": "secret12"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "staffUserId",
+      "value": ""
+    },
+    {
+      "key": "staffFullName",
+      "value": "Ada Lovelace"
+    },
+    {
+      "key": "staffEmail",
+      "value": "ada@example.com"
+    },
+    {
+      "key": "staffPassword",
+      "value": "secret12"
+    },
+    {
+      "key": "staffPhone",
+      "value": "+919876543211"
+    },
+    {
+      "key": "ownerId",
+      "value": ""
+    },
+    {
+      "key": "ownerFullName",
+      "value": "Priya Shah"
+    },
+    {
+      "key": "ownerPhone",
+      "value": "+919876543210"
+    },
+    {
+      "key": "ownerCity",
+      "value": "Bengaluru"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "description": "Liveness. No auth.",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": "GET /health — 200 `{ status, timestamp }`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "description": "Email + password. Login and Refresh are public. Me requires Bearer.",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Session tokens present', function () {",
+                  "  pm.expect(body).to.include.keys('accessToken', 'refreshToken');",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "  if (body.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "    pm.environment.set('accessToken', body.accessToken);",
+                  "  }",
+                  "  if (body.refreshToken) {",
+                  "    pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                  "    pm.environment.set('refreshToken', body.refreshToken);",
+                  "  }",
+                  "  console.log('Tokens stored.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "POST /auth/login — 200 `{ accessToken, refreshToken }`. Invalid credentials → 401 INVALID_CREDENTIALS."
+          }
+        },
+        {
+          "name": "Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "  if (body.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "    pm.environment.set('accessToken', body.accessToken);",
+                  "  }",
+                  "  if (body.refreshToken) {",
+                  "    pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                  "    pm.environment.set('refreshToken', body.refreshToken);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/refresh",
+            "description": "POST /auth/refresh — 200 rotated `{ accessToken, refreshToken }`."
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/auth/me",
+            "description": "GET /auth/me — Bearer. 200 profile with live `roles` from user_roles."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "Admin-only staff CRUD. Roles: admin | salesperson. JWT must belong to an admin in user_roles.",
+      "item": [
+        {
+          "name": "Create Staff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Staff id present', function () {",
+                  "  pm.expect(body).to.have.property('id');",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201 && body.id) {",
+                  "  pm.collectionVariables.set('staffUserId', body.id);",
+                  "  pm.environment.set('staffUserId', body.id);",
+                  "  console.log('staffUserId=', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"{{staffFullName}}\",\n  \"phone\": \"{{staffPhone}}\",\n  \"email\": \"{{staffEmail}}\",\n  \"password\": \"{{staffPassword}}\",\n  \"showroomId\": null,\n  \"roles\": [\"salesperson\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/users",
+            "description": "POST /users — 201. Provisions Auth user (email + password) + profile + staff roles."
+          }
+        },
+        {
+          "name": "List Staff",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "limit", "value": "20", "description": "Page size, 1–100, default 20" },
+                { "key": "offset", "value": "0", "description": "Skip count, default 0" },
+                {
+                  "key": "role",
+                  "value": "salesperson",
+                  "description": "Optional filter: admin | salesperson",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /users — paginated. Optional `role=admin` or `role=salesperson`."
+          }
+        },
+        {
+          "name": "Get Staff",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{staffUserId}}",
+            "description": "GET /users/:id — 200 staff member or 404."
+          }
+        },
+        {
+          "name": "Update Staff",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"{{staffFullName}}\",\n  \"phone\": \"{{staffPhone}}\",\n  \"email\": \"{{staffEmail}}\",\n  \"showroomId\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/users/{{staffUserId}}",
+            "description": "PATCH /users/:id — name, phone, email, showroomId. Email is required."
+          }
+        },
+        {
+          "name": "Replace Staff Roles",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\"salesperson\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/users/{{staffUserId}}/roles",
+            "description": "PUT /users/:id/roles — replace set, min 1. Cannot drop the last admin."
+          }
+        },
+        {
+          "name": "Deactivate Staff",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{staffUserId}}",
+            "description": "DELETE /users/:id — 204 soft-deactivate. Cannot deactivate self or last admin."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Owners",
+      "description": "Staff owner CRUD. Admin or Salesperson. Deactivate is Admin-only. Phone is the unique live key.",
+      "item": [
+        {
+          "name": "Create Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('Owner id present', function () {",
+                  "  pm.expect(body).to.have.property('id');",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201 && body.id) {",
+                  "  pm.collectionVariables.set('ownerId', body.id);",
+                  "  pm.environment.set('ownerId', body.id);",
+                  "  console.log('ownerId=', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"{{ownerFullName}}\",\n  \"phone\": \"{{ownerPhone}}\",\n  \"email\": \"priya@example.com\",\n  \"address\": \"12 MG Road\",\n  \"city\": \"{{ownerCity}}\",\n  \"preferredContactMethod\": \"whatsapp\",\n  \"altPhone\": null,\n  \"idInfo\": null,\n  \"notes\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/owners",
+            "description": "POST /owners — 201. Duplicate live phone → 409 CONFLICT."
+          }
+        },
+        {
+          "name": "List Owners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/owners?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["owners"],
+              "query": [
+                { "key": "limit", "value": "20", "description": "Page size, 1–100, default 20" },
+                { "key": "offset", "value": "0", "description": "Skip count, default 0" },
+                {
+                  "key": "city",
+                  "value": "{{ownerCity}}",
+                  "description": "Optional city filter",
+                  "disabled": true
+                },
+                {
+                  "key": "phone",
+                  "value": "{{ownerPhone}}",
+                  "description": "Optional E.164 phone filter",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /owners — paginated. Optional `city` and `phone` filters."
+          }
+        },
+        {
+          "name": "Get Owner",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/owners/{{ownerId}}",
+            "description": "GET /owners/:id — 200 owner or 404."
+          }
+        },
+        {
+          "name": "Update Owner",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"{{ownerFullName}}\",\n  \"phone\": \"{{ownerPhone}}\",\n  \"email\": \"priya@example.com\",\n  \"address\": \"12 MG Road\",\n  \"city\": \"{{ownerCity}}\",\n  \"preferredContactMethod\": \"phone\",\n  \"altPhone\": null,\n  \"idInfo\": null,\n  \"notes\": \"updated\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/owners/{{ownerId}}",
+            "description": "PATCH /owners/:id — profile fields. Duplicate live phone → 409."
+          }
+        },
+        {
+          "name": "Deactivate Owner",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/owners/{{ownerId}}",
+            "description": "DELETE /owners/:id — 204 soft-deactivate. Admin only."
+          }
+        }
+      ]
+    }
+  ]
+}

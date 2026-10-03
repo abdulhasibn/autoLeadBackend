@@ -17,7 +17,7 @@ export class GetMeUseCase {
       throw new NotFoundError(`User profile not found for id ${ctx.userId}`);
     }
 
-    // Merge roles from the JWT context into the profile DTO.
+    // Roles were loaded from user_roles when the actor was resolved.
     return { ...profile, roles: ctx.roles };
   }
 }

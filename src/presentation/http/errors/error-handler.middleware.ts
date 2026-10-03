@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 
 import { AuthenticationRequiredError } from '../../../domain/errors/authentication-required.error';
 import { ConflictError } from '../../../domain/errors/conflict.error';
+import { ForbiddenActionError } from '../../../domain/errors/forbidden-action.error';
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
 import { DataIntegrityError } from '../../../domain/errors/data-integrity.error';
 import { NotFoundError } from '../../../domain/errors/not-found.error';
@@ -48,6 +49,9 @@ function mapError(
   }
   if (err instanceof AuthenticationRequiredError) {
     return { status: 401, body: { error: { code: err.code, message: err.message } } };
+  }
+  if (err instanceof ForbiddenActionError) {
+    return { status: 403, body: { error: { code: err.code, message: err.message } } };
   }
   if (err instanceof NotFoundError) {
     return { status: 404, body: { error: { code: err.code, message: err.message } } };

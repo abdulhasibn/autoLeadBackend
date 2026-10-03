@@ -1,21 +1,21 @@
 import type { RequestHandler } from 'express';
 
 import { AuthenticationRequiredError } from '../../../../domain/errors/authentication-required.error';
-import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
-import type { ITokenVerifier } from '../../application/ports/token-verifier.port';
+import type { AuthenticateActorUseCase } from '../../application/use-cases/authenticate-actor.use-case';
 
-// Ensure the Express.Request augmentation is loaded.
-import './express-auth.d';
+import '../../../../presentation/http/express-auth.d';
 
 /**
- * Parses the Authorization header, delegates verification to ITokenVerifier,
- * and attaches the resolved AuthenticatedContext to req.auth.
+ * Parses the Authorization header, resolves the actor (JWT identity + live
+ * roles from user_roles), and attaches AuthenticatedContext to req.auth.
  *
  * Throw AuthenticationRequiredError (→ 401) when:
  * - The header is absent or malformed.
  * - The token is invalid or expired.
  */
-export function createBearerMiddleware(tokenVerifier: ITokenVerifier): RequestHandler {
+export function createBearerMiddleware(
+  authenticateActor: AuthenticateActorUseCase,
+): RequestHandler {
   return async (req, _res, next) => {
     try {
       const header = req.headers.authorization;
@@ -29,7 +29,7 @@ export function createBearerMiddleware(tokenVerifier: ITokenVerifier): RequestHa
         return next(new AuthenticationRequiredError());
       }
 
-      const ctx = await tokenVerifier.verify(token);
+      const ctx = await authenticateActor.execute(token);
       if (ctx === null) {
         return next(new AuthenticationRequiredError());
       }
@@ -40,16 +40,4 @@ export function createBearerMiddleware(tokenVerifier: ITokenVerifier): RequestHa
       return next(err);
     }
   };
-}
-
-/**
- * Narrows `req.auth` to a guaranteed `AuthenticatedContext`.
- * Call this at the top of any controller action that requires authentication.
- * Throws AuthenticationRequiredError if the middleware was somehow skipped.
- */
-export function requireAuth(req: { auth?: AuthenticatedContext }): AuthenticatedContext {
-  if (req.auth === undefined) {
-    throw new AuthenticationRequiredError();
-  }
-  return req.auth;
 }

@@ -15,7 +15,7 @@ function mapRow(row: UserRow): UserProfileDto {
     phone: row.phone,
     email: row.email,
     avatarUrl: row.avatar_url,
-    // Roles are merged in at the use-case level from the JWT context.
+    // Roles are loaded separately via findLiveRoles.
     roles: [],
   };
 }
@@ -36,9 +36,7 @@ export class SupabaseAuthQueries implements IAuthQueries {
       .maybeSingle();
 
     if (error !== null) {
-      throw new DatabaseUnavailableError(
-        `Failed to fetch user profile: ${error.message}`,
-      );
+      throw new DatabaseUnavailableError(`Failed to fetch user profile: ${error.message}`);
     }
 
     if (data === null) {
@@ -47,4 +45,36 @@ export class SupabaseAuthQueries implements IAuthQueries {
 
     return mapRow(data as UserRow);
   }
+
+  async findLiveRoles(userId: UserId): Promise<ReadonlyArray<string>> {
+    const { data, error } = await this.db
+      .from('user_roles')
+      .select('roles!inner(name), users!inner(deleted_at)')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .is('users.deleted_at', null);
+
+    if (error !== null) {
+      throw new DatabaseUnavailableError(`Failed to fetch user roles: ${error.message}`);
+    }
+
+    const names: string[] = [];
+    for (const row of data ?? []) {
+      const role = unwrapRoleName(row.roles);
+      if (role !== null && !names.includes(role)) {
+        names.push(role);
+      }
+    }
+    return names;
+  }
+}
+
+function unwrapRoleName(value: { name: string } | { name: string }[] | null): string | null {
+  if (value === null) {
+    return null;
+  }
+  if (Array.isArray(value)) {
+    return value[0]?.name ?? null;
+  }
+  return value.name;
 }

@@ -3,17 +3,18 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '../../infrastructure/supabase/database.types';
 import type { ErrorMapper } from '../../presentation/http/errors/error-mapping';
+import { AuthenticateActorUseCase } from './application/use-cases/authenticate-actor.use-case';
 import { GetMeUseCase } from './application/use-cases/get-me.use-case';
-import { SendOtpUseCase } from './application/use-cases/send-otp.use-case';
-import { VerifyOtpUseCase } from './application/use-cases/verify-otp.use-case';
+import { LoginUseCase } from './application/use-cases/login.use-case';
+import { RefreshSessionUseCase } from './application/use-cases/refresh-session.use-case';
 import {
-  OtpVerificationError,
+  InvalidCredentialsError,
   SupabaseAuthAdapter,
 } from './infrastructure/supabase-auth.adapter';
 import { SupabaseAuthQueries } from './infrastructure/supabase-auth.queries';
 import { MeController } from './presentation/controllers/me.controller';
-import { SendOtpController } from './presentation/controllers/send-otp.controller';
-import { VerifyOtpController } from './presentation/controllers/verify-otp.controller';
+import { LoginController } from './presentation/controllers/login.controller';
+import { RefreshSessionController } from './presentation/controllers/refresh-session.controller';
 import { createBearerMiddleware } from './presentation/middleware/bearer.middleware';
 import { createAuthRouter } from './presentation/auth.routes';
 
@@ -37,31 +38,28 @@ export function composeAuth(
   infraClient: SupabaseClient<Database>,
   anonClient: SupabaseClient<Database>,
 ): AuthComposition {
-  // Infrastructure
   const authAdapter = new SupabaseAuthAdapter(anonClient);
   const authQueries = new SupabaseAuthQueries(infraClient);
 
-  // Use cases
-  const sendOtpUseCase = new SendOtpUseCase(authAdapter);
-  const verifyOtpUseCase = new VerifyOtpUseCase(authAdapter);
+  const loginUseCase = new LoginUseCase(authAdapter);
+  const refreshSessionUseCase = new RefreshSessionUseCase(authAdapter);
   const getMeUseCase = new GetMeUseCase(authQueries);
+  const authenticateActor = new AuthenticateActorUseCase(authAdapter, authQueries);
 
-  // Presentation
-  const bearerMiddleware = createBearerMiddleware(authAdapter);
-  const sendOtpController = new SendOtpController(sendOtpUseCase);
-  const verifyOtpController = new VerifyOtpController(verifyOtpUseCase);
+  const bearerMiddleware = createBearerMiddleware(authenticateActor);
+  const loginController = new LoginController(loginUseCase);
+  const refreshSessionController = new RefreshSessionController(refreshSessionUseCase);
   const meController = new MeController(getMeUseCase);
 
   const router = createAuthRouter({
     bearerMiddleware,
-    sendOtpController,
-    verifyOtpController,
+    loginController,
+    refreshSessionController,
     meController,
   });
 
-  // Feature-scoped error mapper: OtpVerificationError → 401
   const errorMapper: ErrorMapper = (err) => {
-    if (err instanceof OtpVerificationError) {
+    if (err instanceof InvalidCredentialsError) {
       return { status: 401, code: err.code, message: err.message };
     }
     return null;

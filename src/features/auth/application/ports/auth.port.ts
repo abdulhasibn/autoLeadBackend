@@ -1,22 +1,22 @@
-export interface OtpSession {
+export interface AuthSession {
   readonly accessToken: string;
   readonly refreshToken: string;
 }
 
 /**
- * Auth provider port — OTP-based authentication operations.
+ * Auth provider port — email + password session operations.
  * Use cases depend on this interface; Supabase Auth is one implementation.
  */
 export interface IAuthProvider {
   /**
-   * Sends a one-time password to the given E.164 phone number.
-   * Rejects with an Error when the downstream provider fails.
+   * Exchanges an email + password pair for session credentials.
+   * Rejects with an Error when credentials are invalid.
    */
-  sendOtp(phone: string): Promise<void>;
+  signIn(email: string, password: string): Promise<AuthSession>;
 
   /**
-   * Exchanges a phone + OTP token pair for session credentials.
-   * Rejects with an Error when verification fails (wrong/expired token).
+   * Rotates a refresh token into a new session.
+   * Rejects with an Error when the refresh token is invalid or expired.
    */
-  verifyOtp(phone: string, token: string): Promise<OtpSession>;
+  refresh(refreshToken: string): Promise<AuthSession>;
 }

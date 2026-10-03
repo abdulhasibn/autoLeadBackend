@@ -4,7 +4,7 @@
 
 ## Current stage
 
-**Stage:** **Stint 2 Auth** — auth feature module complete; users feature next.
+**Stage:** **Stint 2.1 Owners complete** — owner CRUD landed; vehicles next.
 
 | Area | Status |
 |------|--------|
@@ -12,13 +12,13 @@
 | Architecture docs + ADR-0001 / ADR-0005 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6) | Done — applied to hosted project |
+| SQL migrations (stints 1–6 + save_staff_user + email unique) | Done — applied to hosted project |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
-| Local `.env` with service role key | Local dev only — not committed |
-| Auth feature (`src/features/auth`) | Done — OTP, bearer middleware, /auth/me |
-| Users / roles (`src/features/users`) | Not started |
-| Owners (`src/features/owners`) | Not started |
+| Local `.env` with service role key | Done — local dev only, not committed |
+| Auth feature (`src/features/auth`) | Done — email + password login/refresh, bearer, /auth/me; roles from `user_roles` |
+| Users / roles (`src/features/users`) | Done — staff CRUD + email/password provision (Admin) |
+| Owners (`src/features/owners`) | Done — staff owner CRUD (Admin / Salesperson; deactivate Admin-only) |
 | Vehicles (`src/features/vehicles`) | Not started |
 | Inventory (`src/features/inventory`) | Not started |
 | Marketplace (`src/features/marketplace`) | Not started |
@@ -27,6 +27,7 @@
 | Finance (`src/features/finance`) | Not started |
 | Notifications (`src/features/notifications`) | Not started |
 | Audit trail (cross-cutting) | Not started |
+| Postman collection (Health, Auth, Users, Owners) | Done — [autoLeadBackend-postman](https://github.com/abdulhasibn/autoLeadBackend-postman) + local `postman/` |
 | HTTP integration tests (local Docker Supabase) | Not started |
 | Vercel production host | Not started |
 
@@ -40,16 +41,83 @@
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
 | Tables | 25 |
-| Migrations applied | 6 (stint1–stint6) |
+| Migrations applied | 8 (stint1–stint6 + save_staff_user + users_email_active_uidx) |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
 
-1. Users feature — staff CRUD + role assignment (Admin) (`src/features/users`).
-2. Enable Custom Access Token Hook in hosted dashboard (Auth → Hooks → `private.custom_access_token_hook`) if not already done.
-3. Wire local `.env` with service-role + anon keys if not already done.
+1. Vehicles feature — submission, details, media, documents (`src/features/vehicles`).
+2. Acquisition type + commercial details on vehicles (Stint 2.3).
 
 ## Log
+
+### 2026-10-03 — Standalone Postman GitHub repo
+
+- Published Health, Auth, Users, and Owners collection plus the local
+  environment to public repo
+  [autoLeadBackend-postman](https://github.com/abdulhasibn/autoLeadBackend-postman),
+  same pattern as gym-backend-postman. Local copies stay in `postman/`.
+- Deferred: sync-postman skill (cloud `putCollection` on each feature).
+
+### 2026-09-14 — Owners feature + first admin bootstrap
+
+- Bootstrapped first admin Auth user `admin@example.com` (password matches
+  Postman `password` variable) with `public.users` + admin `user_roles`
+  via `save_staff_user`. Wired local `.env` with hosted URL, anon, and
+  service-role keys.
+- Owners module: `Owner` aggregate, command/query split, staff CRUD under
+  `/owners`. Admin or salesperson for create/list/get/update; Admin-only
+  deactivate. Duplicate live phone → 409 `CONFLICT`.
+- 30 new unit tests (entity, policy, five use cases) — 106 total pass.
+- Postman Owners folder in repo JSON; Create/List/Get/Update/Deactivate
+  requests added on AutoLead API in My Workspace.
+- Deferred: owner portal self-registration / `owners.user_id` linking;
+  vehicle history on owner profile (needs vehicles); feature RLS.
+
+### 2026-09-10 — Email + password auth (no OTP)
+
+- Replaced phone SMS OTP with `POST /auth/login` and `POST /auth/refresh`.
+  Invalid credentials → 401 `INVALID_CREDENTIALS`.
+- Shared `Email` and `Password` VOs; JWT identity + live `user_roles` unchanged.
+- Create staff requires email + password; Auth user is email-only
+  (`email_confirm: true`). Phone stays a profile field.
+- Update staff requires email and syncs Auth email when it changes.
+- Unique live-email index `users_email_active_uidx` applied to hosted project.
+- Postman Auth folder is Login / Refresh / Me; Create Staff sends password.
+- Deferred: password reset / change-own-password; Google; owner self-signup;
+  first-admin bootstrap.
+
+### 2026-09-10 — Postman collection for current APIs
+
+- Created **AutoLead API** in Postman *My Workspace* plus **AutoLead Local**
+  (`baseUrl` `http://localhost:3000`).
+- Folders: Health, Auth (OTP send/verify/me), Users (staff CRUD).
+- Verify OTP saves `accessToken` / `refreshToken`; Create Staff saves
+  `staffUserId`.
+- Repo copies: `postman/AutoLead-API.postman_collection.json`,
+  `postman/AutoLead-Local.postman_environment.json`.
+- Deferred: Owners and later feature folders; first-admin bootstrap so
+  Users requests succeed.
+
+### 2026-09-10 — Resolve roles from user_roles (gym-style)
+
+- JWT is identity only. `ITokenVerifier` returns `UserId`; it no longer reads `app_metadata.roles`.
+- `AuthenticateActorUseCase` loads live roles from `public.user_roles` (excludes soft-deleted users and grants).
+- Bearer middleware calls that use case; role changes apply on the next request.
+- Custom Access Token Hook is unused by the API and no longer a setup step. The SQL function remains in the database.
+- Deferred: drop or leave the unused hook function.
+
+### 2026-09-10 — Users feature module (`src/features/users`)
+
+- Staff aggregate: `StaffRole` VO (`admin` | `salesperson`) and `StaffUser` entity (role set, profile, soft-deactivate).
+- Ports: `IUserRepository` (find/save/countLiveWithRole), `IStaffQueries` (list/get read models), `IAuthUserProvisioner` (Auth admin create/update/disable/delete).
+- Use cases: create, update, replace roles, deactivate, list, get — all gated by `AdminStaffPolicy`.
+- Last-admin and self-deactivate protected (`LastAdminProtectedError` → 409).
+- Routes: `POST/GET /users`, `GET/PATCH/DELETE /users/:id`, `PUT /users/:id/roles`.
+- Atomic save via `private.save_staff_user` + `public.save_staff_user` wrapper (service_role only); applied to hosted project.
+- Promoted `Phone`, `requireAuth` / `Request.auth`, and `ForbiddenActionError` (403) out of auth so later features do not import auth internals.
+- 38 new unit tests (VO, entity, policy, six use cases) — 61 total pass.
+- Deferred: first-admin bootstrap/seed, JWT role claims refresh until next login, feature RLS, showroom required on staff, HTTP tests against Docker Supabase.
 
 ### 2026-09-04 — Auth feature module (`src/features/auth`)
 

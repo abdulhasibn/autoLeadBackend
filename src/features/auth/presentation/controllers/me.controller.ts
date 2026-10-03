@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 
 import type { GetMeUseCase } from '../../application/use-cases/get-me.use-case';
-import { requireAuth } from '../middleware/bearer.middleware';
+import { requireAuth } from '../../../../presentation/http/middleware/require-auth';
 
 /**
  * GET /auth/me

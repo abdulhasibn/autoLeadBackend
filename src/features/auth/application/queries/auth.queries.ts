@@ -12,4 +12,10 @@ export interface IAuthQueries {
    * the profile row exists).
    */
   findProfile(userId: UserId): Promise<UserProfileDto | null>;
+
+  /**
+   * Live role names for a user who is not soft-deleted.
+   * Empty when the profile is missing, deactivated, or has no grants.
+   */
+  findLiveRoles(userId: UserId): Promise<ReadonlyArray<string>>;
 }
