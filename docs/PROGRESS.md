@@ -30,7 +30,7 @@
 | Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications) | Done — local `postman/`, GitHub repo, cloud My Workspace |
 | Frontend API guide (`docs/api.md`) | Done — current endpoints + how to start |
 | HTTP integration tests (local Docker Supabase) | Not started |
-| Vercel production host | Not started |
+| Vercel production host | Done — `autolead-backend` (`bom1`), `https://autolead-backend-lyart.vercel.app` |
 
 **Supabase project**
 
@@ -52,6 +52,20 @@
 3. Acquisition prices on `vehicle_financials` (Stint 2.3).
 
 ## Log
+
+### 2026-10-04 — Vercel production host
+
+- Created Vercel project `autolead-backend` on team
+  `abdul-hasib-ns-projects`, linked to GitHub `abdulhasibn/autoLeadBackend`
+  (`main` → production). Region `bom1`. Node 22. Deployment protection off
+  so API clients can call the host.
+- Production URL: `https://autolead-backend-lyart.vercel.app` (`GET /health`
+  returns 200). Env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+  `SUPABASE_SERVICE_ROLE_KEY`, `LOG_LEVEL`.
+- Fixed a startup crash: side-effect imports of `express-auth.d.ts` compiled
+  to `require("…express-auth.d")`. Ambient types are included from
+  `tsconfig.json` instead.
+- Deferred: custom domain.
 
 ### 2026-10-04 — Frontend API guide
 
