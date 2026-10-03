@@ -77,7 +77,7 @@ docker run --env-file .env -p 3000:3000 autolead-backend
 | [PRD.md](PRD.md)                                                                  | Product requirements (source of truth for behaviour) |
 | [docs/PROGRESS.md](docs/PROGRESS.md)                                              | Current stage, area status, build log                |
 | [docs/MVP_ROADMAP.md](docs/MVP_ROADMAP.md)                                        | MVP build order (stints 1–6)                         |
-| [docs/api.md](docs/api.md)                                                        | Shipped endpoint catalogue                           |
+| [docs/api.md](docs/api.md)                                                        | Shipped APIs + how frontends should start            |
 | [autoLeadBackend-postman](https://github.com/abdulhasibn/autoLeadBackend-postman) | Postman collection and local environment             |
 | [docs/architecture.md](docs/architecture.md)                                      | Clean Architecture rules                             |
 | [docs/schema.dbml](docs/schema.dbml)                                              | Database schema (design before migrations)           |

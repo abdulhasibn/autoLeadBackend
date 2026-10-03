@@ -28,6 +28,7 @@
 | Notifications (`src/features/notifications`) | Admin inbox (`due_at` filter) + mark read |
 | Audit trail (cross-cutting) | Not started |
 | Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications) | Done — local `postman/`, GitHub repo, cloud My Workspace |
+| Frontend API guide (`docs/api.md`) | Done — current endpoints + how to start |
 | HTTP integration tests (local Docker Supabase) | Not started |
 | Vercel production host | Not started |
 
@@ -51,6 +52,13 @@
 3. Acquisition prices on `vehicle_financials` (Stint 2.3).
 
 ## Log
+
+### 2026-10-04 — Frontend API guide
+
+- Replaced the stale `docs/api.md` catalogue with the 30 shipped
+  routes (Health, Auth, Users, Owners, Catalog, Vehicles, Leads,
+  Notifications), request/response shapes, role gates, and how a
+  frontend should start (login, admin screen order, client helper).
 
 ### 2026-10-04 — Postman repo + cloud sync
 
