@@ -27,7 +27,7 @@
 | Finance (`src/features/finance`) | Not started |
 | Notifications (`src/features/notifications`) | Admin inbox (`due_at` filter) + mark read |
 | Audit trail (cross-cutting) | Not started |
-| Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications) | Done — local `postman/` |
+| Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications) | Done — local `postman/`, GitHub repo, cloud My Workspace |
 | HTTP integration tests (local Docker Supabase) | Not started |
 | Vercel production host | Not started |
 
@@ -51,6 +51,16 @@
 3. Acquisition prices on `vehicle_financials` (Stint 2.3).
 
 ## Log
+
+### 2026-10-04 — Postman repo + cloud sync
+
+- Copied Catalog, Vehicles, Leads, and Notifications (plus env vars
+  `showroomId` / `makeId` / `modelId` / `variantId` / `vehicleId` /
+  `leadId` / `notificationId`) to
+  [autoLeadBackend-postman](https://github.com/abdulhasibn/autoLeadBackend-postman).
+- Replaced **AutoLead API** and **AutoLead Local** in Postman *My
+  Workspace*. Request scripts that store tokens and IDs were restored
+  after the collection replace.
 
 ### 2026-10-04 — Admin vehicle + lead first phase
 
