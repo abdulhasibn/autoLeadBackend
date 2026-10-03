@@ -5,7 +5,7 @@ import type { Database } from '../../../infrastructure/supabase/database.types';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import { toPage } from '../../../shared/pagination/pagination';
 import type { IOwnerQueries, OwnerListCriteria, OwnerReadModel } from '../domain/owner.queries';
-import type { OwnerId } from '../domain/owner-id';
+import type { OwnerId } from '../../../domain/shared/owner-id';
 import { toOwnerReadModel, type OwnerRow } from './owner.mapper';
 
 export class SupabaseOwnerQueries implements IOwnerQueries {

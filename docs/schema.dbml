@@ -97,6 +97,19 @@ Table variants {
   id uuid [pk, default: `gen_random_uuid()`]
   model_id uuid [not null, ref: > models.id]
   name text [not null]
+  ex_showroom_price numeric(14,2) [note: 'new-car ex-showroom reference; not the used-vehicle price']
+  displacement_cc integer
+  cylinders smallint
+  fuel_tank_capacity_l numeric(6,1)
+  fuel_type text [note: 'petrol | diesel | cng | electric | hybrid | cng_petrol']
+  height_mm integer
+  length_mm integer
+  width_mm integer
+  body_type text
+  seating_capacity smallint
+  transmission text [note: 'manual | automatic | amt | cvt | dct']
+  power numeric(8,2) [note: 'source Power; mostly bhp']
+  torque numeric(8,2) [note: 'source Torque; mostly Nm']
   deleted_at timestamptz
 
   indexes {
@@ -445,9 +458,11 @@ Table notifications {
   entity_type text
   entity_id uuid
   is_read boolean [not null, default: false]
+  due_at timestamptz [note: 'null means visible immediately; follow_up_due uses scheduled time']
   created_at timestamptz [not null, default: `now()`]
 
   indexes {
     (user_id, is_read, created_at) [name: 'notifications_user_unread_idx']
+    (user_id, due_at) [name: 'notifications_user_due_idx']
   }
 }

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "AutoLead API",
-    "description": "AutoLead backend — used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only).\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login (saves `accessToken`) → Me / Users / Owners. Refresh rotates the session.",
+    "description": "AutoLead backend — used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only). **Catalog, Vehicles, Leads, Notifications** are Admin-only in this phase.\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login → create owner → pick catalog variant → create vehicle → create lead → associate vehicle → schedule follow-up → change status → inbox.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -83,6 +83,34 @@
     {
       "key": "ownerCity",
       "value": "Bengaluru"
+    },
+    {
+      "key": "showroomId",
+      "value": "b0000000-0000-4000-8000-000000000001"
+    },
+    {
+      "key": "makeId",
+      "value": ""
+    },
+    {
+      "key": "modelId",
+      "value": ""
+    },
+    {
+      "key": "variantId",
+      "value": ""
+    },
+    {
+      "key": "vehicleId",
+      "value": ""
+    },
+    {
+      "key": "leadId",
+      "value": ""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
     }
   ],
   "item": [
@@ -420,6 +448,275 @@
             "header": [],
             "url": "{{baseUrl}}/owners/{{ownerId}}",
             "description": "DELETE /owners/:id — 204 soft-deactivate. Admin only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "List Makes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 200 && body.items && body.items[0]) {",
+                  "  pm.environment.set('makeId', body.items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/catalog/makes?limit=20&offset=0",
+            "description": "GET /catalog/makes — paginated makes. Admin."
+          }
+        },
+        {
+          "name": "List Models",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 200 && body.items && body.items[0]) {",
+                  "  pm.environment.set('modelId', body.items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/catalog/makes/{{makeId}}/models?limit=20&offset=0",
+            "description": "GET /catalog/makes/:makeId/models — Admin."
+          }
+        },
+        {
+          "name": "List Variants",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 200 && body.items && body.items[0]) {",
+                  "  pm.environment.set('variantId', body.items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/catalog/models/{{modelId}}/variants?limit=20&offset=0",
+            "description": "GET /catalog/models/:modelId/variants — includes factory fuel, transmission, ex-showroom price."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vehicles",
+      "item": [
+        {
+          "name": "Create Vehicle",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 201 && body.id) {",
+                  "  pm.environment.set('vehicleId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showroomId\": \"{{showroomId}}\",\n  \"ownerId\": \"{{ownerId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"year\": 2019,\n  \"registrationNumber\": \"KA01AB1234\",\n  \"fuelType\": \"petrol\",\n  \"transmission\": \"manual\",\n  \"kmDriven\": 42000,\n  \"numPreviousOwners\": 1,\n  \"colour\": \"White\",\n  \"insuranceValidUntil\": null,\n  \"rcStatus\": \"clear\",\n  \"serviceHistory\": \"full\",\n  \"accidentHistory\": false,\n  \"loanStatus\": \"clear\",\n  \"location\": \"Bengaluru\",\n  \"description\": null,\n  \"acquisitionType\": \"consignment\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/vehicles",
+            "description": "POST /vehicles — Admin. Duplicate live registration → 409."
+          }
+        },
+        {
+          "name": "List Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/vehicles?limit=20&offset=0",
+            "description": "GET /vehicles — filters: status, ownerId, showroomId, registration."
+          }
+        },
+        {
+          "name": "Get Vehicle",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}",
+            "description": "GET /vehicles/:id — catalog names included."
+          }
+        },
+        {
+          "name": "Update Vehicle",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"year\": 2019,\n  \"registrationNumber\": \"KA01AB1234\",\n  \"fuelType\": \"petrol\",\n  \"transmission\": \"manual\",\n  \"kmDriven\": 43000,\n  \"numPreviousOwners\": 1,\n  \"colour\": \"White\",\n  \"insuranceValidUntil\": null,\n  \"rcStatus\": \"clear\",\n  \"serviceHistory\": \"full\",\n  \"accidentHistory\": false,\n  \"loanStatus\": \"clear\",\n  \"location\": \"Bengaluru\",\n  \"description\": \"updated\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}",
+            "description": "PATCH /vehicles/:id — second-hand details only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leads",
+      "item": [
+        {
+          "name": "Create Lead",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 201 && body.id) {",
+                  "  pm.environment.set('leadId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showroomId\": \"{{showroomId}}\",\n  \"fullName\": \"Rahul Sharma\",\n  \"phone\": \"+919811122233\",\n  \"email\": null,\n  \"source\": \"phone\",\n  \"vehicleId\": null,\n  \"budget\": 800000,\n  \"preferredVehicle\": null,\n  \"purchaseTimeline\": null,\n  \"financeRequired\": false,\n  \"currentVehicle\": null,\n  \"tradeInRequired\": false,\n  \"notes\": \"called the showroom\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/leads",
+            "description": "POST /leads — walk-in contact by phone. Admin."
+          }
+        },
+        {
+          "name": "List Leads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/leads?limit=20&offset=0",
+            "description": "GET /leads — filters: status, vehicleId."
+          }
+        },
+        {
+          "name": "Get Lead",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/leads/{{leadId}}",
+            "description": "GET /leads/:id — includes next follow-up."
+          }
+        },
+        {
+          "name": "Associate Vehicle",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/leads/{{leadId}}/vehicle",
+            "description": "PATCH /leads/:id/vehicle — attach a live vehicle."
+          }
+        },
+        {
+          "name": "Schedule Follow-up",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"2026-10-10T10:00:00.000Z\",\n  \"taskType\": \"call\",\n  \"notes\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/leads/{{leadId}}/follow-ups",
+            "description": "POST /leads/:id/follow-ups — also writes the due notification."
+          }
+        },
+        {
+          "name": "Change Lead Status",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"contacted\",\n  \"notes\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/leads/{{leadId}}/status",
+            "description": "POST /leads/:id/status — invalid transition → 422."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "List Notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 200 && body.items && body.items[0]) {",
+                  "  pm.environment.set('notificationId', body.items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/notifications?limit=20&offset=0",
+            "description": "GET /notifications — due reminders for the caller. Future follow-ups stay hidden."
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/notifications/{{notificationId}}/read",
+            "description": "PATCH /notifications/:id/read — 204. Own notifications only."
           }
         }
       ]

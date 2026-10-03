@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Phone } from '../../../domain/shared/phone.value-object';
 import { toUserId } from '../../../domain/shared/user-id';
 import { Owner, parsePreferredContactMethod } from '../domain/owner.entity';
-import { toOwnerId } from '../domain/owner-id';
+import { toOwnerId } from '../../../domain/shared/owner-id';
 
 const CREATED_AT = new Date('2026-09-14T00:00:00.000Z');
 const CREATED_BY = toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');

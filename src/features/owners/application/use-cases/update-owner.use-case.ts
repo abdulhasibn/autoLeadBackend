@@ -8,7 +8,7 @@ import type { OwnerDto } from '../dtos/owner.dto';
 import { toOwnerDto } from '../dtos/owner.dto';
 import type { OwnerManagementPolicy } from '../policies/owner-management.policy';
 import { parsePreferredContactMethod } from '../../domain/owner.entity';
-import { toOwnerId } from '../../domain/owner-id';
+import { toOwnerId } from '../../../../domain/shared/owner-id';
 import type { IOwnerRepository } from '../../domain/owner.repository';
 
 export class UpdateOwnerUseCase {

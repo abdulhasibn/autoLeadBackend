@@ -1,0 +1,33 @@
+import { Router, type RequestHandler } from 'express';
+
+import type { AssociateLeadVehicleController } from './controllers/associate-lead-vehicle.controller';
+import type { ChangeLeadStatusController } from './controllers/change-lead-status.controller';
+import type { CreateLeadController } from './controllers/create-lead.controller';
+import type { GetLeadController } from './controllers/get-lead.controller';
+import type { ListLeadsController } from './controllers/list-leads.controller';
+import type { ScheduleFollowUpController } from './controllers/schedule-follow-up.controller';
+
+export interface LeadsRouterDeps {
+  readonly bearerMiddleware: RequestHandler;
+  readonly createLeadController: CreateLeadController;
+  readonly listLeadsController: ListLeadsController;
+  readonly getLeadController: GetLeadController;
+  readonly associateLeadVehicleController: AssociateLeadVehicleController;
+  readonly changeLeadStatusController: ChangeLeadStatusController;
+  readonly scheduleFollowUpController: ScheduleFollowUpController;
+}
+
+export function createLeadsRouter(deps: LeadsRouterDeps): Router {
+  const router = Router();
+
+  router.use(deps.bearerMiddleware);
+
+  router.post('/', deps.createLeadController.handle());
+  router.get('/', deps.listLeadsController.handle());
+  router.get('/:id', deps.getLeadController.handle());
+  router.patch('/:id/vehicle', deps.associateLeadVehicleController.handle());
+  router.post('/:id/status', deps.changeLeadStatusController.handle());
+  router.post('/:id/follow-ups', deps.scheduleFollowUpController.handle());
+
+  return router;
+}

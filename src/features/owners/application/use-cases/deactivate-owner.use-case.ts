@@ -2,7 +2,7 @@ import { NotFoundError } from '../../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import type { Clock } from '../../../../shared/clock/clock';
 import type { OwnerManagementPolicy } from '../policies/owner-management.policy';
-import { toOwnerId } from '../../domain/owner-id';
+import { toOwnerId } from '../../../../domain/shared/owner-id';
 import type { IOwnerRepository } from '../../domain/owner.repository';
 
 export class DeactivateOwnerUseCase {

@@ -6,8 +6,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { JSON_BODY_LIMIT } from '../config/constants';
 import type { AppConfig } from '../config/environment';
 import { composeAuth } from '../features/auth/composition';
+import { composeLeads } from '../features/leads/composition';
+import { composeNotifications } from '../features/notifications/composition';
 import { composeOwners } from '../features/owners/composition';
 import { composeUsers } from '../features/users/composition';
+import { composeVehicles } from '../features/vehicles/composition';
 import { createLogger } from '../infrastructure/logging/logger';
 import { createRequestLoggerMiddleware } from '../infrastructure/logging/request-logger.middleware';
 import type { Database } from '../infrastructure/supabase/database.types';
@@ -51,6 +54,20 @@ export function composeApp(config: AppConfig): AppDependencies {
     bearerMiddleware: auth.bearerMiddleware,
     clock,
   });
+  const vehicles = composeVehicles(supabaseClient, {
+    bearerMiddleware: auth.bearerMiddleware,
+    clock,
+    registeredOwnerLookup: { isLive: owners.isLiveOwner },
+  });
+  const leads = composeLeads(supabaseClient, {
+    bearerMiddleware: auth.bearerMiddleware,
+    clock,
+    liveVehicleLookup: { isLive: vehicles.isLiveVehicle },
+  });
+  const notifications = composeNotifications(supabaseClient, {
+    bearerMiddleware: auth.bearerMiddleware,
+    clock,
+  });
 
   const app = express();
 
@@ -65,12 +82,23 @@ export function composeApp(config: AppConfig): AppDependencies {
       authRouter: auth.router,
       usersRouter: users.router,
       ownersRouter: owners.router,
+      vehiclesRouter: vehicles.vehiclesRouter,
+      catalogRouter: vehicles.catalogRouter,
+      leadsRouter: leads.router,
+      notificationsRouter: notifications.router,
     }),
   );
 
   app.use(notFoundMiddleware);
   app.use(
-    createErrorHandlerMiddleware(logger, [auth.errorMapper, users.errorMapper, owners.errorMapper]),
+    createErrorHandlerMiddleware(logger, [
+      auth.errorMapper,
+      users.errorMapper,
+      owners.errorMapper,
+      vehicles.errorMapper,
+      leads.errorMapper,
+      notifications.errorMapper,
+    ]),
   );
 
   return { config, logger, supabaseClient, bearerMiddleware: auth.bearerMiddleware, app };

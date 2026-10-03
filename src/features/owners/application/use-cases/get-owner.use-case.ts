@@ -3,7 +3,7 @@ import type { AuthenticatedContext } from '../../../../domain/shared/auth-contex
 import type { OwnerDto } from '../dtos/owner.dto';
 import type { OwnerManagementPolicy } from '../policies/owner-management.policy';
 import type { IOwnerQueries } from '../../domain/owner.queries';
-import { toOwnerId } from '../../domain/owner-id';
+import { toOwnerId } from '../../../../domain/shared/owner-id';
 
 export class GetOwnerUseCase {
   constructor(

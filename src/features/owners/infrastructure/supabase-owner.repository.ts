@@ -5,7 +5,7 @@ import type { UserId } from '../../../domain/shared/user-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
 import type { Owner } from '../domain/owner.entity';
 import type { IOwnerRepository } from '../domain/owner.repository';
-import type { OwnerId } from '../domain/owner-id';
+import type { OwnerId } from '../../../domain/shared/owner-id';
 import { toOwner, type OwnerRow } from './owner.mapper';
 import { translateOwnerWriteError } from './translate-owner-write-error';
 
@@ -30,6 +30,11 @@ export class SupabaseOwnerRepository implements IOwnerRepository {
     }
 
     return toOwner(data as OwnerRow);
+  }
+
+  async isLive(id: OwnerId): Promise<boolean> {
+    const owner = await this.findById(id);
+    return owner !== null;
   }
 
   async save(owner: Owner, createdBy: UserId): Promise<void> {

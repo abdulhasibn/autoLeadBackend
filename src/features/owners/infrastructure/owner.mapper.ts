@@ -3,7 +3,7 @@ import { Phone } from '../../../domain/shared/phone.value-object';
 import { toUserId } from '../../../domain/shared/user-id';
 import { Owner, parsePreferredContactMethod } from '../domain/owner.entity';
 import type { OwnerReadModel } from '../domain/owner.queries';
-import { toOwnerId } from '../domain/owner-id';
+import { toOwnerId } from '../../../domain/shared/owner-id';
 
 export interface OwnerRow {
   readonly id: string;

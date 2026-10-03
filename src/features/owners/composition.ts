@@ -2,6 +2,7 @@ import type { RequestHandler } from 'express';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { ConflictError } from '../../domain/errors/conflict.error';
+import type { OwnerId } from '../../domain/shared/owner-id';
 import type { Database } from '../../infrastructure/supabase/database.types';
 import type { ErrorMapper } from '../../presentation/http/errors/error-mapping';
 import type { Clock } from '../../shared/clock/clock';
@@ -24,6 +25,7 @@ import { createOwnersRouter } from './presentation/owners.routes';
 export interface OwnersComposition {
   readonly router: ReturnType<typeof createOwnersRouter>;
   readonly errorMapper: ErrorMapper;
+  readonly isLiveOwner: (ownerId: OwnerId) => Promise<boolean>;
 }
 
 export interface OwnersCompositionDeps {
@@ -66,5 +68,5 @@ export function composeOwners(
     return null;
   };
 
-  return { router, errorMapper };
+  return { router, errorMapper, isLiveOwner: (ownerId) => repo.isLive(ownerId) };
 }

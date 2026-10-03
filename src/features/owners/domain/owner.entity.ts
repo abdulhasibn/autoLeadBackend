@@ -1,6 +1,6 @@
 import { Phone } from '../../../domain/shared/phone.value-object';
 import type { UserId } from '../../../domain/shared/user-id';
-import type { OwnerId } from './owner-id';
+import type { OwnerId } from '../../../domain/shared/owner-id';
 
 export const PREFERRED_CONTACT_METHODS = ['phone', 'email', 'whatsapp'] as const;
 

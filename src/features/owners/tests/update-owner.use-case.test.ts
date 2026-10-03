@@ -8,7 +8,7 @@ import { toUserId } from '../../../domain/shared/user-id';
 import { OwnerManagementPolicy } from '../application/policies/owner-management.policy';
 import { UpdateOwnerUseCase } from '../application/use-cases/update-owner.use-case';
 import { Owner } from '../domain/owner.entity';
-import { toOwnerId } from '../domain/owner-id';
+import { toOwnerId } from '../../../domain/shared/owner-id';
 import { FakeClock, FakeOwnerRepository } from './fakes';
 
 const OWNER_ID = '22222222-2222-4222-8222-222222222222';

@@ -6,7 +6,7 @@ import { toPage } from '../../../shared/pagination/pagination';
 import type { IOwnerQueries, OwnerListCriteria, OwnerReadModel } from '../domain/owner.queries';
 import type { Owner } from '../domain/owner.entity';
 import type { IOwnerRepository } from '../domain/owner.repository';
-import type { OwnerId } from '../domain/owner-id';
+import type { OwnerId } from '../../../domain/shared/owner-id';
 
 export class FakeClock implements Clock {
   constructor(private current: Date) {}
@@ -38,6 +38,11 @@ export class FakeOwnerRepository implements IOwnerRepository {
       return null;
     }
     return owner;
+  }
+
+  async isLive(id: OwnerId): Promise<boolean> {
+    const owner = await this.findById(id);
+    return owner !== null;
   }
 
   async save(owner: Owner, _createdBy: UserId): Promise<void> {

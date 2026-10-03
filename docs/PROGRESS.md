@@ -4,7 +4,7 @@
 
 ## Current stage
 
-**Stage:** **Stint 2.1 Owners complete** — owner CRUD landed; vehicles next.
+**Stage:** **Admin vehicle + lead first phase** — catalog intake, thin vehicles, walk-in leads, follow-up due inbox.
 
 | Area | Status |
 |------|--------|
@@ -12,22 +12,22 @@
 | Architecture docs + ADR-0001 / ADR-0005 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique) | Done — applied to hosted project |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads) | Done — applied to hosted project |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
 | Auth feature (`src/features/auth`) | Done — email + password login/refresh, bearer, /auth/me; roles from `user_roles` |
 | Users / roles (`src/features/users`) | Done — staff CRUD + email/password provision (Admin) |
 | Owners (`src/features/owners`) | Done — staff owner CRUD (Admin / Salesperson; deactivate Admin-only) |
-| Vehicles (`src/features/vehicles`) | Not started |
+| Vehicles (`src/features/vehicles`) | Admin create/list/get/update + catalog reads; no media, documents, or lifecycle API |
 | Inventory (`src/features/inventory`) | Not started |
 | Marketplace (`src/features/marketplace`) | Not started |
-| Leads (`src/features/leads`) | Not started |
+| Leads (`src/features/leads`) | Admin walk-in create, associate vehicle, status, follow-up + mandatory due notification |
 | Sales (`src/features/sales`) | Not started |
 | Finance (`src/features/finance`) | Not started |
-| Notifications (`src/features/notifications`) | Not started |
+| Notifications (`src/features/notifications`) | Admin inbox (`due_at` filter) + mark read |
 | Audit trail (cross-cutting) | Not started |
-| Postman collection (Health, Auth, Users, Owners) | Done — [autoLeadBackend-postman](https://github.com/abdulhasibn/autoLeadBackend-postman) + local `postman/` |
+| Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications) | Done — local `postman/` |
 | HTTP integration tests (local Docker Supabase) | Not started |
 | Vercel production host | Not started |
 
@@ -41,15 +41,46 @@
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
 | Tables | 25 |
-| Migrations applied | 8 (stint1–stint6 + save_staff_user + users_email_active_uidx) |
+| Migrations applied | 10 (previous 9 + admin_vehicles_leads) |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
 
-1. Vehicles feature — submission, details, media, documents (`src/features/vehicles`).
-2. Acquisition type + commercial details on vehicles (Stint 2.3).
+1. Vehicle media, documents, and lifecycle (rest of Stint 2.2).
+2. Salesperson lead assignment + scoped inbox.
+3. Acquisition prices on `vehicle_financials` (Stint 2.3).
 
 ## Log
+
+### 2026-10-04 — Admin vehicle + lead first phase
+
+- Admin catalog reads plus thin vehicle create/list/get/update
+  (`src/features/vehicles/`). Status stays `submitted`. Seeded showroom
+  `b0000000-0000-4000-8000-000000000001`.
+- Admin walk-in leads (`src/features/leads/`): contact by phone, associate
+  vehicle, status pipeline, follow-up. `schedule_follow_up` writes the
+  follow-up and a `follow_up_due` notification in one transaction.
+- Inbox (`src/features/notifications/`): list due reminders
+  (`due_at` null or `<= now`) and mark read. Email/push deferred.
+- Shared branded ids: `OwnerId`, `VehicleId`, `ShowroomId`, `NotificationId`.
+- Postman Catalog / Vehicles / Leads / Notifications folders.
+- Deferred: salesperson access; vehicle media/docs/lifecycle; commercial
+  prices; lead assignment; owner portal.
+
+### 2026-10-04 — Vehicle catalog seed from Shrey car dataset
+
+- Restored paused hosted project `autolead` (`pptljtbxqzmjossuamve`), then
+  loaded the spreadsheet into `makes` / `models` / `variants`.
+- Variant rows now store ex-showroom price and factory specs
+  (`supabase/migrations/20261003183826_seed_vehicle_catalog.sql`,
+  `docs/schema.dbml`). Used-vehicle fields stay on `vehicles`.
+- Loaded 38 makes, 263 models, 1,267 variants (1,276 sheet rows; 9 exact
+  Mahindra XUV500 duplicates collapsed).
+- Repaired split names: Land Rover / Range Rover*, Maruti Suzuki / Wagon R;
+  stored BMW, MG, DC, ICML. "Not Mentioned" body/transmission stored as null.
+  Lexus NX 300H length 4.64 m stored as 4640 mm.
+- Deferred: vehicles feature; further catalog cleanup (0 cylinder counts,
+  odd torque values, make/model spelling such as "Xuv500").
 
 ### 2026-10-03 — Standalone Postman GitHub repo
 

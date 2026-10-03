@@ -584,6 +584,7 @@ export type Database = {
         Row: {
           body: string | null;
           created_at: string;
+          due_at: string | null;
           entity_id: string | null;
           entity_type: string | null;
           id: string;
@@ -595,6 +596,7 @@ export type Database = {
         Insert: {
           body?: string | null;
           created_at?: string;
+          due_at?: string | null;
           entity_id?: string | null;
           entity_type?: string | null;
           id?: string;
@@ -606,6 +608,7 @@ export type Database = {
         Update: {
           body?: string | null;
           created_at?: string;
+          due_at?: string | null;
           entity_id?: string | null;
           entity_type?: string | null;
           id?: string;
@@ -917,22 +920,61 @@ export type Database = {
       };
       variants: {
         Row: {
+          body_type: string | null;
+          cylinders: number | null;
           deleted_at: string | null;
+          displacement_cc: number | null;
+          ex_showroom_price: number | null;
+          fuel_tank_capacity_l: number | null;
+          fuel_type: string | null;
+          height_mm: number | null;
           id: string;
+          length_mm: number | null;
           model_id: string;
           name: string;
+          power: number | null;
+          seating_capacity: number | null;
+          torque: number | null;
+          transmission: string | null;
+          width_mm: number | null;
         };
         Insert: {
+          body_type?: string | null;
+          cylinders?: number | null;
           deleted_at?: string | null;
+          displacement_cc?: number | null;
+          ex_showroom_price?: number | null;
+          fuel_tank_capacity_l?: number | null;
+          fuel_type?: string | null;
+          height_mm?: number | null;
           id?: string;
+          length_mm?: number | null;
           model_id: string;
           name: string;
+          power?: number | null;
+          seating_capacity?: number | null;
+          torque?: number | null;
+          transmission?: string | null;
+          width_mm?: number | null;
         };
         Update: {
+          body_type?: string | null;
+          cylinders?: number | null;
           deleted_at?: string | null;
+          displacement_cc?: number | null;
+          ex_showroom_price?: number | null;
+          fuel_tank_capacity_l?: number | null;
+          fuel_type?: string | null;
+          height_mm?: number | null;
           id?: string;
+          length_mm?: number | null;
           model_id?: string;
           name?: string;
+          power?: number | null;
+          seating_capacity?: number | null;
+          torque?: number | null;
+          transmission?: string | null;
+          width_mm?: number | null;
         };
         Relationships: [
           {
@@ -1260,6 +1302,32 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      save_lead: {
+        Args: {
+          p_budget: number | null;
+          p_contact_created_by: string | null;
+          p_contact_email: string | null;
+          p_contact_full_name: string | null;
+          p_contact_id: string;
+          p_contact_phone: string | null;
+          p_created_by: string;
+          p_current_vehicle: string | null;
+          p_deleted_at: string | null;
+          p_finance_required: boolean | null;
+          p_id: string;
+          p_notes: string | null;
+          p_preferred_vehicle: string | null;
+          p_purchase_timeline: string | null;
+          p_showroom_id: string;
+          p_source: string;
+          p_status: string;
+          p_status_notes: string | null;
+          p_trade_in_required: boolean | null;
+          p_vehicle_id: string | null;
+          p_write_history: boolean;
+        };
+        Returns: undefined;
+      };
       save_staff_user: {
         Args: {
           p_deleted_at: string | null;
@@ -1270,6 +1338,48 @@ export type Database = {
           p_phone: string;
           p_role_names: string[];
           p_showroom_id: string | null;
+        };
+        Returns: undefined;
+      };
+      save_vehicle: {
+        Args: {
+          p_accident_history: boolean;
+          p_acquisition_type: string;
+          p_actor_id: string;
+          p_colour: string;
+          p_deleted_at: string | null;
+          p_description: string | null;
+          p_fuel_type: string;
+          p_id: string;
+          p_insurance_valid_until: string | null;
+          p_km_driven: number;
+          p_loan_status: string | null;
+          p_location: string | null;
+          p_num_previous_owners: number;
+          p_owner_id: string;
+          p_rc_status: string | null;
+          p_registration_number: string;
+          p_service_history: string | null;
+          p_showroom_id: string;
+          p_status: string;
+          p_submitted_by: string;
+          p_transmission: string;
+          p_variant_id: string;
+          p_year: number;
+        };
+        Returns: undefined;
+      };
+      schedule_follow_up: {
+        Args: {
+          p_assigned_to: string;
+          p_created_by: string;
+          p_due_at: string;
+          p_id: string;
+          p_lead_id: string;
+          p_notes: string | null;
+          p_notification_id: string;
+          p_scheduled_at: string;
+          p_task_type: string;
         };
         Returns: undefined;
       };

@@ -1,5 +1,5 @@
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
-import type { OwnerId } from './owner-id';
+import type { OwnerId } from '../../../domain/shared/owner-id';
 
 /**
  * Read-model shaped for staff owner screens. Not an entity.
