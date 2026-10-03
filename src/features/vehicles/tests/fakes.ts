@@ -1,9 +1,22 @@
 import type { OwnerId } from '../../../domain/shared/owner-id';
+import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Clock } from '../../../shared/clock/clock';
 import type { IdGenerator } from '../../../shared/ids/id-generator';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import { toPage } from '../../../shared/pagination/pagination';
+import type { DocumentId } from '../domain/document-id';
+import type {
+  ObjectStoragePort,
+  SignedReadUrl,
+  SignedUploadTicket,
+  VehicleStorageKind,
+} from '../domain/object-storage.port';
+import type { MediaId } from '../domain/media-id';
+import type { VehicleDocument } from '../domain/vehicle-document.entity';
+import type { IVehicleDocumentRepository } from '../domain/vehicle-document.repository';
+import type { VehicleMedia } from '../domain/vehicle-media.entity';
+import type { IVehicleMediaRepository } from '../domain/vehicle-media.repository';
 import type { IActiveShowroomLookup } from '../domain/active-showroom.port';
 import type {
   ICatalogQueries,
@@ -61,11 +74,82 @@ export class FakeVehicleRepository implements IVehicleRepository {
     return (await this.findById(id)) !== null;
   }
 
-  async save(vehicle: Vehicle): Promise<void> {
+  async save(vehicle: Vehicle, _actorId: UserId): Promise<void> {
     if (this.saveError !== null) {
       throw this.saveError;
     }
     this.store.set(vehicle.id, vehicle);
+  }
+}
+
+export class FakeVehicleMediaRepository implements IVehicleMediaRepository {
+  readonly store = new Map<string, VehicleMedia>();
+
+  seed(media: VehicleMedia): void {
+    this.store.set(media.id, media);
+  }
+
+  async findById(id: MediaId): Promise<VehicleMedia | null> {
+    return this.store.get(id) ?? null;
+  }
+
+  async save(media: VehicleMedia): Promise<void> {
+    this.store.set(media.id, media);
+  }
+
+  async delete(id: MediaId): Promise<void> {
+    this.store.delete(id);
+  }
+}
+
+export class FakeVehicleDocumentRepository implements IVehicleDocumentRepository {
+  readonly store = new Map<string, VehicleDocument>();
+
+  async findById(id: DocumentId): Promise<VehicleDocument | null> {
+    return this.store.get(id) ?? null;
+  }
+
+  async save(document: VehicleDocument): Promise<void> {
+    this.store.set(document.id, document);
+  }
+
+  async delete(id: DocumentId): Promise<void> {
+    this.store.delete(id);
+  }
+}
+
+export class FakeObjectStorage implements ObjectStoragePort {
+  readonly objects = new Set<string>();
+
+  seed(kind: VehicleStorageKind, storagePath: string): void {
+    this.objects.add(`${kind}:${storagePath}`);
+  }
+
+  async createSignedUpload(input: {
+    readonly kind: VehicleStorageKind;
+    readonly storagePath: string;
+    readonly expiresInSeconds: number;
+  }): Promise<SignedUploadTicket> {
+    return {
+      uploadUrl: `https://storage.example/${input.kind}/${input.storagePath}`,
+      token: 'upload-token',
+    };
+  }
+
+  async exists(kind: VehicleStorageKind, storagePath: string): Promise<boolean> {
+    return this.objects.has(`${kind}:${storagePath}`);
+  }
+
+  async createSignedReadUrl(input: {
+    readonly kind: VehicleStorageKind;
+    readonly storagePath: string;
+    readonly expiresInSeconds: number;
+  }): Promise<SignedReadUrl> {
+    return { url: `https://storage.example/read/${input.kind}/${input.storagePath}` };
+  }
+
+  async remove(kind: VehicleStorageKind, storagePath: string): Promise<void> {
+    this.objects.delete(`${kind}:${storagePath}`);
   }
 }
 

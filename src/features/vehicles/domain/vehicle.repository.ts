@@ -1,3 +1,4 @@
+import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Vehicle } from './vehicle.entity';
 
@@ -8,5 +9,5 @@ import type { Vehicle } from './vehicle.entity';
 export interface IVehicleRepository {
   findById(id: VehicleId): Promise<Vehicle | null>;
   isLive(id: VehicleId): Promise<boolean>;
-  save(vehicle: Vehicle): Promise<void>;
+  save(vehicle: Vehicle, actorId: UserId): Promise<void>;
 }

@@ -11,7 +11,9 @@ import { PreviousOwners } from '../domain/previous-owners.value-object';
 import { RegistrationNumber } from '../domain/registration-number.value-object';
 import { Transmission } from '../domain/transmission.value-object';
 import { toVariantId } from '../domain/variant-id';
+import { InvalidVehicleStatusTransitionError } from '../domain/errors/invalid-vehicle-status-transition.error';
 import { Vehicle } from '../domain/vehicle.entity';
+import { VehicleStatus } from '../domain/vehicle-status.value-object';
 import { VehicleYear } from '../domain/vehicle-year.value-object';
 
 const NOW = new Date('2026-10-03T00:00:00.000Z');
@@ -76,5 +78,28 @@ describe('Vehicle entity', () => {
     expect(vehicle.registrationNumber.value).toBe('KA01AB9999');
     expect(vehicle.accidentHistory).toBe(true);
     expect(vehicle.updatedAt).toEqual(at);
+  });
+
+  it('moves along the inspection path and stores a reason', () => {
+    const vehicle = makeVehicle();
+    const at = new Date('2026-10-03T12:00:00.000Z');
+    vehicle.changeStatus(VehicleStatus.create('inspection_pending'), at, '  ready  ');
+    expect(vehicle.status.value).toBe('inspection_pending');
+    expect(vehicle.statusChangeReason).toBe('ready');
+    expect(vehicle.updatedAt).toEqual(at);
+  });
+
+  it('rejects an invalid status jump', () => {
+    const vehicle = makeVehicle();
+    expect(() => vehicle.changeStatus(VehicleStatus.create('approved'), NOW, null)).toThrow(
+      InvalidVehicleStatusTransitionError,
+    );
+  });
+
+  it('treats the same status as a no-op', () => {
+    const vehicle = makeVehicle();
+    vehicle.changeStatus(VehicleStatus.create('submitted'), NOW, 'ignored');
+    expect(vehicle.status.value).toBe('submitted');
+    expect(vehicle.statusChangeReason).toBeNull();
   });
 });

@@ -210,6 +210,7 @@ Table vehicle_media {
 
   indexes {
     (vehicle_id, sort_order) [name: 'vehicle_media_vehicle_sort_idx']
+    (storage_path) [unique, name: 'vehicle_media_storage_path_uidx']
   }
 }
 
@@ -224,6 +225,7 @@ Table vehicle_documents {
 
   indexes {
     (vehicle_id, doc_type) [name: 'vehicle_documents_vehicle_type_idx']
+    (storage_path) [unique, name: 'vehicle_documents_storage_path_uidx']
   }
 }
 

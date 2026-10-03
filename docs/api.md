@@ -2,7 +2,7 @@
 
 What is live today, and how a frontend (admin web first) can start against it.
 
-**Current phase:** admin vehicle + walk-in lead management. There is no public marketplace, owner portal, salesperson assignment, vehicle media, or production host yet.
+**Current phase:** admin vehicle + walk-in lead management, including inspection status, photos, and documents. There is no public marketplace, owner portal, or salesperson assignment yet.
 
 **Base URL:** `http://localhost:3000`  
 **Postman:** [autoLeadBackend-postman](https://github.com/abdulhasibn/autoLeadBackend-postman) (also **AutoLead API** + **AutoLead Local** in Postman *My Workspace*)
@@ -54,7 +54,7 @@ This matches the APIs that exist and the intended first-phase flow.
 1. **Login / session** — login, refresh, me, logout (drop tokens locally).
 2. **Catalog pickers** — makes → models → variants (cascading selects).
 3. **Owners** — create/list/get/update (needed before a vehicle).
-4. **Vehicles** — create a second-hand car from a catalog variant + owner.
+4. **Vehicles** — create a second-hand car, add photos/documents, move it through inspection.
 5. **Leads** — create walk-in contact, attach a vehicle, change status, schedule a follow-up.
 6. **Inbox** — list due notifications and mark them read.
 7. **Staff (admin settings)** — optional; create other admins/salespeople.
@@ -289,7 +289,7 @@ Read-only factory catalog. Use these to populate vehicle create.
 
 ### Vehicles — Admin only
 
-Creates a second-hand car. Status is always `submitted` on create. No media, documents, inspection, or lifecycle transitions yet.
+Creates a second-hand car. Status is always `submitted` on create. Photos and documents use a two-step signed upload (bytes never pass through this API). Inspection status is a separate POST.
 
 | Method | Path | Success |
 |--------|------|---------|
@@ -297,6 +297,16 @@ Creates a second-hand car. Status is always `submitted` on create. No media, doc
 | `GET` | `/vehicles` | `200` page (includes catalog names) |
 | `GET` | `/vehicles/:id` | `200` vehicle |
 | `PATCH` | `/vehicles/:id` | `200` vehicle (second-hand fields only; cannot change owner/variant/showroom/status) |
+| `POST` | `/vehicles/:id/status` | `200` `{ "status" }` |
+| `GET` | `/vehicles/:id/status-history` | `200` page (newest first) |
+| `POST` | `/vehicles/:id/media/uploads` | `200` signed upload ticket |
+| `POST` | `/vehicles/:id/media` | `201` media row + short-lived read URL |
+| `GET` | `/vehicles/:id/media` | `200` page |
+| `DELETE` | `/vehicles/:id/media/:mediaId` | `204` |
+| `POST` | `/vehicles/:id/documents/uploads` | `200` signed upload ticket |
+| `POST` | `/vehicles/:id/documents` | `201` document row + short-lived read URL |
+| `GET` | `/vehicles/:id/documents` | `200` page |
+| `DELETE` | `/vehicles/:id/documents/:documentId` | `204` |
 
 **Create body**
 
@@ -337,7 +347,7 @@ Creates a second-hand car. Status is always `submitted` on create. No media, doc
 | `rcStatus` | `clear`, `hypothecation`, `under_transfer` (or `null`) |
 | `serviceHistory` | `full`, `partial`, `none`, `unknown` (or `null`) |
 | `loanStatus` | `clear`, `active` (or `null`) |
-| `status` (read-only today) | `submitted` on create. Filter also accepts `inspection_pending`, `under_inspection`, `approved`, `available`, `reserved`, `sold`, `rejected`, `on_hold`, `removed` |
+| `status` | starts `submitted`. Change with `POST /vehicles/:id/status` |
 
 **Rules:** year `1900–2100`; `kmDriven` ≥ 0 integer; `numPreviousOwners` `0–32767`; registration uppercase alphanumeric, max 16, spaces stripped; `ownerId` / `variantId` / `showroomId` must exist. Duplicate live registration → `409`.
 
@@ -373,6 +383,57 @@ Creates a second-hand car. Status is always `submitted` on create. No media, doc
   "updatedAt": "…"
 }
 ```
+
+**Change status:** `{ "status": "inspection_pending", "reason": null }`  
+Illegal jump → `422 INVALID_VEHICLE_STATUS_TRANSITION`. Same status is a no-op. `PATCH /vehicles/:id` still cannot set status. Detail edits stay allowed on any live vehicle.
+
+```text
+submitted           → inspection_pending | rejected | on_hold | removed
+inspection_pending  → under_inspection | rejected | on_hold | removed
+under_inspection    → approved | rejected | on_hold | removed
+approved            → rejected | on_hold | removed
+on_hold             → inspection_pending | under_inspection | approved | removed
+rejected / removed  → (terminal)
+```
+
+`available`, `reserved`, and `sold` exist on the row for later inventory/sales work and have no transitions here.
+
+**Status history item**
+
+```json
+{
+  "id": "uuid",
+  "vehicleId": "uuid",
+  "fromStatus": "submitted",
+  "toStatus": "inspection_pending",
+  "changedBy": "uuid",
+  "reason": "photos in",
+  "changedAt": "…"
+}
+```
+
+**Photos and documents**
+
+1. `POST /vehicles/:id/media/uploads` with `{ "category": "front", "contentType": "image/jpeg" }`.
+2. `PUT` the bytes to `uploadUrl` using the returned `token` (Supabase signed upload).
+3. `POST /vehicles/:id/media` with `{ "storagePath", "category", "sortOrder" }` — `storagePath` must be the one from step 1 and the object must exist.
+4. `GET` lists include `url` and `urlExpiresAt` (about 10 minutes). Documents stay `isSensitive: true`.
+
+Upload ticket:
+
+```json
+{
+  "storagePath": "<vehicleId>/<uuid>.jpg",
+  "uploadUrl": "https://…",
+  "token": "…",
+  "expiresAt": "…"
+}
+```
+
+Media `category`: `front`, `rear`, `left`, `right`, `interior`, `dashboard`, `engine`, `tyres`, `other`.  
+Media `contentType`: `image/jpeg`, `image/png`, `image/webp` (max 10 MB).  
+Document `docType`: `rc`, `insurance`, `service_record`, `loan_clearance`, `inspection_report`, `other`.  
+Document `contentType`: `application/pdf`, `image/jpeg`, `image/png` (max 15 MB).
 
 ### Leads — Admin only
 
@@ -505,7 +566,8 @@ Poll `GET /notifications` on the admin home screen. Use `entityId` to deep-link 
 | App shell | `GET /auth/me` for name + roles; `GET /notifications` badge |
 | Owners list / form | `GET/POST/PATCH /owners`, `GET /owners/:id` |
 | Vehicle create | `GET /catalog/makes` → models → variants, then `POST /vehicles` |
-| Vehicle list / detail | `GET /vehicles`, `GET /vehicles/:id`, `PATCH /vehicles/:id` |
+| Vehicle list / detail | `GET /vehicles`, `GET /vehicles/:id`, `PATCH /vehicles/:id`, `POST /vehicles/:id/status`, `GET /vehicles/:id/status-history` |
+| Vehicle photos / docs | signed upload then `POST /vehicles/:id/media` or `/documents` |
 | Lead pipeline | `GET /leads?status=`, `POST /leads`, `PATCH /leads/:id/vehicle`, `POST /leads/:id/status`, `POST /leads/:id/follow-ups` |
 | Inbox | `GET /notifications`, `PATCH /notifications/:id/read` |
 | Staff settings | `/users` (admin only) |

@@ -80,7 +80,7 @@ export class CreateVehicleUseCase {
       updatedAt: now,
     });
 
-    await this.repo.save(vehicle);
+    await this.repo.save(vehicle, ctx.userId);
     return toVehicleDto(vehicle);
   }
 }

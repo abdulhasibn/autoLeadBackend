@@ -4,7 +4,7 @@
 
 ## Current stage
 
-**Stage:** **Admin vehicle + lead first phase** — catalog intake, thin vehicles, walk-in leads, follow-up due inbox.
+**Stage:** **Admin vehicle + lead first phase** — catalog intake, vehicles with media/docs/inspection, walk-in leads, follow-up due inbox.
 
 | Area | Status |
 |------|--------|
@@ -12,14 +12,14 @@
 | Architecture docs + ADR-0001 / ADR-0005 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads) | Done — applied to hosted project |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle) | Done — applied to hosted project |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
 | Auth feature (`src/features/auth`) | Done — email + password login/refresh, bearer, /auth/me; roles from `user_roles` |
 | Users / roles (`src/features/users`) | Done — staff CRUD + email/password provision (Admin) |
 | Owners (`src/features/owners`) | Done — staff owner CRUD (Admin / Salesperson; deactivate Admin-only) |
-| Vehicles (`src/features/vehicles`) | Admin create/list/get/update + catalog reads; no media, documents, or lifecycle API |
+| Vehicles (`src/features/vehicles`) | Admin create/list/get/update, catalog reads, inspection status + history, signed media/document uploads |
 | Inventory (`src/features/inventory`) | Not started |
 | Marketplace (`src/features/marketplace`) | Not started |
 | Leads (`src/features/leads`) | Admin walk-in create, associate vehicle, status, follow-up + mandatory due notification |
@@ -42,16 +42,32 @@
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
 | Tables | 25 |
-| Migrations applied | 10 (previous 9 + admin_vehicles_leads) |
+| Migrations applied | 11 (previous 10 + vehicle_media_lifecycle) |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
 
-1. Vehicle media, documents, and lifecycle (rest of Stint 2.2).
-2. Salesperson lead assignment + scoped inbox.
-3. Acquisition prices on `vehicle_financials` (Stint 2.3).
+1. Salesperson lead assignment + scoped inbox.
+2. Acquisition prices on `vehicle_financials` (Stint 2.3).
+3. Inventory listing (`available` / `reserved` / `sold`).
 
 ## Log
+
+### 2026-10-04 — Vehicle media, documents, inspection lifecycle
+
+- Admin inspection status graph on `Vehicle` (`submitted` →
+  `inspection_pending` → `under_inspection` → `approved`, plus
+  `on_hold` / `rejected` / `removed`). `POST /vehicles/:id/status` and
+  paginated `GET /vehicles/:id/status-history`.
+- `save_vehicle` now takes `p_reason` and records it on
+  `vehicle_status_history` in the same transaction
+  (`supabase/migrations/20261004014500_vehicle_media_lifecycle.sql`).
+- Signed uploads via `ObjectStoragePort` + private buckets
+  `vehicle-media` (10 MB jpeg/png/webp) and `vehicle-documents`
+  (15 MB pdf/jpeg/png). Confirm writes `vehicle_media` /
+  `vehicle_documents`; lists return short-lived signed read URLs.
+- `available` / `reserved` / `sold`, salesperson access, acquisition
+  prices, and orphan-object cleanup stay deferred.
 
 ### 2026-10-04 — Vercel production host
 

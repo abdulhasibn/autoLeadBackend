@@ -13,6 +13,21 @@ export const VEHICLE_STATUSES = [
 
 export type VehicleStatusValue = (typeof VEHICLE_STATUSES)[number];
 
+const TERMINAL: readonly VehicleStatusValue[] = ['rejected', 'removed'];
+
+const ALLOWED: Readonly<Record<VehicleStatusValue, readonly VehicleStatusValue[]>> = {
+  submitted: ['inspection_pending', 'rejected', 'on_hold', 'removed'],
+  inspection_pending: ['under_inspection', 'rejected', 'on_hold', 'removed'],
+  under_inspection: ['approved', 'rejected', 'on_hold', 'removed'],
+  approved: ['rejected', 'on_hold', 'removed'],
+  available: [],
+  reserved: [],
+  sold: [],
+  rejected: [],
+  on_hold: ['inspection_pending', 'under_inspection', 'approved', 'removed'],
+  removed: [],
+};
+
 export class VehicleStatus {
   private constructor(readonly value: VehicleStatusValue) {}
 
@@ -26,5 +41,13 @@ export class VehicleStatus {
 
   static submitted(): VehicleStatus {
     return new VehicleStatus('submitted');
+  }
+
+  isTerminal(): boolean {
+    return TERMINAL.includes(this.value);
+  }
+
+  canTransitionTo(next: VehicleStatus): boolean {
+    return ALLOWED[this.value].includes(next.value);
   }
 }

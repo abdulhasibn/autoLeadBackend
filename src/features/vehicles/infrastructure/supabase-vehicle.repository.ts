@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
+import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
 import type { Vehicle } from '../domain/vehicle.entity';
@@ -37,7 +38,7 @@ export class SupabaseVehicleRepository implements IVehicleRepository {
     return vehicle !== null;
   }
 
-  async save(vehicle: Vehicle): Promise<void> {
+  async save(vehicle: Vehicle, actorId: UserId): Promise<void> {
     const { error } = await this.db.rpc('save_vehicle', {
       p_id: vehicle.id,
       p_showroom_id: vehicle.showroomId,
@@ -62,7 +63,8 @@ export class SupabaseVehicleRepository implements IVehicleRepository {
       p_acquisition_type: vehicle.acquisitionType.value,
       p_submitted_by: vehicle.submittedBy,
       p_deleted_at: vehicle.deletedAt === null ? null : vehicle.deletedAt.toISOString(),
-      p_actor_id: vehicle.submittedBy,
+      p_actor_id: actorId,
+      p_reason: vehicle.statusChangeReason,
     });
 
     if (error !== null) {

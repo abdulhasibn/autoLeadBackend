@@ -588,6 +588,177 @@
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}",
             "description": "PATCH /vehicles/:id — second-hand details only."
           }
+        },
+        {
+          "name": "Change Vehicle Status",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inspection_pending\",\n  \"reason\": \"photos in\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}/status",
+            "description": "POST /vehicles/:id/status — invalid transition → 422."
+          }
+        },
+        {
+          "name": "List Vehicle Status History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}/status-history?limit=20&offset=0",
+            "description": "GET /vehicles/:id/status-history — newest first."
+          }
+        },
+        {
+          "name": "Create Media Upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 200 && body.storagePath) {",
+                  "  pm.environment.set('mediaStoragePath', body.storagePath);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"front\",\n  \"contentType\": \"image/jpeg\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media/uploads",
+            "description": "POST /vehicles/:id/media/uploads — then PUT bytes to uploadUrl."
+          }
+        },
+        {
+          "name": "Confirm Media",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 201 && body.id) {",
+                  "  pm.environment.set('mediaId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storagePath\": \"{{mediaStoragePath}}\",\n  \"category\": \"front\",\n  \"sortOrder\": 0\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media",
+            "description": "POST /vehicles/:id/media — object must already exist in storage."
+          }
+        },
+        {
+          "name": "List Media",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media?limit=20&offset=0",
+            "description": "GET /vehicles/:id/media — includes short-lived signed read URLs."
+          }
+        },
+        {
+          "name": "Delete Media",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media/{{mediaId}}",
+            "description": "DELETE /vehicles/:id/media/:mediaId — 204."
+          }
+        },
+        {
+          "name": "Create Document Upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 200 && body.storagePath) {",
+                  "  pm.environment.set('documentStoragePath', body.storagePath);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"docType\": \"rc\",\n  \"contentType\": \"application/pdf\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents/uploads",
+            "description": "POST /vehicles/:id/documents/uploads — then PUT bytes to uploadUrl."
+          }
+        },
+        {
+          "name": "Confirm Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 201 && body.id) {",
+                  "  pm.environment.set('documentId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"storagePath\": \"{{documentStoragePath}}\",\n  \"docType\": \"rc\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents",
+            "description": "POST /vehicles/:id/documents — object must already exist in storage."
+          }
+        },
+        {
+          "name": "List Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents?limit=20&offset=0",
+            "description": "GET /vehicles/:id/documents — signed read URLs only; always sensitive."
+          }
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents/{{documentId}}",
+            "description": "DELETE /vehicles/:id/documents/:documentId — 204."
+          }
         }
       ]
     },

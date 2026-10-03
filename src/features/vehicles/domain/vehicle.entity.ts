@@ -13,6 +13,7 @@ import type { VariantId } from './variant-id';
 import type { LoanStatus, RcStatus, ServiceHistory } from './vehicle-details';
 import { normalizeColour, normalizeOptionalText } from './vehicle-details';
 import type { VehicleYear } from './vehicle-year.value-object';
+import { InvalidVehicleStatusTransitionError } from './errors/invalid-vehicle-status-transition.error';
 import { VehicleStatus } from './vehicle-status.value-object';
 
 export interface VehicleCreateProps {
@@ -64,8 +65,8 @@ export interface VehicleDetailsUpdate {
 }
 
 /**
- * Vehicle aggregate for admin intake. Status stays submitted in this phase.
- * Owner, showroom, variant, and acquisition type are fixed after create.
+ * Vehicle aggregate for admin intake. Inspection status is changed through
+ * changeStatus. Owner, showroom, variant, and acquisition type stay fixed.
  */
 export class Vehicle {
   private constructor(
@@ -87,12 +88,13 @@ export class Vehicle {
     private loanStatusValue: LoanStatus | null,
     private locationValue: string | null,
     private descriptionValue: string | null,
-    readonly status: VehicleStatus,
+    private statusValue: VehicleStatus,
     readonly acquisitionType: AcquisitionType,
     readonly submittedBy: UserId,
     readonly createdAt: Date,
     private updatedAtValue: Date,
     private deletedAtValue: Date | null,
+    private statusChangeReasonValue: string | null,
   ) {}
 
   static create(props: VehicleCreateProps): Vehicle {
@@ -120,6 +122,7 @@ export class Vehicle {
       props.submittedBy,
       props.createdAt,
       props.updatedAt,
+      null,
       null,
     );
   }
@@ -150,7 +153,16 @@ export class Vehicle {
       props.createdAt,
       props.updatedAt,
       props.deletedAt,
+      null,
     );
+  }
+
+  get status(): VehicleStatus {
+    return this.statusValue;
+  }
+
+  get statusChangeReason(): string | null {
+    return this.statusChangeReasonValue;
   }
 
   get year(): VehicleYear {
@@ -238,6 +250,19 @@ export class Vehicle {
     this.locationValue = normalizeOptionalText(update.location);
     this.descriptionValue = normalizeOptionalText(update.description);
     this.updatedAtValue = update.updatedAt;
+  }
+
+  changeStatus(next: VehicleStatus, at: Date, reason: string | null): void {
+    this.assertLive();
+    if (this.statusValue.value === next.value) {
+      return;
+    }
+    if (!this.statusValue.canTransitionTo(next)) {
+      throw new InvalidVehicleStatusTransitionError(this.id, this.statusValue.value, next.value);
+    }
+    this.statusValue = next;
+    this.statusChangeReasonValue = normalizeOptionalText(reason);
+    this.updatedAtValue = at;
   }
 
   private assertLive(): void {

@@ -1362,6 +1362,7 @@ export type Database = {
           p_service_history: string | null;
           p_showroom_id: string;
           p_status: string;
+          p_reason?: string | null;
           p_submitted_by: string;
           p_transmission: string;
           p_variant_id: string;

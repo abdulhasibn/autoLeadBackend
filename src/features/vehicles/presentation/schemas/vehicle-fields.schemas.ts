@@ -8,6 +8,10 @@ import { PreviousOwners } from '../../domain/previous-owners.value-object';
 import { RegistrationNumber } from '../../domain/registration-number.value-object';
 import { Transmission } from '../../domain/transmission.value-object';
 import { parseLoanStatus, parseRcStatus, parseServiceHistory } from '../../domain/vehicle-details';
+import { DocumentContentType } from '../../domain/document-content-type.value-object';
+import { DocumentType } from '../../domain/document-type.value-object';
+import { MediaCategory } from '../../domain/media-category.value-object';
+import { MediaContentType } from '../../domain/media-content-type.value-object';
 import { VehicleStatus } from '../../domain/vehicle-status.value-object';
 import { VehicleYear } from '../../domain/vehicle-year.value-object';
 
@@ -143,6 +147,38 @@ function optionalEnumSchema(parse: (val: string | null) => string | null) {
 export const optionalRcStatusSchema = optionalEnumSchema(parseRcStatus);
 export const optionalServiceHistorySchema = optionalEnumSchema(parseServiceHistory);
 export const optionalLoanStatusSchema = optionalEnumSchema(parseLoanStatus);
+
+export const vehicleStatusSchema = z
+  .string({ error: 'status is required' })
+  .superRefine(refineVo((val) => VehicleStatus.create(val)))
+  .transform((val) => VehicleStatus.create(val).value);
+
+export const mediaCategorySchema = z
+  .string({ error: 'category is required' })
+  .superRefine(refineVo((val) => MediaCategory.create(val)))
+  .transform((val) => MediaCategory.create(val).value);
+
+export const mediaContentTypeSchema = z
+  .string({ error: 'contentType is required' })
+  .superRefine(refineVo((val) => MediaContentType.create(val)))
+  .transform((val) => MediaContentType.create(val).value);
+
+export const documentTypeSchema = z
+  .string({ error: 'docType is required' })
+  .superRefine(refineVo((val) => DocumentType.create(val)))
+  .transform((val) => DocumentType.create(val).value);
+
+export const documentContentTypeSchema = z
+  .string({ error: 'contentType is required' })
+  .superRefine(refineVo((val) => DocumentContentType.create(val)))
+  .transform((val) => DocumentContentType.create(val).value);
+
+export const sortOrderSchema = z
+  .number({ error: 'sortOrder is required' })
+  .int()
+  .min(0)
+  .max(32767)
+  .default(0);
 
 export const optionalVehicleStatusSchema = z
   .string()

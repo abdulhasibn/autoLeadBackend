@@ -52,7 +52,7 @@ export class UpdateVehicleUseCase {
       updatedAt: this.clock.now(),
     });
 
-    await this.repo.save(vehicle);
+    await this.repo.save(vehicle, ctx.userId);
     return toVehicleDto(vehicle);
   }
 }
