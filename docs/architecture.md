@@ -79,6 +79,9 @@ Authorization, least privilege, and sensitive-data handling MUST be part of the 
 - Authorization MUST be enforced in application policy/use-case boundaries and backed by database controls where applicable.
 - Service-role Supabase credentials MUST remain infrastructure-only and MUST NOT be exposed to clients.
 - Sensitive data MUST NOT be logged.
+- Role checks MUST use `ROLE` and `requireAnyRole` / `hasAnyRole` from `src/domain/shared/role.ts`, never string literals.
+- Record-level scope (e.g. a salesperson's own leads) MUST be enforced in the policy and applied as a query criterion; out-of-scope ids MUST answer `NotFound`, so ids are never confirmed.
+- The showroom a new record belongs to MUST come from `resolveShowroomId` (actor's home showroom; only admins may override), never directly from the request body.
 
 ### 2.8 Testability
 
@@ -318,6 +321,10 @@ Validation Errors → Domain Errors → Infrastructure Errors → Application Er
 ```
 
 The presentation error handler MUST map known errors to stable HTTP status codes and safe response bodies. Unknown errors MUST map to a generic 500 with no leaked internals.
+
+A well-formed request that breaks a business rule MUST throw `BusinessRuleViolationError(code, message)` (mapped to `422` with that code). A plain `Error` for a rule a client can trigger is a bug: it surfaces as `500`.
+
+Cross-feature workflows MUST go through a narrow port that the depending feature declares and the composition root wires (see [ADR-0006](./adr/0006-cross-feature-coordination-via-ports.md)).
 
 ## 14. Validation Rules
 

@@ -4,29 +4,29 @@
 
 ## Current stage
 
-**Stage:** **Admin vehicle + lead first phase** — catalog intake, vehicles with media/docs/inspection, walk-in leads, follow-up due inbox.
+**Stage:** **Staff vehicle + lead phase** — admin and salesperson intake, inspection and inventory statuses, walk-in leads with assignment, staff inbox.
 
 | Area | Status |
 |------|--------|
 | Repo scaffold (Express / TS / Vitest / CI) | Done |
-| Architecture docs + ADR-0001 / ADR-0005 | Done |
+| Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0010 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle) | Done — applied to hosted project |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment) | 11 applied to hosted project; `20261004120000_lead_assignment` pending apply |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
 | Auth feature (`src/features/auth`) | Done — email + password login/refresh, bearer, /auth/me; roles from `user_roles` |
 | Users / roles (`src/features/users`) | Done — staff CRUD + email/password provision (Admin) |
 | Owners (`src/features/owners`) | Done — staff owner CRUD (Admin / Salesperson; deactivate Admin-only) |
-| Vehicles (`src/features/vehicles`) | Admin create/list/get/update, catalog reads, inspection status + history, signed media/document uploads |
+| Vehicles (`src/features/vehicles`) | Staff create/list/get/update, catalog reads, signed media/document uploads; Admin status changes (inspection + `available` / `reserved` / `sold`) and deletes |
 | Inventory (`src/features/inventory`) | Not started |
 | Marketplace (`src/features/marketplace`) | Not started |
-| Leads (`src/features/leads`) | Admin walk-in create, associate vehicle, status, follow-up + mandatory due notification |
+| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle, status (optional vehicle sale), follow-up + due notification; Admin assignment; salesperson sees assigned leads only |
 | Sales (`src/features/sales`) | Not started |
 | Finance (`src/features/finance`) | Not started |
-| Notifications (`src/features/notifications`) | Admin inbox (`due_at` filter) + mark read |
-| Audit trail (cross-cutting) | Not started |
+| Notifications (`src/features/notifications`) | Staff inbox (`due_at` filter) + mark read; `follow_up_due`, `lead_assigned` |
+| Audit trail (cross-cutting) | Partial — status history tables; lead assignment in `audit_logs` |
 | Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications) | Done — local `postman/`, GitHub repo, cloud My Workspace |
 | Frontend API guide (`docs/api.md`) | Done — current endpoints + how to start |
 | HTTP integration tests (local Docker Supabase) | Not started |
@@ -42,16 +42,44 @@
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
 | Tables | 25 |
-| Migrations applied | 11 (previous 10 + vehicle_media_lifecycle) |
+| Migrations applied | 11 (previous 10 + vehicle_media_lifecycle); 12th (`lead_assignment`) pending |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
 
-1. Salesperson lead assignment + scoped inbox.
+1. Apply `20261004120000_lead_assignment.sql` to the hosted project, then merge.
 2. Acquisition prices on `vehicle_financials` (Stint 2.3).
-3. Inventory listing (`available` / `reserved` / `sold`).
+3. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-10-04 — Salesperson access, lead assignment, inventory statuses
+
+- Shared `ROLE` constants + `requireAnyRole` (`src/domain/shared/role.ts`);
+  every policy delegates to it.
+- Salesperson opened to catalog, vehicle intake (create/edit/media/docs),
+  their own leads, and their own inbox. Admin-only: lead assignment,
+  vehicle status, media/document delete, owner deactivate, staff.
+- `AuthenticatedContext.showroomId` from `users.showroom_id`;
+  `resolveShowroomId` defaults vehicles and leads to it. `showroomId` in
+  create bodies is now optional; only admins may name another showroom.
+- Vehicle graph: `approved → available → reserved → sold`,
+  `reserved → available`, `on_hold ↔ available`; `sold` terminal.
+- `PUT /leads/:id/assignment`; `assignedTo` on leads and list filter;
+  salesperson-created leads self-assign; follow-ups go to the assignee.
+- `POST /leads/:id/status` takes `markVehicleSold` (ADR-0006: vehicle
+  first, retry-safe).
+- `BusinessRuleViolationError` → `422` with a rule code (was `500` for
+  closed-lead edits).
+- Migration `20261004120000_lead_assignment.sql`: `save_lead` stores the
+  assignee, records the real actor on `lead_status_history` (was the lead
+  creator), and writes the `audit_logs` row and `lead_assigned`
+  notification in the same transaction. Backward compatible with the
+  deployed API. Replayed locally on Postgres 16 with all prior migrations.
+- ADR-0006–0010 record cross-feature coordination, Contact extraction,
+  registered-buyer leads, vehicle profit, and the marketplace module.
+- api.md drift fixed: lead status / associate-vehicle responses,
+  notification `entityType`, route count, "Not shipped" list.
 
 ### 2026-10-04 — Vehicle media, documents, inspection lifecycle
 

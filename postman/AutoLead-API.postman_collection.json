@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "AutoLead API",
-    "description": "AutoLead backend \u2014 used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only). **Catalog, Vehicles, Leads, Notifications** are Admin-only in this phase.\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login \u2192 create owner \u2192 pick catalog variant \u2192 create vehicle \u2192 create lead \u2192 associate vehicle \u2192 schedule follow-up \u2192 change status \u2192 inbox.",
+    "description": "AutoLead backend \u2014 used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only). **Catalog, Vehicles, Leads, Notifications** accept Admin or Salesperson; lead assignment, vehicle status changes, and media/document deletes are Admin-only. A salesperson only sees leads assigned to them.\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login \u2192 create owner \u2192 pick catalog variant \u2192 create vehicle \u2192 create lead \u2192 associate vehicle \u2192 assign lead \u2192 schedule follow-up \u2192 change status \u2192 inbox.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -251,7 +251,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/auth/me",
-            "description": "Returns the authenticated user's profile and live roles.\n\n**Auth:** Bearer token required.\n\n**200** \u2014 Profile returned successfully.\n\n**401** \u2014 Missing or invalid token (`AUTHENTICATION_REQUIRED`).\n\n**404** \u2014 Token valid but user record no longer exists (`NOT_FOUND`).\n\n**503** \u2014 Database unavailable (`DB_UNAVAILABLE`). Previously caused by an ambiguous PostgREST FK embed on `user_roles \u2192 users`; fixed by disambiguating with `users!user_id!inner(deleted_at)`."
+            "description": "Returns the authenticated user's profile and live roles.\n\n**Auth:** Bearer token required.\n\n**200** \u2014 Profile returned successfully.\n\n**401** \u2014 Missing or invalid token (`AUTHENTICATION_FAILED`).\n\n**404** \u2014 Token valid but user record no longer exists (`NOT_FOUND`).\n\n**503** \u2014 Database unavailable (`DB_UNAVAILABLE`). Previously caused by an ambiguous PostgREST FK embed on `user_roles \u2192 users`; fixed by disambiguating with `users!user_id!inner(deleted_at)`."
           },
           "response": [
             {
@@ -1028,6 +1028,29 @@
           }
         },
         {
+          "name": "Assign Lead",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignedTo\": \"{{staffUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/leads/{{leadId}}/assignment",
+            "description": "PUT /leads/:id/assignment (Admin) \u2014 200 `{ id, assignedTo }`. assignedTo must be an active admin or salesperson, or null to unassign. Notifies the assignee (`lead_assigned`). Closed lead \u2192 422 LEAD_CLOSED."
+          }
+        },
+        {
           "name": "Associate Vehicle",
           "request": {
             "method": "PATCH",
@@ -1093,7 +1116,30 @@
               }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/status",
-            "description": "POST /leads/:id/status \u2014 invalid transition \u2192 422."
+            "description": "POST /leads/:id/status \u2014 200 `{ status, vehicleMarkedSold }`. Invalid transition \u2192 422."
+          }
+        },
+        {
+          "name": "Close Lead As Sold With Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"sold\",\n  \"notes\": null,\n  \"markVehicleSold\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/leads/{{leadId}}/status",
+            "description": "POST /leads/:id/status from booking_confirmed \u2014 also sells the linked vehicle (must be available or reserved). Safe to repeat if the lead write fails."
           }
         }
       ]

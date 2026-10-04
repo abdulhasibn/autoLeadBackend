@@ -2,10 +2,11 @@
 
 What is live today, and how a frontend (admin web first) can start against it.
 
-**Current phase:** admin vehicle + walk-in lead management, including inspection status, photos, and documents. There is no public marketplace, owner portal, or salesperson assignment yet.
+**Current phase:** staff (admin + salesperson) vehicle intake, inspection, inventory listing statuses, and walk-in lead management with assignment. There is no public marketplace or owner portal yet.
 
 **Base URL:** `http://localhost:3000`  
-**Postman:** [autoLeadBackend-postman](https://github.com/abdulhasibn/autoLeadBackend-postman) (also **AutoLead API** + **AutoLead Local** in Postman *My Workspace*)
+**Production:** `https://autolead-backend-lyart.vercel.app` (deploys from `main`)  
+**Postman:** `postman/` in this repo, mirrored at [autoLeadBackend-postman](https://github.com/abdulhasibn/autoLeadBackend-postman) (also **AutoLead API** + **AutoLead Local** in Postman *My Workspace*)
 
 ---
 
@@ -55,11 +56,11 @@ This matches the APIs that exist and the intended first-phase flow.
 2. **Catalog pickers** — makes → models → variants (cascading selects).
 3. **Owners** — create/list/get/update (needed before a vehicle).
 4. **Vehicles** — create a second-hand car, add photos/documents, move it through inspection.
-5. **Leads** — create walk-in contact, attach a vehicle, change status, schedule a follow-up.
-6. **Inbox** — list due notifications and mark them read.
-7. **Staff (admin settings)** — optional; create other admins/salespeople.
+5. **Leads** — create walk-in contact, attach a vehicle, assign to a salesperson, change status, schedule a follow-up.
+6. **Inbox** — list due notifications and mark them read (admins and salespersons each see their own).
+7. **Staff (admin settings)** — create other admins/salespeople. Give salespeople a `showroomId` so their vehicles and leads file there automatically.
 
-Do **not** start a buyer marketplace, owner self-serve portal, or salesperson inbox. Those APIs are not shipped.
+The same screens serve salespersons, with assignment, vehicle status, deletes, and staff hidden (see **Roles**). Do **not** start a buyer marketplace or owner self-serve portal. Those APIs are not shipped.
 
 ### 4. Recommended client shape
 
@@ -90,11 +91,11 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 ```
 
-Treat `422 VALIDATION_ERROR` as a form error (the API does **not** return field-level details). Treat `409` as a uniqueness conflict (duplicate phone, email, or registration). Treat `403 FORBIDDEN` as a role problem.
+Treat `422 VALIDATION_ERROR` as a form error (the API does **not** return field-level details). Other `422` codes are business rules; show the `message`. Treat `409` as a uniqueness conflict (duplicate phone, email, or registration). Treat `403 FORBIDDEN` as a role problem.
 
 ### 5. Smoke the same path as Postman
 
-Login → Create Owner → List Makes → List Models → List Variants → Create Vehicle → Create Lead → Associate Vehicle → Schedule Follow-up → Change Status → List Notifications.
+Login → Create Owner → List Makes → List Models → List Variants → Create Vehicle → Create Lead → Associate Vehicle → Assign Lead → Schedule Follow-up → Change Status → List Notifications.
 
 Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local UI testing, schedule a time in the past or wait.
 
@@ -120,9 +121,11 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 
 | Role | Meaning today |
 |------|----------------|
-| `admin` | Full staff API in this phase |
-| `salesperson` | Owners create/list/get/update only. Cannot deactivate owners or use catalog/vehicles/leads/notifications/users. |
+| `admin` | Full staff API. Sees every lead. Only role that can assign leads, change vehicle status, delete vehicle media/documents, deactivate owners, or manage staff. |
+| `salesperson` | Owners (no deactivate), catalog, vehicle intake (create, edit, photos, documents, status history), leads **assigned to them**, and their own notifications. Leads they create are assigned to them. Other leads answer `404`. |
 | `owner` / `buyer` | Seeded in the database. **No HTTP API yet.** |
+
+**Showroom.** A staff member's `showroomId` (set on `/users`) is their home showroom. `POST /vehicles` and `POST /leads` file the record there when the body omits `showroomId`. Only an admin may name a different showroom; a staff member with no home showroom must send one (`422 SHOWROOM_REQUIRED`).
 
 ### HTTP error codes
 
@@ -136,13 +139,18 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | 409 | `LAST_ADMIN_PROTECTED` | Would remove the last admin, or deactivate yourself |
 | 422 | `VALIDATION_ERROR` | Body/query/params failed Zod |
 | 422 | `INVALID_LEAD_STATUS_TRANSITION` | Illegal lead status jump |
+| 422 | `INVALID_VEHICLE_STATUS_TRANSITION` | Illegal vehicle status jump (including `markVehicleSold` on a vehicle that is not listed) |
+| 422 | `SHOWROOM_REQUIRED` | No `showroomId` in the body and no home showroom on your account |
+| 422 | `LEAD_CLOSED` | Assigning or attaching a vehicle to a lead in a terminal status |
+| 422 | `ASSIGNEE_NOT_ELIGIBLE` | `assignedTo` is not an active admin or salesperson |
+| 422 | `MARK_VEHICLE_SOLD_REQUIRES_SOLD` / `LEAD_HAS_NO_VEHICLE` | `markVehicleSold` used without `status: "sold"`, or on a lead with no vehicle |
 | 503 | `DB_UNAVAILABLE` / `DB_TRANSIENT` | Database down or retryable |
 
 ---
 
 ## Endpoint catalogue
 
-**30 routes** are mounted.
+**41 routes** are mounted.
 
 ### Health — public
 
@@ -262,7 +270,7 @@ Phone is the unique live key.
 
 **Owner object** also includes `id`, `userId` (null until owner portal), `createdBy`, `createdAt`, `updatedAt`. Duplicate live phone → `409`.
 
-### Catalog — Admin only
+### Catalog — Admin or Salesperson
 
 Read-only factory catalog. Use these to populate vehicle create.
 
@@ -287,9 +295,9 @@ Read-only factory catalog. Use these to populate vehicle create.
 
 `fuelType` / `transmission` / `exShowroomPrice` can be `null` on some seed rows. Pagination: `limit`, `offset`.
 
-### Vehicles — Admin only
+### Vehicles — Admin or Salesperson (status change and deletes are Admin)
 
-Creates a second-hand car. Status is always `submitted` on create. Photos and documents use a two-step signed upload (bytes never pass through this API). Inspection status is a separate POST.
+Creates a second-hand car. Status is always `submitted` on create. Photos and documents use a two-step signed upload (bytes never pass through this API). Status (inspection and listing) is a separate POST.
 
 | Method | Path | Success |
 |--------|------|---------|
@@ -297,16 +305,16 @@ Creates a second-hand car. Status is always `submitted` on create. Photos and do
 | `GET` | `/vehicles` | `200` page (includes catalog names) |
 | `GET` | `/vehicles/:id` | `200` vehicle |
 | `PATCH` | `/vehicles/:id` | `200` vehicle (second-hand fields only; cannot change owner/variant/showroom/status) |
-| `POST` | `/vehicles/:id/status` | `200` `{ "status" }` |
+| `POST` | `/vehicles/:id/status` | `200` `{ "status" }` (Admin) |
 | `GET` | `/vehicles/:id/status-history` | `200` page (newest first) |
 | `POST` | `/vehicles/:id/media/uploads` | `200` signed upload ticket |
 | `POST` | `/vehicles/:id/media` | `201` media row + short-lived read URL |
 | `GET` | `/vehicles/:id/media` | `200` page |
-| `DELETE` | `/vehicles/:id/media/:mediaId` | `204` |
+| `DELETE` | `/vehicles/:id/media/:mediaId` | `204` (Admin) |
 | `POST` | `/vehicles/:id/documents/uploads` | `200` signed upload ticket |
 | `POST` | `/vehicles/:id/documents` | `201` document row + short-lived read URL |
 | `GET` | `/vehicles/:id/documents` | `200` page |
-| `DELETE` | `/vehicles/:id/documents/:documentId` | `204` |
+| `DELETE` | `/vehicles/:id/documents/:documentId` | `204` (Admin) |
 
 **Create body**
 
@@ -332,6 +340,8 @@ Creates a second-hand car. Status is always `submitted` on create. Photos and do
   "acquisitionType": "consignment"
 }
 ```
+
+`showroomId` is optional: omit it to use your home showroom (see **Roles**).
 
 **Update body** is the same minus `showroomId`, `ownerId`, `variantId`, `acquisitionType`. `accidentHistory` is required on update.
 
@@ -391,12 +401,14 @@ Illegal jump → `422 INVALID_VEHICLE_STATUS_TRANSITION`. Same status is a no-op
 submitted           → inspection_pending | rejected | on_hold | removed
 inspection_pending  → under_inspection | rejected | on_hold | removed
 under_inspection    → approved | rejected | on_hold | removed
-approved            → rejected | on_hold | removed
-on_hold             → inspection_pending | under_inspection | approved | removed
-rejected / removed  → (terminal)
+approved            → available | rejected | on_hold | removed
+available           → reserved | sold | on_hold | removed
+reserved            → available | sold
+on_hold             → inspection_pending | under_inspection | approved | available | removed
+sold / rejected / removed → (terminal)
 ```
 
-`available`, `reserved`, and `sold` exist on the row for later inventory/sales work and have no transitions here.
+`available` means listed for sale. `reserved → available` is the deal-fell-through path. A lead closed as `sold` with `markVehicleSold: true` moves its vehicle to `sold` through this same graph.
 
 **Status history item**
 
@@ -435,18 +447,21 @@ Media `contentType`: `image/jpeg`, `image/png`, `image/webp` (max 10 MB).
 Document `docType`: `rc`, `insurance`, `service_record`, `loan_clearance`, `inspection_report`, `other`.  
 Document `contentType`: `application/pdf`, `image/jpeg`, `image/png` (max 15 MB).
 
-### Leads — Admin only
+### Leads — Admin or Salesperson (assignment is Admin)
 
 Walk-in contact keyed by phone. Creating a lead with an existing live phone reuses that contact and refreshes name/email.
+
+A salesperson only sees and works leads where `assignedTo` is their id; any other lead id answers `404`. A lead a salesperson creates is assigned to them. An admin's new lead starts unassigned.
 
 | Method | Path | Success |
 |--------|------|---------|
 | `POST` | `/leads` | `201` lead (`nextFollowUp` is `null`) |
 | `GET` | `/leads` | `200` page |
 | `GET` | `/leads/:id` | `200` lead (includes `nextFollowUp` if scheduled) |
-| `PATCH` | `/leads/:id/vehicle` | `200` lead |
+| `PATCH` | `/leads/:id/vehicle` | `200` `{ "vehicleId" }` |
+| `PUT` | `/leads/:id/assignment` | `200` `{ "id", "assignedTo" }` (Admin) |
 | `POST` | `/leads/:id/follow-ups` | `201` follow-up |
-| `POST` | `/leads/:id/status` | `200` lead |
+| `POST` | `/leads/:id/status` | `200` `{ "status", "vehicleMarkedSold" }` |
 
 **Create body**
 
@@ -468,13 +483,16 @@ Walk-in contact keyed by phone. Creating a lead with an existing live phone reus
 }
 ```
 
+`showroomId` is optional: omit it to use your home showroom (see **Roles**).  
 `source`: `marketplace`, `mobile_app`, `website`, `phone`, `walkin`, `whatsapp`, `instagram`, `facebook`, `referral`, `other`.  
-**List query:** `limit`, `offset`, optional `status`, `vehicleId`.  
-**Associate vehicle:** `{ "vehicleId": "<uuid>" }` — vehicle must exist.  
+**List query:** `limit`, `offset`, optional `status`, `vehicleId`, `assignedTo` (admin only; a salesperson always gets their own leads).  
+**Associate vehicle:** `{ "vehicleId": "<uuid>" }` — vehicle must exist; lead must not be closed.  
+**Assign:** `{ "assignedTo": "<staff uuid>" }` or `{ "assignedTo": null }` to unassign. The assignee must be an active admin or salesperson. The assignee gets a `lead_assigned` notification (not when you assign yourself), and the change is written to the audit log. Closed leads cannot be reassigned (`422 LEAD_CLOSED`).  
 **Schedule follow-up:** `{ "scheduledAt": "2026-10-10T10:00:00.000Z", "taskType": "call", "notes": null }`  
 `taskType`: `call`, `whatsapp`, `meeting`, `test_drive`, `send_quotation`, `other`.  
-This also writes a `follow_up_due` notification for the caller, due at `scheduledAt`.  
-**Change status:** `{ "status": "contacted", "notes": null }`
+The follow-up belongs to the lead's assignee (or to you if the lead is unassigned), and that person gets a `follow_up_due` notification at `scheduledAt`.  
+**Change status:** `{ "status": "contacted", "notes": null }`. Status history records who made the change.  
+**Close a sale and its vehicle:** `{ "status": "sold", "notes": null, "markVehicleSold": true }`. The lead's vehicle must be `available` or `reserved` (or already `sold`). The vehicle is updated first; if the lead update then fails, repeat the same request and it completes. `markVehicleSold` defaults to `false`.
 
 **Lead object**
 
@@ -483,6 +501,7 @@ This also writes a `follow_up_due` notification for the caller, due at `schedule
   "id": "uuid",
   "showroomId": "uuid",
   "vehicleId": null,
+  "assignedTo": "uuid or null",
   "contactId": "uuid",
   "contactFullName": "Rahul Sharma",
   "contactPhone": "+919811122233",
@@ -531,9 +550,14 @@ sold / lost / not_interested / no_response  → (terminal)
 }
 ```
 
-### Notifications — Admin only
+### Notifications — Admin or Salesperson
 
 Inbox for the **signed-in user**. Items with a future `dueAt` are omitted.
+
+| `type` | `entityType` / `entityId` | Sent to |
+|--------|---------------------------|---------|
+| `follow_up_due` | `follow_up` / follow-up id | The follow-up's assignee, at `scheduledAt` |
+| `lead_assigned` | `lead` / lead id | The new assignee, immediately |
 
 | Method | Path | Success |
 |--------|------|---------|
@@ -544,17 +568,17 @@ Inbox for the **signed-in user**. Items with a future `dueAt` are omitted.
 {
   "id": "uuid",
   "type": "follow_up_due",
-  "title": "…",
-  "body": null,
-  "entityType": "lead",
-  "entityId": "<lead uuid>",
+  "title": "Follow-up due",
+  "body": "Follow-up (call) is scheduled",
+  "entityType": "follow_up",
+  "entityId": "<follow-up uuid>",
   "isRead": false,
   "dueAt": "2026-10-10T10:00:00.000Z",
   "createdAt": "…"
 }
 ```
 
-Poll `GET /notifications` on the admin home screen. Use `entityId` to deep-link to the lead.
+Poll `GET /notifications` on the home screen. Deep-link `lead` items to the lead. For `follow_up` items, the lead appears in `GET /leads` with that follow-up as `nextFollowUp`.
 
 ---
 
@@ -568,22 +592,20 @@ Poll `GET /notifications` on the admin home screen. Use `entityId` to deep-link 
 | Vehicle create | `GET /catalog/makes` → models → variants, then `POST /vehicles` |
 | Vehicle list / detail | `GET /vehicles`, `GET /vehicles/:id`, `PATCH /vehicles/:id`, `POST /vehicles/:id/status`, `GET /vehicles/:id/status-history` |
 | Vehicle photos / docs | signed upload then `POST /vehicles/:id/media` or `/documents` |
-| Lead pipeline | `GET /leads?status=`, `POST /leads`, `PATCH /leads/:id/vehicle`, `POST /leads/:id/status`, `POST /leads/:id/follow-ups` |
+| Lead pipeline | `GET /leads?status=&assignedTo=`, `POST /leads`, `PATCH /leads/:id/vehicle`, `PUT /leads/:id/assignment`, `POST /leads/:id/status`, `POST /leads/:id/follow-ups` |
 | Inbox | `GET /notifications`, `PATCH /notifications/:id/read` |
 | Staff settings | `/users` (admin only) |
 
-Hide catalog, vehicles, leads, notifications, and users when `me.roles` has no `admin`. Show owners for `admin` or `salesperson`.
+For `salesperson`, show owners, catalog, vehicles, leads, and the inbox, and hide staff settings, lead assignment, vehicle status buttons, media/document delete, and owner deactivate. Show everything for `admin`.
 
 ---
 
 ## Not shipped yet — do not design screens against these
 
 - Owner self-registration / portal (`owners.userId` linking)
-- Salesperson lead assignment and scoped inbox
-- Vehicle media, documents, inspection, or status lifecycle
-- Acquisition prices / finance
-- Marketplace / buyer browse
+- Acquisition prices / finance / profit (`vehicle_financials`)
+- Marketplace / buyer browse and buyer inquiries (registered-buyer leads)
+- Automatic lead assignment
 - Password reset or change-own-password
-- Production URL (Vercel not deployed)
 
 Those stay on the backend roadmap (`docs/MVP_ROADMAP.md`). If you need a contract for a later screen, wait until the matching folder appears in this file and in Postman.

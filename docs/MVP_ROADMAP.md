@@ -36,8 +36,8 @@ Foundation (shipped)
 | # | Work item | Paths | PRD | Status |
 |---|-----------|-------|-----|--------|
 | 1.1 | Supabase project + identity migration (users, roles) | `supabase/migrations/`, `docs/schema.dbml` | §5, §6 | Done |
-| 1.2 | Auth: OTP / session, Bearer middleware, `/auth/me` | `src/features/auth/` | §5 | Todo |
-| 1.3 | Users: staff CRUD, role assignment (Admin) | `src/features/users/` | §5.1, §5.2 | Todo |
+| 1.2 | Auth: OTP / session, Bearer middleware, `/auth/me` | `src/features/auth/` | §5 | Done (email + password; OTP deferred) |
+| 1.3 | Users: staff CRUD, role assignment (Admin) | `src/features/users/` | §5.1, §5.2 | Done |
 
 **Exit criteria:** Admin OTP sign-in → create salesperson → authenticated request carries role; unauthorized roles rejected.
 
@@ -49,9 +49,9 @@ Foundation (shipped)
 
 | # | Work item | Paths | PRD | Status |
 |---|-----------|-------|-----|--------|
-| 2.1 | Owner CRUD + Owner portal profile | `src/features/owners/` | §7, §8 | Todo |
-| 2.2 | Vehicle submission, details, media, documents | `src/features/vehicles/` | §9, §10 | Todo |
-| 2.3 | Acquisition type + commercial details | `vehicles` | §9.2, §9.3 | Todo |
+| 2.1 | Owner CRUD + Owner portal profile | `src/features/owners/` | §7, §8 | Partial — staff CRUD done; portal Todo |
+| 2.2 | Vehicle submission, details, media, documents | `src/features/vehicles/` | §9, §10 | Done (staff) |
+| 2.3 | Acquisition type + commercial details | `vehicles` | §9.2, §9.3 | Partial — acquisition type done; prices Todo |
 
 **Exit criteria:** Salesperson registers owner → submits vehicle → vehicle moves through initial lifecycle states.
 
@@ -63,7 +63,7 @@ Foundation (shipped)
 
 | # | Work item | Paths | PRD | Status |
 |---|-----------|-------|-----|--------|
-| 3.1 | Inventory management (status, pricing, listing guard) | `src/features/inventory/` | §9, §10 | Todo |
+| 3.1 | Inventory management (status, pricing, listing guard) | `src/features/inventory/` | §9, §10 | Partial — `available` / `reserved` / `sold` transitions shipped on `vehicles`; pricing and listing guard Todo |
 | 3.2 | Public marketplace: browse, search, filter | `src/features/marketplace/` | §11 | Todo |
 | 3.3 | Vehicle detail page API | `marketplace` | §12 | Todo |
 | 3.4 | Showroom info (name, address, hours) | `marketplace` or `config` slice | §32 | Todo |
@@ -80,7 +80,7 @@ Foundation (shipped)
 |---|-----------|-------|-----|--------|
 | 4.1 | Buyer registration + saved vehicles | buyer slice in `owners` or dedicated | §14–§16 | Todo |
 | 4.2 | Buyer inquiry → internal lead creation | `src/features/leads/` | §17, §19, §20 | Todo |
-| 4.3 | Lead assignment, status pipeline, follow-ups | `leads` | §21–§23 | Todo |
+| 4.3 | Lead assignment, status pipeline, follow-ups | `leads` | §21–§23 | Done — admin assignment, salesperson-scoped leads, follow-ups to assignee |
 | 4.4 | Test drive requests | `leads` or `sales` | §24 | Todo |
 | 4.5 | Salesperson dashboard queries | `src/features/sales/` | §25 | Todo |
 
@@ -109,8 +109,8 @@ Foundation (shipped)
 
 | # | Work item | Paths | PRD | Status |
 |---|-----------|-------|-----|--------|
-| 6.1 | Notifications (in-app / email for MVP) | `src/features/notifications/` | §33 | Todo |
-| 6.2 | Audit trail writes (status changes, assignments, financial) | cross-cutting in use cases | §38 | Todo |
+| 6.1 | Notifications (in-app / email for MVP) | `src/features/notifications/` | §33 | Partial — in-app inbox for staff; `follow_up_due` + `lead_assigned`. Email Todo |
+| 6.2 | Audit trail writes (status changes, assignments, financial) | cross-cutting in use cases | §38 | Partial — status history tables + lead assignment in `audit_logs`; financial Todo |
 | 6.3 | Admin dashboard aggregate queries | `sales` / reporting slice | §26 | Todo |
 
 **Exit criteria:** Lead assignment triggers salesperson notification; vehicle status change writes audit row; Admin dashboard returns inventory/lead/sales summaries.
