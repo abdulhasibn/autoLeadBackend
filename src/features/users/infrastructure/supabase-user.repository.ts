@@ -25,7 +25,7 @@ export class SupabaseUserRepository implements IUserRepository {
     const { data, error } = await this.db
       .from('users')
       .select(
-        'id, full_name, phone, email, showroom_id, created_at, deleted_at, user_roles ( deleted_at, roles ( name ) )',
+        'id, full_name, phone, email, showroom_id, created_at, deleted_at, user_roles!user_id ( deleted_at, roles ( name ) )',
       )
       .eq('id', id)
       .is('deleted_at', null)
