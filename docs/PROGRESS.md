@@ -87,6 +87,9 @@
   the full staff flow when `ADMIN_EMAIL` / `ADMIN_PASSWORD` are set). Ran
   green (116/116) against all migrations on local Postgres 16 + PostgREST
   12.2.3; not yet run against the hosted project.
+- Postman: request descriptions updated for the new role rules; the
+  `autoLeadBackend-postman` repo and the cloud **AutoLead API** collection +
+  **AutoLead Local** environment are synced with `postman/` (42 requests).
 
 ### 2026-10-04 — Vehicle media, documents, inspection lifecycle
 

@@ -619,7 +619,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/catalog/makes?limit=20&offset=0",
-            "description": "GET /catalog/makes \u2014 paginated makes. Admin."
+            "description": "GET /catalog/makes \u2014 paginated makes. Admin or Salesperson."
           }
         },
         {
@@ -707,7 +707,7 @@
               }
             },
             "url": "{{baseUrl}}/vehicles",
-            "description": "POST /vehicles \u2014 Admin. Duplicate live registration \u2192 409."
+            "description": "POST /vehicles \u2014 Admin or Salesperson. `showroomId` is optional: it defaults to your home showroom, and only admins may name another. Duplicate live registration \u2192 409."
           }
         },
         {
@@ -771,7 +771,7 @@
               }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/status",
-            "description": "POST /vehicles/:id/status \u2014 invalid transition \u2192 422."
+            "description": "POST /vehicles/:id/status (Admin) \u2014 200 `{ status }`. Graph: submitted \u2192 inspection_pending \u2192 under_inspection \u2192 approved \u2192 available \u2192 reserved \u2192 sold; reserved \u2192 available when a deal falls through. Invalid transition \u2192 422 INVALID_VEHICLE_STATUS_TRANSITION."
           }
         },
         {
@@ -872,7 +872,7 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media/{{mediaId}}",
-            "description": "DELETE /vehicles/:id/media/:mediaId \u2014 204."
+            "description": "DELETE /vehicles/:id/media/:mediaId (Admin) \u2014 204."
           }
         },
         {
@@ -964,7 +964,7 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents/{{documentId}}",
-            "description": "DELETE /vehicles/:id/documents/:documentId \u2014 204."
+            "description": "DELETE /vehicles/:id/documents/:documentId (Admin) \u2014 204."
           }
         }
       ]
@@ -1006,7 +1006,7 @@
               }
             },
             "url": "{{baseUrl}}/leads",
-            "description": "POST /leads \u2014 walk-in contact by phone. Admin."
+            "description": "POST /leads \u2014 walk-in contact by phone. Admin or Salesperson; a salesperson's lead is assigned to them. `showroomId` is optional."
           }
         },
         {
@@ -1015,7 +1015,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/leads?limit=20&offset=0",
-            "description": "GET /leads \u2014 filters: status, vehicleId."
+            "description": "GET /leads \u2014 filters: status, vehicleId, assignedTo (admin only). A salesperson only sees leads assigned to them."
           }
         },
         {
@@ -1093,7 +1093,7 @@
               }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/follow-ups",
-            "description": "POST /leads/:id/follow-ups \u2014 also writes the due notification."
+            "description": "POST /leads/:id/follow-ups \u2014 assigned to the lead's assignee (or you if unassigned), who gets the due notification."
           }
         },
         {
@@ -1167,7 +1167,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/notifications?limit=20&offset=0",
-            "description": "GET /notifications \u2014 due reminders for the caller. Future follow-ups stay hidden."
+            "description": "GET /notifications \u2014 the caller's inbox (Admin or Salesperson): `lead_assigned` right away, `follow_up_due` at the scheduled time."
           }
         },
         {
