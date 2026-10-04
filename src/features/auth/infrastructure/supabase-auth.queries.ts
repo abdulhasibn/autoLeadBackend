@@ -49,7 +49,7 @@ export class SupabaseAuthQueries implements IAuthQueries {
   async findLiveRoles(userId: UserId): Promise<ReadonlyArray<string>> {
     const { data, error } = await this.db
       .from('user_roles')
-      .select('roles!inner(name), users!inner(deleted_at)')
+      .select('roles!inner(name), users!user_id!inner(deleted_at)')
       .eq('user_id', userId)
       .is('deleted_at', null)
       .is('users.deleted_at', null);

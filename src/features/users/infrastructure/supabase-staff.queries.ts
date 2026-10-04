@@ -42,7 +42,7 @@ export class SupabaseStaffQueries implements IStaffQueries {
     const { data, error } = await this.db
       .from('user_roles')
       .select(
-        'user_id, roles!inner ( name ), users!inner ( id, full_name, phone, email, showroom_id, created_at, deleted_at )',
+        'user_id, roles!inner ( name ), users!user_id!inner ( id, full_name, phone, email, showroom_id, created_at, deleted_at )',
       )
       .is('deleted_at', null)
       .is('users.deleted_at', null)

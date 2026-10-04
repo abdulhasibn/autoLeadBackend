@@ -63,7 +63,7 @@ export class SupabaseUserRepository implements IUserRepository {
   async countLiveWithRole(role: StaffRole): Promise<number> {
     const { count, error } = await this.db
       .from('user_roles')
-      .select('id, roles!inner(name), users!inner(deleted_at)', {
+      .select('id, roles!inner(name), users!user_id!inner(deleted_at)', {
         count: 'exact',
         head: true,
       })
