@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "AutoLead API",
-    "description": "AutoLead backend — used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only). **Catalog, Vehicles, Leads, Notifications** are Admin-only in this phase.\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login → create owner → pick catalog variant → create vehicle → create lead → associate vehicle → schedule follow-up → change status → inbox.",
+    "description": "AutoLead backend \u2014 used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only). **Catalog, Vehicles, Leads, Notifications** are Admin-only in this phase.\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login \u2192 create owner \u2192 pick catalog variant \u2192 create vehicle \u2192 create lead \u2192 associate vehicle \u2192 schedule follow-up \u2192 change status \u2192 inbox.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -121,11 +121,13 @@
         {
           "name": "Health",
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/health",
-            "description": "GET /health — 200 `{ status, timestamp }`."
+            "description": "GET /health \u2014 200 `{ status, timestamp }`."
           }
         }
       ]
@@ -168,16 +170,27 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/auth/login",
-            "description": "POST /auth/login — 200 `{ accessToken, refreshToken }`. Invalid credentials → 401 INVALID_CREDENTIALS."
+            "description": "POST /auth/login \u2014 200 `{ accessToken, refreshToken }`. Invalid credentials \u2192 401 INVALID_CREDENTIALS."
           }
         },
         {
@@ -209,16 +222,27 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/auth/refresh",
-            "description": "POST /auth/refresh — 200 rotated `{ accessToken, refreshToken }`."
+            "description": "POST /auth/refresh \u2014 200 rotated `{ accessToken, refreshToken }`."
           }
         },
         {
@@ -227,8 +251,67 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/auth/me",
-            "description": "GET /auth/me — Bearer. 200 profile with live `roles` from user_roles."
-          }
+            "description": "Returns the authenticated user's profile and live roles.\n\n**Auth:** Bearer token required.\n\n**200** \u2014 Profile returned successfully.\n\n**401** \u2014 Missing or invalid token (`AUTHENTICATION_REQUIRED`).\n\n**404** \u2014 Token valid but user record no longer exists (`NOT_FOUND`).\n\n**503** \u2014 Database unavailable (`DB_UNAVAILABLE`). Previously caused by an ambiguous PostgREST FK embed on `user_roles \u2192 users`; fixed by disambiguating with `users!user_id!inner(deleted_at)`."
+          },
+          "response": [
+            {
+              "id": "259a0716-721b-4ca6-88bf-f6fcfc63a3b6",
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/auth/me"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"usr_01abc\",\n  \"fullName\": \"Jane Smith\",\n  \"phone\": \"+919876543210\",\n  \"email\": \"jane@example.com\",\n  \"avatarUrl\": null,\n  \"roles\": [\n    \"sales_agent\"\n  ]\n}"
+            },
+            {
+              "id": "699dcf5d-1de7-470a-9da2-ead79b99dd2b",
+              "name": "401 Unauthenticated",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/auth/me"
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication required\"\n  }\n}"
+            },
+            {
+              "id": "ebc92884-8227-4a1a-b5e2-985a3647bfd3",
+              "name": "503 DB Unavailable",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/auth/me"
+              },
+              "status": "Service Unavailable",
+              "code": 503,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"DB_UNAVAILABLE\",\n    \"message\": \"Failed to fetch user roles: Could not embed because more than one relationship was found for 'user_roles' and 'users'\"\n  }\n}"
+            }
+          ]
         }
       ]
     },
@@ -265,14 +348,23 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fullName\": \"{{staffFullName}}\",\n  \"phone\": \"{{staffPhone}}\",\n  \"email\": \"{{staffEmail}}\",\n  \"password\": \"{{staffPassword}}\",\n  \"showroomId\": null,\n  \"roles\": [\"salesperson\"]\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/users",
-            "description": "POST /users — 201. Provisions Auth user (email + password) + profile + staff roles."
+            "description": "POST /users \u2014 201. Provisions Auth user (email + password) + profile + staff roles."
           }
         },
         {
@@ -285,8 +377,16 @@
               "host": ["{{baseUrl}}"],
               "path": ["users"],
               "query": [
-                { "key": "limit", "value": "20", "description": "Page size, 1–100, default 20" },
-                { "key": "offset", "value": "0", "description": "Skip count, default 0" },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Page size, 1\u2013100, default 20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Skip count, default 0"
+                },
                 {
                   "key": "role",
                   "value": "salesperson",
@@ -295,7 +395,7 @@
                 }
               ]
             },
-            "description": "GET /users — paginated. Optional `role=admin` or `role=salesperson`."
+            "description": "GET /users \u2014 paginated. Optional `role=admin` or `role=salesperson`."
           }
         },
         {
@@ -304,35 +404,53 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/users/{{staffUserId}}",
-            "description": "GET /users/:id — 200 staff member or 404."
+            "description": "GET /users/:id \u2014 200 staff member or 404."
           }
         },
         {
           "name": "Update Staff",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fullName\": \"{{staffFullName}}\",\n  \"phone\": \"{{staffPhone}}\",\n  \"email\": \"{{staffEmail}}\",\n  \"showroomId\": null\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/users/{{staffUserId}}",
-            "description": "PATCH /users/:id — name, phone, email, showroomId. Email is required."
+            "description": "PATCH /users/:id \u2014 name, phone, email, showroomId. Email is required."
           }
         },
         {
           "name": "Replace Staff Roles",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"roles\": [\"salesperson\"]\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/users/{{staffUserId}}/roles",
-            "description": "PUT /users/:id/roles — replace set, min 1. Cannot drop the last admin."
+            "description": "PUT /users/:id/roles \u2014 replace set, min 1. Cannot drop the last admin."
           }
         },
         {
@@ -341,7 +459,7 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/users/{{staffUserId}}",
-            "description": "DELETE /users/:id — 204 soft-deactivate. Cannot deactivate self or last admin."
+            "description": "DELETE /users/:id \u2014 204 soft-deactivate. Cannot deactivate self or last admin."
           }
         }
       ]
@@ -379,14 +497,23 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fullName\": \"{{ownerFullName}}\",\n  \"phone\": \"{{ownerPhone}}\",\n  \"email\": \"priya@example.com\",\n  \"address\": \"12 MG Road\",\n  \"city\": \"{{ownerCity}}\",\n  \"preferredContactMethod\": \"whatsapp\",\n  \"altPhone\": null,\n  \"idInfo\": null,\n  \"notes\": null\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/owners",
-            "description": "POST /owners — 201. Duplicate live phone → 409 CONFLICT."
+            "description": "POST /owners \u2014 201. Duplicate live phone \u2192 409 CONFLICT."
           }
         },
         {
@@ -399,8 +526,16 @@
               "host": ["{{baseUrl}}"],
               "path": ["owners"],
               "query": [
-                { "key": "limit", "value": "20", "description": "Page size, 1–100, default 20" },
-                { "key": "offset", "value": "0", "description": "Skip count, default 0" },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Page size, 1\u2013100, default 20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Skip count, default 0"
+                },
                 {
                   "key": "city",
                   "value": "{{ownerCity}}",
@@ -415,7 +550,7 @@
                 }
               ]
             },
-            "description": "GET /owners — paginated. Optional `city` and `phone` filters."
+            "description": "GET /owners \u2014 paginated. Optional `city` and `phone` filters."
           }
         },
         {
@@ -424,21 +559,30 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/owners/{{ownerId}}",
-            "description": "GET /owners/:id — 200 owner or 404."
+            "description": "GET /owners/:id \u2014 200 owner or 404."
           }
         },
         {
           "name": "Update Owner",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"fullName\": \"{{ownerFullName}}\",\n  \"phone\": \"{{ownerPhone}}\",\n  \"email\": \"priya@example.com\",\n  \"address\": \"12 MG Road\",\n  \"city\": \"{{ownerCity}}\",\n  \"preferredContactMethod\": \"phone\",\n  \"altPhone\": null,\n  \"idInfo\": null,\n  \"notes\": \"updated\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/owners/{{ownerId}}",
-            "description": "PATCH /owners/:id — profile fields. Duplicate live phone → 409."
+            "description": "PATCH /owners/:id \u2014 profile fields. Duplicate live phone \u2192 409."
           }
         },
         {
@@ -447,7 +591,7 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/owners/{{ownerId}}",
-            "description": "DELETE /owners/:id — 204 soft-deactivate. Admin only."
+            "description": "DELETE /owners/:id \u2014 204 soft-deactivate. Admin only."
           }
         }
       ]
@@ -475,7 +619,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/catalog/makes?limit=20&offset=0",
-            "description": "GET /catalog/makes — paginated makes. Admin."
+            "description": "GET /catalog/makes \u2014 paginated makes. Admin."
           }
         },
         {
@@ -498,7 +642,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/catalog/makes/{{makeId}}/models?limit=20&offset=0",
-            "description": "GET /catalog/makes/:makeId/models — Admin."
+            "description": "GET /catalog/makes/:makeId/models \u2014 Admin."
           }
         },
         {
@@ -521,7 +665,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/catalog/models/{{modelId}}/variants?limit=20&offset=0",
-            "description": "GET /catalog/models/:modelId/variants — includes factory fuel, transmission, ex-showroom price."
+            "description": "GET /catalog/models/:modelId/variants \u2014 includes factory fuel, transmission, ex-showroom price."
           }
         }
       ]
@@ -547,14 +691,23 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"showroomId\": \"{{showroomId}}\",\n  \"ownerId\": \"{{ownerId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"year\": 2019,\n  \"registrationNumber\": \"KA01AB1234\",\n  \"fuelType\": \"petrol\",\n  \"transmission\": \"manual\",\n  \"kmDriven\": 42000,\n  \"numPreviousOwners\": 1,\n  \"colour\": \"White\",\n  \"insuranceValidUntil\": null,\n  \"rcStatus\": \"clear\",\n  \"serviceHistory\": \"full\",\n  \"accidentHistory\": false,\n  \"loanStatus\": \"clear\",\n  \"location\": \"Bengaluru\",\n  \"description\": null,\n  \"acquisitionType\": \"consignment\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/vehicles",
-            "description": "POST /vehicles — Admin. Duplicate live registration → 409."
+            "description": "POST /vehicles \u2014 Admin. Duplicate live registration \u2192 409."
           }
         },
         {
@@ -563,7 +716,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/vehicles?limit=20&offset=0",
-            "description": "GET /vehicles — filters: status, ownerId, showroomId, registration."
+            "description": "GET /vehicles \u2014 filters: status, ownerId, showroomId, registration."
           }
         },
         {
@@ -572,35 +725,53 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}",
-            "description": "GET /vehicles/:id — catalog names included."
+            "description": "GET /vehicles/:id \u2014 catalog names included."
           }
         },
         {
           "name": "Update Vehicle",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"year\": 2019,\n  \"registrationNumber\": \"KA01AB1234\",\n  \"fuelType\": \"petrol\",\n  \"transmission\": \"manual\",\n  \"kmDriven\": 43000,\n  \"numPreviousOwners\": 1,\n  \"colour\": \"White\",\n  \"insuranceValidUntil\": null,\n  \"rcStatus\": \"clear\",\n  \"serviceHistory\": \"full\",\n  \"accidentHistory\": false,\n  \"loanStatus\": \"clear\",\n  \"location\": \"Bengaluru\",\n  \"description\": \"updated\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}",
-            "description": "PATCH /vehicles/:id — second-hand details only."
+            "description": "PATCH /vehicles/:id \u2014 second-hand details only."
           }
         },
         {
           "name": "Change Vehicle Status",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"inspection_pending\",\n  \"reason\": \"photos in\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/status",
-            "description": "POST /vehicles/:id/status — invalid transition → 422."
+            "description": "POST /vehicles/:id/status \u2014 invalid transition \u2192 422."
           }
         },
         {
@@ -609,7 +780,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/status-history?limit=20&offset=0",
-            "description": "GET /vehicles/:id/status-history — newest first."
+            "description": "GET /vehicles/:id/status-history \u2014 newest first."
           }
         },
         {
@@ -630,14 +801,23 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"category\": \"front\",\n  \"contentType\": \"image/jpeg\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media/uploads",
-            "description": "POST /vehicles/:id/media/uploads — then PUT bytes to uploadUrl."
+            "description": "POST /vehicles/:id/media/uploads \u2014 then PUT bytes to uploadUrl."
           }
         },
         {
@@ -658,14 +838,23 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"storagePath\": \"{{mediaStoragePath}}\",\n  \"category\": \"front\",\n  \"sortOrder\": 0\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media",
-            "description": "POST /vehicles/:id/media — object must already exist in storage."
+            "description": "POST /vehicles/:id/media \u2014 object must already exist in storage."
           }
         },
         {
@@ -674,7 +863,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media?limit=20&offset=0",
-            "description": "GET /vehicles/:id/media — includes short-lived signed read URLs."
+            "description": "GET /vehicles/:id/media \u2014 includes short-lived signed read URLs."
           }
         },
         {
@@ -683,7 +872,7 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media/{{mediaId}}",
-            "description": "DELETE /vehicles/:id/media/:mediaId — 204."
+            "description": "DELETE /vehicles/:id/media/:mediaId \u2014 204."
           }
         },
         {
@@ -704,14 +893,23 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"docType\": \"rc\",\n  \"contentType\": \"application/pdf\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents/uploads",
-            "description": "POST /vehicles/:id/documents/uploads — then PUT bytes to uploadUrl."
+            "description": "POST /vehicles/:id/documents/uploads \u2014 then PUT bytes to uploadUrl."
           }
         },
         {
@@ -732,14 +930,23 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"storagePath\": \"{{documentStoragePath}}\",\n  \"docType\": \"rc\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents",
-            "description": "POST /vehicles/:id/documents — object must already exist in storage."
+            "description": "POST /vehicles/:id/documents \u2014 object must already exist in storage."
           }
         },
         {
@@ -748,7 +955,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents?limit=20&offset=0",
-            "description": "GET /vehicles/:id/documents — signed read URLs only; always sensitive."
+            "description": "GET /vehicles/:id/documents \u2014 signed read URLs only; always sensitive."
           }
         },
         {
@@ -757,7 +964,7 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents/{{documentId}}",
-            "description": "DELETE /vehicles/:id/documents/:documentId — 204."
+            "description": "DELETE /vehicles/:id/documents/:documentId \u2014 204."
           }
         }
       ]
@@ -783,14 +990,23 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"showroomId\": \"{{showroomId}}\",\n  \"fullName\": \"Rahul Sharma\",\n  \"phone\": \"+919811122233\",\n  \"email\": null,\n  \"source\": \"phone\",\n  \"vehicleId\": null,\n  \"budget\": 800000,\n  \"preferredVehicle\": null,\n  \"purchaseTimeline\": null,\n  \"financeRequired\": false,\n  \"currentVehicle\": null,\n  \"tradeInRequired\": false,\n  \"notes\": \"called the showroom\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/leads",
-            "description": "POST /leads — walk-in contact by phone. Admin."
+            "description": "POST /leads \u2014 walk-in contact by phone. Admin."
           }
         },
         {
@@ -799,7 +1015,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/leads?limit=20&offset=0",
-            "description": "GET /leads — filters: status, vehicleId."
+            "description": "GET /leads \u2014 filters: status, vehicleId."
           }
         },
         {
@@ -808,49 +1024,76 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/leads/{{leadId}}",
-            "description": "GET /leads/:id — includes next follow-up."
+            "description": "GET /leads/:id \u2014 includes next follow-up."
           }
         },
         {
           "name": "Associate Vehicle",
           "request": {
             "method": "PATCH",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/vehicle",
-            "description": "PATCH /leads/:id/vehicle — attach a live vehicle."
+            "description": "PATCH /leads/:id/vehicle \u2014 attach a live vehicle."
           }
         },
         {
           "name": "Schedule Follow-up",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"scheduledAt\": \"2026-10-10T10:00:00.000Z\",\n  \"taskType\": \"call\",\n  \"notes\": null\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/follow-ups",
-            "description": "POST /leads/:id/follow-ups — also writes the due notification."
+            "description": "POST /leads/:id/follow-ups \u2014 also writes the due notification."
           }
         },
         {
           "name": "Change Lead Status",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"contacted\",\n  \"notes\": null\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/status",
-            "description": "POST /leads/:id/status — invalid transition → 422."
+            "description": "POST /leads/:id/status \u2014 invalid transition \u2192 422."
           }
         }
       ]
@@ -878,7 +1121,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/notifications?limit=20&offset=0",
-            "description": "GET /notifications — due reminders for the caller. Future follow-ups stay hidden."
+            "description": "GET /notifications \u2014 due reminders for the caller. Future follow-ups stay hidden."
           }
         },
         {
@@ -887,7 +1130,7 @@
             "method": "PATCH",
             "header": [],
             "url": "{{baseUrl}}/notifications/{{notificationId}}/read",
-            "description": "PATCH /notifications/:id/read — 204. Own notifications only."
+            "description": "PATCH /notifications/:id/read \u2014 204. Own notifications only."
           }
         }
       ]
