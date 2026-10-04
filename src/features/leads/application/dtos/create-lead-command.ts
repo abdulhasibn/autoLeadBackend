@@ -1,5 +1,6 @@
 export interface CreateLeadCommand {
-  readonly showroomId: string;
+  /** Defaults to the actor's home showroom; only admins may name another. */
+  readonly showroomId: string | null;
   readonly fullName: string;
   readonly phone: string;
   readonly email: string | null;

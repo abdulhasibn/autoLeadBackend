@@ -15,7 +15,7 @@ export class ListVariantsUseCase {
     page: Pagination,
     ctx: AuthenticatedContext,
   ): Promise<Page<VariantReadModel>> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
     return this.queries.listVariants(toModelId(modelIdRaw), page);
   }
 }

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { ForbiddenActionError } from '../../../domain/errors/forbidden-action.error';
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
 import { Phone } from '../../../domain/shared/phone.value-object';
+import { toShowroomId } from '../../../domain/shared/showroom-id';
 import { toUserId } from '../../../domain/shared/user-id';
 import { LeadManagementPolicy } from '../application/policies/lead-management.policy';
 import { CreateLeadUseCase } from '../application/use-cases/create-lead.use-case';
@@ -13,6 +14,7 @@ import { FakeClock, FakeIdGenerator, FakeLeadRepository, FakeLiveVehicleLookup }
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const COMMAND = {
@@ -74,9 +76,31 @@ describe('CreateLeadUseCase', () => {
     expect(result.contactFullName).toBe('Rahul Sharma');
   });
 
-  it('rejects a salesperson', async () => {
+  it('starts an admin lead unassigned', async () => {
+    const result = await useCase.execute(COMMAND, ADMIN);
+    expect(result.assignedTo).toBeNull();
+  });
+
+  it('assigns a salesperson lead to its creator in their home showroom', async () => {
+    const result = await useCase.execute(
+      { ...COMMAND, showroomId: null },
+      {
+        userId: toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+        roles: ['salesperson'],
+        showroomId: toShowroomId(COMMAND.showroomId),
+      },
+    );
+    expect(result.assignedTo).toBe('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+    expect(result.showroomId).toBe(COMMAND.showroomId);
+  });
+
+  it('rejects a buyer', async () => {
     await expect(
-      useCase.execute(COMMAND, { userId: toUserId('bbbb'), roles: ['salesperson'] }),
+      useCase.execute(COMMAND, {
+        userId: toUserId('cccc'),
+        roles: ['buyer'],
+        showroomId: null,
+      }),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });
 });

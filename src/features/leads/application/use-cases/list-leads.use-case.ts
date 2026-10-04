@@ -1,4 +1,5 @@
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
+import { toUserId } from '../../../../domain/shared/user-id';
 import { toVehicleId } from '../../../../domain/shared/vehicle-id';
 import type { Page } from '../../../../shared/pagination/pagination';
 import type { LeadDto } from '../dtos/lead.dto';
@@ -14,12 +15,16 @@ export class ListLeadsUseCase {
   ) {}
 
   async execute(query: ListLeadsQuery, ctx: AuthenticatedContext): Promise<Page<LeadDto>> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     return this.queries.listLeads(
       {
         status: query.status === undefined ? undefined : LeadStatus.create(query.status).value,
         vehicleId: query.vehicleId === undefined ? undefined : toVehicleId(query.vehicleId),
+        assignedTo: this.policy.assigneeScope(
+          ctx,
+          query.assignedTo === undefined ? undefined : toUserId(query.assignedTo),
+        ),
       },
       query.page,
     );

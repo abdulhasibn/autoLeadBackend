@@ -1,5 +1,5 @@
-import { ForbiddenActionError } from '../../../../domain/errors/forbidden-action.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
+import { ROLE, requireAnyRole } from '../../../../domain/shared/role';
 
 /**
  * Staff management is Admin-only. Roles come from the JWT context, never
@@ -7,8 +7,6 @@ import type { AuthenticatedContext } from '../../../../domain/shared/auth-contex
  */
 export class AdminStaffPolicy {
   requireAdmin(ctx: AuthenticatedContext): void {
-    if (!ctx.roles.includes('admin')) {
-      throw new ForbiddenActionError('Only an admin can manage staff');
-    }
+    requireAnyRole(ctx, [ROLE.ADMIN], 'Only an admin can manage staff');
   }
 }

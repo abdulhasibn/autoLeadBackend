@@ -40,12 +40,40 @@ describe('VehicleStatus', () => {
     );
   });
 
-  it('leaves listing statuses closed in this phase', () => {
+  it('lists an approved vehicle and walks it through reservation to sale', () => {
+    const can = (from: string, to: string): boolean =>
+      VehicleStatus.create(from).canTransitionTo(VehicleStatus.create(to));
+    expect(can('approved', 'available')).toBe(true);
+    expect(can('available', 'reserved')).toBe(true);
+    expect(can('reserved', 'sold')).toBe(true);
+    expect(can('available', 'sold')).toBe(true);
+  });
+
+  it('returns a reserved vehicle to available when the deal falls through', () => {
     expect(
-      VehicleStatus.create('approved').canTransitionTo(VehicleStatus.create('available')),
-    ).toBe(false);
+      VehicleStatus.create('reserved').canTransitionTo(VehicleStatus.create('available')),
+    ).toBe(true);
+  });
+
+  it('lets a listed vehicle go on hold and come back', () => {
+    expect(VehicleStatus.create('available').canTransitionTo(VehicleStatus.create('on_hold'))).toBe(
+      true,
+    );
+    expect(VehicleStatus.create('on_hold').canTransitionTo(VehicleStatus.create('available'))).toBe(
+      true,
+    );
+  });
+
+  it('treats sold as terminal and blocks listing before approval', () => {
+    expect(VehicleStatus.sold().isTerminal()).toBe(true);
+    expect(VehicleStatus.create('sold').canTransitionTo(VehicleStatus.create('available'))).toBe(
+      false,
+    );
     expect(
-      VehicleStatus.create('available').canTransitionTo(VehicleStatus.create('reserved')),
+      VehicleStatus.create('under_inspection').canTransitionTo(VehicleStatus.create('available')),
     ).toBe(false);
+    expect(VehicleStatus.create('reserved').canTransitionTo(VehicleStatus.create('removed'))).toBe(
+      false,
+    );
   });
 });

@@ -16,6 +16,7 @@ const USER_ID = '11111111-1111-4111-8111-111111111111';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 function seedSalesperson(): StaffUser {
@@ -103,7 +104,7 @@ describe('UpdateStaffUseCase', () => {
           email: 'ada@example.com',
           showroomId: null,
         },
-        { userId: toUserId(USER_ID), roles: ['salesperson'] },
+        { userId: toUserId(USER_ID), roles: ['salesperson'], showroomId: null },
       ),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });

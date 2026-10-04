@@ -11,12 +11,14 @@ import { FakeLeadQueries } from './fakes';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const LEAD: LeadReadModel = {
   id: '77777777-7777-4777-8777-777777777777',
   showroomId: 'b0000000-0000-4000-8000-000000000001',
   vehicleId: null,
+  assignedTo: null,
   contactId: '66666666-6666-4666-8666-666666666666',
   contactFullName: 'Rahul Sharma',
   contactPhone: '+919811122233',
@@ -53,6 +55,28 @@ describe('GetLeadUseCase', () => {
   it('throws when missing', async () => {
     await expect(
       useCase.execute('55555555-5555-4555-8555-555555555555', ADMIN),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('shows a salesperson a lead assigned to them', async () => {
+    const queries = new FakeLeadQueries();
+    queries.seed({ ...LEAD, assignedTo: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' });
+    const scoped = new GetLeadUseCase(new LeadManagementPolicy(), queries);
+    const result = await scoped.execute(LEAD.id, {
+      userId: toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+      roles: ['salesperson'],
+      showroomId: null,
+    });
+    expect(result.id).toBe(LEAD.id);
+  });
+
+  it('hides a lead assigned to someone else from a salesperson', async () => {
+    await expect(
+      useCase.execute(LEAD.id, {
+        userId: toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+        roles: ['salesperson'],
+        showroomId: null,
+      }),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 });

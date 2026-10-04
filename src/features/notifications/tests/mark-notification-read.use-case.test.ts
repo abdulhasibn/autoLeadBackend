@@ -12,6 +12,7 @@ import type { INotificationRepository } from '../domain/notification.repository'
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 class FakeNotificationRepository implements INotificationRepository {

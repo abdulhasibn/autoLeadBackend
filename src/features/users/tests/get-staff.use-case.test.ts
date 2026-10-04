@@ -12,6 +12,7 @@ import { FakeStaffQueries } from './fakes';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const MEMBER: StaffMemberReadModel = {
@@ -45,7 +46,11 @@ describe('GetStaffUseCase', () => {
 
   it('rejects a non-admin actor', async () => {
     await expect(
-      useCase.execute(MEMBER.id, { userId: toUserId(MEMBER.id), roles: ['salesperson'] }),
+      useCase.execute(MEMBER.id, {
+        userId: toUserId(MEMBER.id),
+        roles: ['salesperson'],
+        showroomId: null,
+      }),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });
 });

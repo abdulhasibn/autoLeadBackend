@@ -12,12 +12,13 @@ export class GetLeadUseCase {
   ) {}
 
   async execute(leadIdRaw: string, ctx: AuthenticatedContext): Promise<LeadDto> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const lead = await this.queries.getLead(toLeadId(leadIdRaw));
     if (lead === null) {
       throw new NotFoundError(`Lead not found for id ${leadIdRaw}`);
     }
+    this.policy.requireCanWork(ctx, lead);
 
     return lead;
   }

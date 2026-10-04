@@ -13,18 +13,18 @@ export const VEHICLE_STATUSES = [
 
 export type VehicleStatusValue = (typeof VEHICLE_STATUSES)[number];
 
-const TERMINAL: readonly VehicleStatusValue[] = ['rejected', 'removed'];
+const TERMINAL: readonly VehicleStatusValue[] = ['sold', 'rejected', 'removed'];
 
 const ALLOWED: Readonly<Record<VehicleStatusValue, readonly VehicleStatusValue[]>> = {
   submitted: ['inspection_pending', 'rejected', 'on_hold', 'removed'],
   inspection_pending: ['under_inspection', 'rejected', 'on_hold', 'removed'],
   under_inspection: ['approved', 'rejected', 'on_hold', 'removed'],
-  approved: ['rejected', 'on_hold', 'removed'],
-  available: [],
-  reserved: [],
+  approved: ['available', 'rejected', 'on_hold', 'removed'],
+  available: ['reserved', 'sold', 'on_hold', 'removed'],
+  reserved: ['available', 'sold'],
   sold: [],
   rejected: [],
-  on_hold: ['inspection_pending', 'under_inspection', 'approved', 'removed'],
+  on_hold: ['inspection_pending', 'under_inspection', 'approved', 'available', 'removed'],
   removed: [],
 };
 
@@ -37,6 +37,10 @@ export class VehicleStatus {
       throw new Error('Invalid vehicle status');
     }
     return new VehicleStatus(trimmed as VehicleStatusValue);
+  }
+
+  static sold(): VehicleStatus {
+    return new VehicleStatus('sold');
   }
 
   static submitted(): VehicleStatus {

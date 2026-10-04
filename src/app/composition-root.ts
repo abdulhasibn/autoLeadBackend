@@ -63,6 +63,7 @@ export function composeApp(config: AppConfig): AppDependencies {
     bearerMiddleware: auth.bearerMiddleware,
     clock,
     liveVehicleLookup: { isLive: vehicles.isLiveVehicle },
+    vehicleSale: vehicles.vehicleSale,
   });
   const notifications = composeNotifications(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,

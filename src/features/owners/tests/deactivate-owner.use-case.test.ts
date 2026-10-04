@@ -17,6 +17,7 @@ const ADMIN_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId(ADMIN_ID),
   roles: ['admin'],
+  showroomId: null,
 };
 
 function seedOwner(): Owner {
@@ -67,7 +68,11 @@ describe('DeactivateOwnerUseCase', () => {
   it('rejects a salesperson', async () => {
     repo.seed(seedOwner());
     await expect(
-      useCase.execute(OWNER_ID, { userId: toUserId(OWNER_ID), roles: ['salesperson'] }),
+      useCase.execute(OWNER_ID, {
+        userId: toUserId(OWNER_ID),
+        roles: ['salesperson'],
+        showroomId: null,
+      }),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });
 });

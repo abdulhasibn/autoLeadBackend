@@ -10,7 +10,7 @@ export class ListMakesUseCase {
   ) {}
 
   async execute(page: Pagination, ctx: AuthenticatedContext): Promise<Page<MakeReadModel>> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
     return this.queries.listMakes(page);
   }
 }

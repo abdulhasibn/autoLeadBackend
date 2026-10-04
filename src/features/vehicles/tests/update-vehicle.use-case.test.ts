@@ -22,6 +22,7 @@ import { FakeClock, FakeVehicleRepository } from './fakes';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const VEHICLE_ID = '33333333-3333-4333-8333-333333333333';

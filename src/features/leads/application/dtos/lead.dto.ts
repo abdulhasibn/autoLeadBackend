@@ -9,6 +9,7 @@ export function toLeadDto(lead: Lead, contact: Contact): LeadDto {
     id: lead.id,
     showroomId: lead.showroomId,
     vehicleId: lead.vehicleId,
+    assignedTo: lead.assignedTo,
     contactId: contact.id,
     contactFullName: contact.fullName,
     contactPhone: contact.phone.value,

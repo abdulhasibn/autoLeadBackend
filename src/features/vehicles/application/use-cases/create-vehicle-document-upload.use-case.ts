@@ -28,7 +28,7 @@ export class CreateVehicleDocumentUploadUseCase {
     command: CreateVehicleDocumentUploadCommand,
     ctx: AuthenticatedContext,
   ): Promise<SignedUploadDto> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const vehicleId = toVehicleId(command.vehicleId);
     const vehicle = await this.vehicles.findById(vehicleId);

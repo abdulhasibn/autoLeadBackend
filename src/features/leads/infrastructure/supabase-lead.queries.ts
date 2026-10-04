@@ -9,7 +9,7 @@ import type { ILeadQueries, LeadListCriteria, LeadReadModel } from '../domain/le
 import { toLeadReadModel, type LeadListRow } from './lead.mapper';
 
 const LEAD_LIST_COLUMNS =
-  'id, showroom_id, vehicle_id, contact_id, source, status, budget, preferred_vehicle, purchase_timeline, finance_required, current_vehicle, trade_in_required, notes, created_by, created_at, updated_at, deleted_at, contacts ( full_name, phone, email, deleted_at ), follow_ups ( id, task_type, scheduled_at, notes, completed_at, deleted_at )';
+  'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget, preferred_vehicle, purchase_timeline, finance_required, current_vehicle, trade_in_required, notes, created_by, created_at, updated_at, deleted_at, contacts ( full_name, phone, email, deleted_at ), follow_ups ( id, task_type, scheduled_at, notes, completed_at, deleted_at )';
 
 export class SupabaseLeadQueries implements ILeadQueries {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -26,6 +26,9 @@ export class SupabaseLeadQueries implements ILeadQueries {
     }
     if (criteria.vehicleId !== undefined) {
       query = query.eq('vehicle_id', criteria.vehicleId);
+    }
+    if (criteria.assignedTo !== undefined) {
+      query = query.eq('assigned_to', criteria.assignedTo);
     }
 
     const { data, error, count } = await query.range(page.offset, page.offset + page.limit - 1);

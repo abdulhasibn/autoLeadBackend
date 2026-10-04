@@ -11,6 +11,7 @@ import { FakeVehicleQueries } from './fakes';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const VEHICLE: VehicleReadModel = {

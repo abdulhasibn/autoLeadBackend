@@ -7,12 +7,12 @@ import type { Contact } from '../domain/contact.entity';
 import type { FollowUp } from '../domain/follow-up.entity';
 import type { Lead } from '../domain/lead.entity';
 import type { LeadId } from '../domain/lead-id';
-import type { ILeadRepository } from '../domain/lead.repository';
+import type { ILeadRepository, LeadWrite } from '../domain/lead.repository';
 import { toContact, toLead, type ContactRow, type LeadRow } from './lead.mapper';
 import { translateLeadWriteError } from './translate-lead-write-error';
 
 const LEAD_COLUMNS =
-  'id, showroom_id, vehicle_id, contact_id, source, status, budget, preferred_vehicle, purchase_timeline, finance_required, current_vehicle, trade_in_required, notes, created_by, created_at, updated_at, deleted_at';
+  'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget, preferred_vehicle, purchase_timeline, finance_required, current_vehicle, trade_in_required, notes, created_by, created_at, updated_at, deleted_at';
 
 export class SupabaseLeadRepository implements ILeadRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -54,7 +54,8 @@ export class SupabaseLeadRepository implements ILeadRepository {
     return toContact(data as ContactRow);
   }
 
-  async save(lead: Lead, contact: Contact | null, statusNotes: string | null): Promise<void> {
+  async save(lead: Lead, write: LeadWrite): Promise<void> {
+    const contact = write.contact ?? null;
     const { error } = await this.db.rpc('save_lead', {
       p_id: lead.id,
       p_showroom_id: lead.showroomId,
@@ -77,7 +78,10 @@ export class SupabaseLeadRepository implements ILeadRepository {
       p_created_by: lead.createdBy,
       p_deleted_at: lead.deletedAt === null ? null : lead.deletedAt.toISOString(),
       p_write_history: lead.hasStatusChanged,
-      p_status_notes: statusNotes,
+      p_status_notes: write.statusNotes ?? null,
+      p_assigned_to: lead.assignedTo,
+      p_update_assignee: lead.hasAssigneeChanged,
+      p_actor_id: write.actorId,
     });
 
     if (error !== null) {

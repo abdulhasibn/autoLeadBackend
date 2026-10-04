@@ -11,6 +11,7 @@ import { FakeStaffQueries } from './fakes';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const MEMBER: StaffMemberReadModel = {
@@ -44,7 +45,7 @@ describe('ListStaffUseCase', () => {
     await expect(
       useCase.execute(
         { page: { limit: 20, offset: 0 } },
-        { userId: toUserId(MEMBER.id), roles: ['salesperson'] },
+        { userId: toUserId(MEMBER.id), roles: ['salesperson'], showroomId: null },
       ),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });

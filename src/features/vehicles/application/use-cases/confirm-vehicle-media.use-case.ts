@@ -28,7 +28,7 @@ export class ConfirmVehicleMediaUseCase {
     command: ConfirmVehicleMediaCommand,
     ctx: AuthenticatedContext,
   ): Promise<VehicleMediaDto> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const vehicleId = toVehicleId(command.vehicleId);
     const vehicle = await this.vehicles.findById(vehicleId);

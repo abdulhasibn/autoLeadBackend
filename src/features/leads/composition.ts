@@ -7,15 +7,19 @@ import type { Clock } from '../../shared/clock/clock';
 import { UuidIdGenerator } from '../../shared/ids/id-generator';
 import { InvalidLeadStatusTransitionError } from './domain/errors/invalid-lead-status-transition.error';
 import type { ILiveVehicleLookup } from './domain/live-vehicle.port';
+import type { IVehicleSale } from './domain/vehicle-sale.port';
 import { LeadManagementPolicy } from './application/policies/lead-management.policy';
+import { AssignLeadUseCase } from './application/use-cases/assign-lead.use-case';
 import { AssociateLeadVehicleUseCase } from './application/use-cases/associate-lead-vehicle.use-case';
 import { ChangeLeadStatusUseCase } from './application/use-cases/change-lead-status.use-case';
 import { CreateLeadUseCase } from './application/use-cases/create-lead.use-case';
 import { GetLeadUseCase } from './application/use-cases/get-lead.use-case';
 import { ListLeadsUseCase } from './application/use-cases/list-leads.use-case';
 import { ScheduleFollowUpUseCase } from './application/use-cases/schedule-follow-up.use-case';
+import { SupabaseAssignableStaffLookup } from './infrastructure/supabase-assignable-staff.lookup';
 import { SupabaseLeadQueries } from './infrastructure/supabase-lead.queries';
 import { SupabaseLeadRepository } from './infrastructure/supabase-lead.repository';
+import { AssignLeadController } from './presentation/controllers/assign-lead.controller';
 import { AssociateLeadVehicleController } from './presentation/controllers/associate-lead-vehicle.controller';
 import { ChangeLeadStatusController } from './presentation/controllers/change-lead-status.controller';
 import { CreateLeadController } from './presentation/controllers/create-lead.controller';
@@ -33,6 +37,7 @@ export interface LeadsCompositionDeps {
   readonly bearerMiddleware: RequestHandler;
   readonly clock: Clock;
   readonly liveVehicleLookup: ILiveVehicleLookup;
+  readonly vehicleSale: IVehicleSale;
 }
 
 /**
@@ -61,7 +66,18 @@ export function composeLeads(
     deps.liveVehicleLookup,
     deps.clock,
   );
-  const changeLeadStatusUseCase = new ChangeLeadStatusUseCase(policy, repo, deps.clock);
+  const changeLeadStatusUseCase = new ChangeLeadStatusUseCase(
+    policy,
+    repo,
+    deps.vehicleSale,
+    deps.clock,
+  );
+  const assignLeadUseCase = new AssignLeadUseCase(
+    policy,
+    repo,
+    new SupabaseAssignableStaffLookup(infraClient),
+    deps.clock,
+  );
   const scheduleFollowUpUseCase = new ScheduleFollowUpUseCase(policy, repo, deps.clock, ids);
   const listLeadsUseCase = new ListLeadsUseCase(policy, queries);
   const getLeadUseCase = new GetLeadUseCase(policy, queries);
@@ -72,6 +88,7 @@ export function composeLeads(
     listLeadsController: new ListLeadsController(listLeadsUseCase),
     getLeadController: new GetLeadController(getLeadUseCase),
     associateLeadVehicleController: new AssociateLeadVehicleController(associateLeadVehicleUseCase),
+    assignLeadController: new AssignLeadController(assignLeadUseCase),
     changeLeadStatusController: new ChangeLeadStatusController(changeLeadStatusUseCase),
     scheduleFollowUpController: new ScheduleFollowUpController(scheduleFollowUpUseCase),
   });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import { toShowroomId } from '../../../domain/shared/showroom-id';
 import { toUserId } from '../../../domain/shared/user-id';
 import { toVehicleId } from '../../../domain/shared/vehicle-id';
@@ -18,6 +19,7 @@ function makeLead(): Lead {
     showroomId: toShowroomId('b0000000-0000-4000-8000-000000000001'),
     contactId: toContactId('66666666-6666-4666-8666-666666666666'),
     vehicleId: null,
+    assignedTo: null,
     source: LeadSource.create('phone'),
     budget: null,
     preferredVehicle: null,
@@ -59,5 +61,30 @@ describe('Lead entity', () => {
     expect(() =>
       lead.associateVehicle(toVehicleId('33333333-3333-4333-8333-333333333333'), NOW),
     ).toThrow('closed lead');
+  });
+
+  it('starts unassigned without an assignee change', () => {
+    const lead = makeLead();
+    expect(lead.assignedTo).toBeNull();
+    expect(lead.hasAssigneeChanged).toBe(false);
+  });
+
+  it('assigns, reassigns, and clears the assignee', () => {
+    const lead = makeLead();
+    const later = new Date('2026-10-04T00:00:00.000Z');
+    lead.assign(toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'), later);
+    expect(lead.assignedTo).toBe('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+    expect(lead.hasAssigneeChanged).toBe(true);
+    expect(lead.updatedAt).toBe(later);
+    lead.assign(null, later);
+    expect(lead.assignedTo).toBeNull();
+  });
+
+  it('refuses to assign a closed lead with a typed business-rule error', () => {
+    const lead = makeLead();
+    lead.changeStatus(LeadStatus.create('no_response'), NOW);
+    expect(() => lead.assign(toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'), NOW)).toThrow(
+      BusinessRuleViolationError,
+    );
   });
 });

@@ -17,7 +17,12 @@ import {
 } from './vehicle-fields.schemas';
 
 export const createVehicleBodySchema = z.object({
-  showroomId: z.string({ error: 'showroomId is required' }).uuid('showroomId must be a UUID'),
+  showroomId: z
+    .string()
+    .uuid('showroomId must be a UUID')
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
   ownerId: z.string({ error: 'ownerId is required' }).uuid('ownerId must be a UUID'),
   variantId: z.string({ error: 'variantId is required' }).uuid('variantId must be a UUID'),
   year: vehicleYearSchema,

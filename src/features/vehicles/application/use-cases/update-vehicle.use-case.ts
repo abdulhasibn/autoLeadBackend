@@ -24,7 +24,7 @@ export class UpdateVehicleUseCase {
   ) {}
 
   async execute(command: UpdateVehicleCommand, ctx: AuthenticatedContext): Promise<VehicleDto> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const vehicle = await this.repo.findById(toVehicleId(command.vehicleId));
     if (vehicle === null) {

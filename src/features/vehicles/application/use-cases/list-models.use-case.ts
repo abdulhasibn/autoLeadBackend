@@ -15,7 +15,7 @@ export class ListModelsUseCase {
     page: Pagination,
     ctx: AuthenticatedContext,
   ): Promise<Page<ModelReadModel>> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
     return this.queries.listModels(toMakeId(makeIdRaw), page);
   }
 }

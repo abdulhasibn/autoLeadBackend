@@ -27,6 +27,7 @@ export interface LeadRow {
   readonly id: string;
   readonly showroom_id: string;
   readonly vehicle_id: string | null;
+  readonly assigned_to: string | null;
   readonly contact_id: string | null;
   readonly source: string;
   readonly status: string;
@@ -86,6 +87,7 @@ export function toLead(row: LeadRow): Lead {
     showroomId: toShowroomId(row.showroom_id),
     contactId: toContactId(row.contact_id),
     vehicleId: row.vehicle_id === null ? null : toVehicleId(row.vehicle_id),
+    assignedTo: row.assigned_to === null ? null : toUserId(row.assigned_to),
     source: mapVo(row.source, row.id, 'source', (value) => LeadSource.create(value)),
     status: mapVo(row.status, row.id, 'status', (value) => LeadStatus.create(value)),
     budget: row.budget,
@@ -114,6 +116,7 @@ export function toLeadReadModel(row: LeadListRow): LeadReadModel | null {
     id: row.id,
     showroomId: row.showroom_id,
     vehicleId: row.vehicle_id,
+    assignedTo: row.assigned_to,
     contactId: row.contact_id,
     contactFullName: row.contacts.full_name,
     contactPhone: row.contacts.phone,

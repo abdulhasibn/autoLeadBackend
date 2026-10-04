@@ -11,7 +11,7 @@ export class MarkNotificationReadUseCase {
   ) {}
 
   async execute(notificationIdRaw: string, ctx: AuthenticatedContext): Promise<void> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const marked = await this.repo.markRead(toNotificationId(notificationIdRaw), ctx.userId);
     if (!marked) {

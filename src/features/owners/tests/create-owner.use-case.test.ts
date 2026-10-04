@@ -11,11 +11,13 @@ import { FakeClock, FakeIdGenerator, FakeOwnerRepository } from './fakes';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const SALES: AuthenticatedContext = {
   userId: toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
   roles: ['salesperson'],
+  showroomId: null,
 };
 
 const COMMAND = {
@@ -68,7 +70,7 @@ describe('CreateOwnerUseCase', () => {
 
   it('rejects a buyer', async () => {
     await expect(
-      useCase.execute(COMMAND, { userId: toUserId('cccc'), roles: ['buyer'] }),
+      useCase.execute(COMMAND, { userId: toUserId('cccc'), roles: ['buyer'], showroomId: null }),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
     expect(repo.store.size).toBe(0);
   });

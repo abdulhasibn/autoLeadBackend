@@ -16,7 +16,7 @@ export class ListVehiclesUseCase {
   ) {}
 
   async execute(query: ListVehiclesQuery, ctx: AuthenticatedContext): Promise<Page<VehicleDto>> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     return this.queries.listVehicles(
       {

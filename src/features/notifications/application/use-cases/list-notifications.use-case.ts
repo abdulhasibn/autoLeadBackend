@@ -15,7 +15,7 @@ export class ListNotificationsUseCase {
   ) {}
 
   async execute(page: Pagination, ctx: AuthenticatedContext): Promise<Page<NotificationReadModel>> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
     return this.queries.listDue(ctx.userId, this.clock.now(), page);
   }
 }

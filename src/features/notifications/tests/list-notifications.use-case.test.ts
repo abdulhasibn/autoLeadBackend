@@ -15,6 +15,7 @@ import type { INotificationQueries, NotificationReadModel } from '../domain/noti
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 class FakeClock implements Clock {
@@ -76,11 +77,20 @@ describe('ListNotificationsUseCase', () => {
     expect(page.items.map((item) => item.id)).toEqual(['n2']);
   });
 
-  it('rejects a salesperson', async () => {
+  it('lets a salesperson read their own inbox', async () => {
     await expect(
       useCase.execute(
         { limit: 20, offset: 0 },
-        { userId: toUserId('bbbb'), roles: ['salesperson'] },
+        { userId: toUserId('bbbb'), roles: ['salesperson'], showroomId: null },
+      ),
+    ).resolves.toMatchObject({ limit: 20, offset: 0 });
+  });
+
+  it('rejects a buyer', async () => {
+    await expect(
+      useCase.execute(
+        { limit: 20, offset: 0 },
+        { userId: toUserId('cccc'), roles: ['buyer'], showroomId: null },
       ),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });

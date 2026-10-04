@@ -17,7 +17,7 @@ import type { ILiveVariantLookup } from '../../domain/live-variant.port';
 import { PreviousOwners } from '../../domain/previous-owners.value-object';
 import type { IRegisteredOwnerLookup } from '../../domain/registered-owner.port';
 import { RegistrationNumber } from '../../domain/registration-number.value-object';
-import { toShowroomId } from '../../../../domain/shared/showroom-id';
+import { resolveShowroomId } from '../../../../domain/shared/resolve-showroom';
 import { Transmission } from '../../domain/transmission.value-object';
 import { toVariantId } from '../../domain/variant-id';
 import { Vehicle } from '../../domain/vehicle.entity';
@@ -37,7 +37,7 @@ export class CreateVehicleUseCase {
   ) {}
 
   async execute(command: CreateVehicleCommand, ctx: AuthenticatedContext): Promise<VehicleDto> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const ownerId = toOwnerId(command.ownerId);
     if (!(await this.owners.isLive(ownerId))) {
@@ -49,9 +49,9 @@ export class CreateVehicleUseCase {
       throw new NotFoundError(`Variant not found for id ${command.variantId}`);
     }
 
-    const showroomId = toShowroomId(command.showroomId);
+    const showroomId = resolveShowroomId(ctx, command.showroomId);
     if (!(await this.showrooms.isActive(showroomId))) {
-      throw new NotFoundError(`Showroom not found for id ${command.showroomId}`);
+      throw new NotFoundError(`Showroom not found for id ${showroomId}`);
     }
 
     const now = this.clock.now();

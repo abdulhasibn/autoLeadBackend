@@ -8,4 +8,5 @@ export const listLeadsQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
   status: optionalLeadStatusSchema,
   vehicleId: z.string().uuid('vehicleId must be a UUID').optional(),
+  assignedTo: z.string().uuid('assignedTo must be a UUID').optional(),
 });

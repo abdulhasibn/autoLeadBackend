@@ -1,10 +1,12 @@
-import { ForbiddenActionError } from '../../../../domain/errors/forbidden-action.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
+import { STAFF_ROLES, requireAnyRole } from '../../../../domain/shared/role';
 
+/**
+ * Every staff member reads their own inbox; queries are always filtered by
+ * the actor's user id.
+ */
 export class NotificationInboxPolicy {
-  requireAdmin(ctx: AuthenticatedContext): void {
-    if (!ctx.roles.includes('admin')) {
-      throw new ForbiddenActionError('Only an admin can read notifications');
-    }
+  requireStaff(ctx: AuthenticatedContext): void {
+    requireAnyRole(ctx, STAFF_ROLES, 'Only staff can read notifications');
   }
 }

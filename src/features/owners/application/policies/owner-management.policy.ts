@@ -1,5 +1,5 @@
-import { ForbiddenActionError } from '../../../../domain/errors/forbidden-action.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
+import { ROLE, STAFF_ROLES, requireAnyRole } from '../../../../domain/shared/role';
 
 /**
  * Owner CRUD is Admin or Salesperson. Deactivate is Admin-only.
@@ -7,14 +7,10 @@ import type { AuthenticatedContext } from '../../../../domain/shared/auth-contex
  */
 export class OwnerManagementPolicy {
   requireAdminOrSalesperson(ctx: AuthenticatedContext): void {
-    if (!ctx.roles.includes('admin') && !ctx.roles.includes('salesperson')) {
-      throw new ForbiddenActionError('Only staff can manage owners');
-    }
+    requireAnyRole(ctx, STAFF_ROLES, 'Only staff can manage owners');
   }
 
   requireAdmin(ctx: AuthenticatedContext): void {
-    if (!ctx.roles.includes('admin')) {
-      throw new ForbiddenActionError('Only an admin can deactivate an owner');
-    }
+    requireAnyRole(ctx, [ROLE.ADMIN], 'Only an admin can deactivate an owner');
   }
 }

@@ -24,6 +24,7 @@ import { FakeClock, FakeVehicleRepository } from './fakes';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const VEHICLE_ID = '33333333-3333-4333-8333-333333333333';
@@ -101,7 +102,11 @@ describe('ChangeVehicleStatusUseCase', () => {
     await expect(
       useCase.execute(
         { vehicleId: VEHICLE_ID, status: 'inspection_pending', reason: null },
-        { userId: toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'), roles: ['salesperson'] },
+        {
+          userId: toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+          roles: ['salesperson'],
+          showroomId: null,
+        },
       ),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });

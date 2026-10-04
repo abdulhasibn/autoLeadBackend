@@ -1,3 +1,4 @@
+import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import type { LeadId } from './lead-id';
@@ -14,6 +15,7 @@ export interface LeadReadModel {
   readonly id: string;
   readonly showroomId: string;
   readonly vehicleId: string | null;
+  readonly assignedTo: string | null;
   readonly contactId: string;
   readonly contactFullName: string;
   readonly contactPhone: string;
@@ -36,6 +38,7 @@ export interface LeadReadModel {
 export interface LeadListCriteria {
   readonly status?: LeadStatusValue;
   readonly vehicleId?: VehicleId;
+  readonly assignedTo?: UserId;
 }
 
 export interface ILeadQueries {

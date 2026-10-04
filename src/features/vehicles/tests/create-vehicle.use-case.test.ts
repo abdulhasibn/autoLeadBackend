@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import { ForbiddenActionError } from '../../../domain/errors/forbidden-action.error';
 import { NotFoundError } from '../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
@@ -21,6 +22,7 @@ import {
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const OWNER_ID = '22222222-2222-4222-8222-222222222222';
@@ -88,9 +90,36 @@ describe('CreateVehicleUseCase', () => {
     expect(repo.store.has(ids.nextId)).toBe(true);
   });
 
-  it('rejects a salesperson', async () => {
+  it('lets a salesperson create a vehicle in their home showroom', async () => {
+    const result = await useCase.execute(
+      { ...COMMAND, showroomId: null },
+      { userId: toUserId('bbbb'), roles: ['salesperson'], showroomId: toShowroomId(SHOWROOM_ID) },
+    );
+    expect(result).toMatchObject({ showroomId: SHOWROOM_ID, submittedBy: 'bbbb' });
+  });
+
+  it('rejects a salesperson filing into another showroom', async () => {
     await expect(
-      useCase.execute(COMMAND, { userId: toUserId('bbbb'), roles: ['salesperson'] }),
+      useCase.execute(
+        { ...COMMAND, showroomId: SHOWROOM_ID },
+        {
+          userId: toUserId('bbbb'),
+          roles: ['salesperson'],
+          showroomId: toShowroomId('b0000000-0000-4000-8000-000000000009'),
+        },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenActionError);
+  });
+
+  it('requires a showroom when the actor has no home showroom', async () => {
+    await expect(useCase.execute({ ...COMMAND, showroomId: null }, ADMIN)).rejects.toBeInstanceOf(
+      BusinessRuleViolationError,
+    );
+  });
+
+  it('rejects a buyer', async () => {
+    await expect(
+      useCase.execute(COMMAND, { userId: toUserId('cccc'), roles: ['buyer'], showroomId: null }),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });
 

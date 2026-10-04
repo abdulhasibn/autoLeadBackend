@@ -1,3 +1,4 @@
+import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import type { ShowroomId } from '../../../domain/shared/showroom-id';
 import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
@@ -12,6 +13,7 @@ export interface LeadCreateProps {
   readonly showroomId: ShowroomId;
   readonly contactId: ContactId;
   readonly vehicleId: VehicleId | null;
+  readonly assignedTo: UserId | null;
   readonly source: LeadSource;
   readonly budget: number | null;
   readonly preferredVehicle: string | null;
@@ -36,6 +38,7 @@ export class Lead {
     readonly showroomId: ShowroomId,
     readonly contactId: ContactId,
     private vehicleIdValue: VehicleId | null,
+    private assignedToValue: UserId | null,
     readonly source: LeadSource,
     private statusValue: LeadStatus,
     private budgetValue: number | null,
@@ -50,6 +53,7 @@ export class Lead {
     private updatedAtValue: Date,
     private deletedAtValue: Date | null,
     private statusChanged: boolean,
+    private assigneeChanged: boolean,
   ) {}
 
   static create(props: LeadCreateProps): Lead {
@@ -58,6 +62,7 @@ export class Lead {
       props.showroomId,
       props.contactId,
       props.vehicleId,
+      props.assignedTo,
       props.source,
       LeadStatus.initial(),
       props.budget,
@@ -72,6 +77,7 @@ export class Lead {
       props.updatedAt,
       null,
       true,
+      props.assignedTo !== null,
     );
   }
 
@@ -81,6 +87,7 @@ export class Lead {
       props.showroomId,
       props.contactId,
       props.vehicleId,
+      props.assignedTo,
       props.source,
       props.status,
       props.budget,
@@ -95,11 +102,16 @@ export class Lead {
       props.updatedAt,
       props.deletedAt,
       false,
+      false,
     );
   }
 
   get vehicleId(): VehicleId | null {
     return this.vehicleIdValue;
+  }
+
+  get assignedTo(): UserId | null {
+    return this.assignedToValue;
   }
 
   get status(): LeadStatus {
@@ -146,11 +158,22 @@ export class Lead {
     return this.statusChanged;
   }
 
-  associateVehicle(vehicleId: VehicleId, at: Date): void {
-    this.assertLive();
-    if (this.statusValue.isTerminal()) {
-      throw new Error('Cannot associate a vehicle with a closed lead');
+  get hasAssigneeChanged(): boolean {
+    return this.assigneeChanged;
+  }
+
+  assign(assignee: UserId | null, at: Date): void {
+    this.assertOpen('Cannot reassign a closed lead');
+    if (this.assignedToValue === assignee) {
+      return;
     }
+    this.assignedToValue = assignee;
+    this.assigneeChanged = true;
+    this.updatedAtValue = at;
+  }
+
+  associateVehicle(vehicleId: VehicleId, at: Date): void {
+    this.assertOpen('Cannot associate a vehicle with a closed lead');
     this.vehicleIdValue = vehicleId;
     this.updatedAtValue = at;
   }
@@ -166,6 +189,13 @@ export class Lead {
     this.statusValue = next;
     this.statusChanged = true;
     this.updatedAtValue = at;
+  }
+
+  private assertOpen(message: string): void {
+    this.assertLive();
+    if (this.statusValue.isTerminal()) {
+      throw new BusinessRuleViolationError('LEAD_CLOSED', message);
+    }
   }
 
   private assertLive(): void {

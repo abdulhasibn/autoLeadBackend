@@ -20,12 +20,13 @@ export class AssociateLeadVehicleUseCase {
     command: AssociateLeadVehicleCommand,
     ctx: AuthenticatedContext,
   ): Promise<{ readonly vehicleId: string }> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const lead = await this.repo.findById(toLeadId(command.leadId));
     if (lead === null) {
       throw new NotFoundError(`Lead not found for id ${command.leadId}`);
     }
+    this.policy.requireCanWork(ctx, lead);
 
     const vehicleId = toVehicleId(command.vehicleId);
     if (!(await this.vehicles.isLive(vehicleId))) {
@@ -33,7 +34,7 @@ export class AssociateLeadVehicleUseCase {
     }
 
     lead.associateVehicle(vehicleId, this.clock.now());
-    await this.repo.save(lead, null, null);
+    await this.repo.save(lead, { actorId: ctx.userId });
     return { vehicleId };
   }
 }

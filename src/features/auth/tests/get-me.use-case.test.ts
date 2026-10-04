@@ -4,7 +4,7 @@ import { NotFoundError } from '../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
 import { toUserId } from '../../../domain/shared/user-id';
 import type { UserProfileDto } from '../application/dtos/user-profile.dto';
-import type { IAuthQueries } from '../application/queries/auth.queries';
+import type { ActorGrants, IAuthQueries } from '../application/queries/auth.queries';
 import { GetMeUseCase } from '../application/use-cases/get-me.use-case';
 import type { UserId } from '../../../domain/shared/user-id';
 
@@ -21,8 +21,8 @@ class FakeAuthQueries implements IAuthQueries {
     return this.store.get(userId) ?? null;
   }
 
-  async findLiveRoles(): Promise<ReadonlyArray<string>> {
-    return [];
+  async findActor(): Promise<ActorGrants> {
+    return { roles: [], showroomId: null };
   }
 }
 
@@ -40,6 +40,7 @@ const PROFILE: UserProfileDto = {
 const CTX: AuthenticatedContext = {
   userId: toUserId('user-1'),
   roles: ['salesperson'],
+  showroomId: null,
 };
 
 describe('GetMeUseCase', () => {

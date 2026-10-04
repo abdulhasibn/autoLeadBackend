@@ -18,7 +18,7 @@ export class AuthenticateActorUseCase {
       return null;
     }
 
-    const roles = await this.authQueries.findLiveRoles(userId);
-    return { userId, roles };
+    const { roles, showroomId } = await this.authQueries.findActor(userId);
+    return { userId, roles, showroomId };
   }
 }

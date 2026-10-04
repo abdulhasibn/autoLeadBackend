@@ -24,7 +24,7 @@ export class ListVehicleMediaUseCase {
     page: Pagination,
     ctx: AuthenticatedContext,
   ): Promise<Page<VehicleMediaDto>> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const vehicleId = toVehicleId(vehicleIdRaw);
     const vehicle = await this.vehicleQueries.getVehicle(vehicleId);

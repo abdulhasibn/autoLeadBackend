@@ -2,7 +2,7 @@ import { NotFoundError } from '../../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { Email } from '../../../../domain/shared/email.value-object';
 import { Phone } from '../../../../domain/shared/phone.value-object';
-import { toShowroomId } from '../../../../domain/shared/showroom-id';
+import { resolveShowroomId } from '../../../../domain/shared/resolve-showroom';
 import { toVehicleId } from '../../../../domain/shared/vehicle-id';
 import type { Clock } from '../../../../shared/clock/clock';
 import type { IdGenerator } from '../../../../shared/ids/id-generator';
@@ -29,7 +29,8 @@ export class CreateLeadUseCase {
   ) {}
 
   async execute(command: CreateLeadCommand, ctx: AuthenticatedContext): Promise<LeadDto> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
+    const showroomId = resolveShowroomId(ctx, command.showroomId);
 
     const vehicleId = command.vehicleId === null ? null : toVehicleId(command.vehicleId);
     if (vehicleId !== null && !(await this.vehicles.isLive(vehicleId))) {
@@ -57,9 +58,10 @@ export class CreateLeadUseCase {
 
     const lead = Lead.create({
       id: toLeadId(this.ids.generate()),
-      showroomId: toShowroomId(command.showroomId),
+      showroomId,
       contactId: contact.id,
       vehicleId,
+      assignedTo: this.policy.initialAssignee(ctx),
       source: LeadSource.create(command.source),
       budget: command.budget === null ? null : Budget.create(command.budget).value,
       preferredVehicle: command.preferredVehicle,
@@ -73,7 +75,7 @@ export class CreateLeadUseCase {
       updatedAt: now,
     });
 
-    await this.repo.save(lead, contact, null);
+    await this.repo.save(lead, { actorId: ctx.userId, contact });
     return toLeadDto(lead, contact);
   }
 }

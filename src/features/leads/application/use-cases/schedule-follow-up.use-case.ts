@@ -23,18 +23,19 @@ export class ScheduleFollowUpUseCase {
   ) {}
 
   async execute(command: ScheduleFollowUpCommand, ctx: AuthenticatedContext): Promise<FollowUpDto> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const lead = await this.repo.findById(toLeadId(command.leadId));
     if (lead === null) {
       throw new NotFoundError(`Lead not found for id ${command.leadId}`);
     }
+    this.policy.requireCanWork(ctx, lead);
 
     const scheduledAt = ScheduledAt.create(command.scheduledAt).value;
     const followUp = FollowUp.schedule({
       id: toFollowUpId(this.ids.generate()),
       leadId: lead.id,
-      assignedTo: ctx.userId,
+      assignedTo: lead.assignedTo ?? ctx.userId,
       taskType: FollowUpTaskType.create(command.taskType),
       scheduledAt,
       notes: command.notes,

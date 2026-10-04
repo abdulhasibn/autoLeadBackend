@@ -16,6 +16,7 @@ export class ListLeadsController {
           {
             status: query.status,
             vehicleId: query.vehicleId,
+            assignedTo: query.assignedTo,
             page: { limit: query.limit, offset: query.offset },
           },
           ctx,

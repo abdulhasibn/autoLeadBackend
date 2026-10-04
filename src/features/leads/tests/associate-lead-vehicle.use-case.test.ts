@@ -16,6 +16,7 @@ import { FakeClock, FakeLeadRepository, FakeLiveVehicleLookup } from './fakes';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const LEAD_ID = '77777777-7777-4777-8777-777777777777';
@@ -37,6 +38,7 @@ describe('AssociateLeadVehicleUseCase', () => {
         showroomId: toShowroomId('b0000000-0000-4000-8000-000000000001'),
         contactId: toContactId('66666666-6666-4666-8666-666666666666'),
         vehicleId: null,
+        assignedTo: null,
         source: LeadSource.create('walkin'),
         budget: null,
         preferredVehicle: null,

@@ -12,6 +12,7 @@ describe('VehicleManagementPolicy', () => {
     const ctx: AuthenticatedContext = {
       userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
       roles: ['admin'],
+      showroomId: null,
     };
     expect(() => policy.requireAdmin(ctx)).not.toThrow();
   });
@@ -20,6 +21,7 @@ describe('VehicleManagementPolicy', () => {
     const ctx: AuthenticatedContext = {
       userId: toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
       roles: ['salesperson'],
+      showroomId: null,
     };
     expect(() => policy.requireAdmin(ctx)).toThrow(ForbiddenActionError);
   });

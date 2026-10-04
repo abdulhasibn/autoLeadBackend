@@ -8,6 +8,7 @@ import type { ErrorMapper } from '../../presentation/http/errors/error-mapping';
 import type { Clock } from '../../shared/clock/clock';
 import { UuidIdGenerator } from '../../shared/ids/id-generator';
 import { VehicleManagementPolicy } from './application/policies/vehicle-management.policy';
+import { MarkVehicleSoldService } from './application/services/mark-vehicle-sold.service';
 import { ChangeVehicleStatusUseCase } from './application/use-cases/change-vehicle-status.use-case';
 import { ConfirmVehicleDocumentUseCase } from './application/use-cases/confirm-vehicle-document.use-case';
 import { ConfirmVehicleMediaUseCase } from './application/use-cases/confirm-vehicle-media.use-case';
@@ -64,6 +65,7 @@ export interface VehiclesComposition {
   readonly catalogRouter: ReturnType<typeof createCatalogRouter>;
   readonly errorMapper: ErrorMapper;
   readonly isLiveVehicle: (vehicleId: VehicleId) => Promise<boolean>;
+  readonly vehicleSale: MarkVehicleSoldService;
 }
 
 export interface VehiclesCompositionDeps {
@@ -220,5 +222,6 @@ export function composeVehicles(
     catalogRouter,
     errorMapper,
     isLiveVehicle: (vehicleId) => repo.isLive(vehicleId),
+    vehicleSale: new MarkVehicleSoldService(repo, deps.clock),
   };
 }

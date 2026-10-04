@@ -16,6 +16,7 @@ const OWNER_ID = '22222222-2222-4222-8222-222222222222';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 function seedOwner(): Owner {
@@ -111,7 +112,7 @@ describe('UpdateOwnerUseCase', () => {
           idInfo: null,
           notes: null,
         },
-        { userId: toUserId(OWNER_ID), roles: ['buyer'] },
+        { userId: toUserId(OWNER_ID), roles: ['buyer'], showroomId: null },
       ),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });

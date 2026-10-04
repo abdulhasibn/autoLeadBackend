@@ -12,7 +12,7 @@ export class GetVehicleUseCase {
   ) {}
 
   async execute(vehicleIdRaw: string, ctx: AuthenticatedContext): Promise<VehicleDto> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const vehicle = await this.queries.getVehicle(toVehicleId(vehicleIdRaw));
     if (vehicle === null) {

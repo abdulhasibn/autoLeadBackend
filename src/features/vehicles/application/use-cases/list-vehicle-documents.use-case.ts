@@ -24,7 +24,7 @@ export class ListVehicleDocumentsUseCase {
     page: Pagination,
     ctx: AuthenticatedContext,
   ): Promise<Page<VehicleDocumentDto>> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const vehicleId = toVehicleId(vehicleIdRaw);
     const vehicle = await this.vehicleQueries.getVehicle(vehicleId);

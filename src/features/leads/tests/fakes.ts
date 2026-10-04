@@ -1,4 +1,5 @@
 import type { Phone } from '../../../domain/shared/phone.value-object';
+import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Clock } from '../../../shared/clock/clock';
 import type { IdGenerator } from '../../../shared/ids/id-generator';
@@ -9,8 +10,10 @@ import type { FollowUp } from '../domain/follow-up.entity';
 import type { Lead } from '../domain/lead.entity';
 import type { LeadId } from '../domain/lead-id';
 import type { ILeadQueries, LeadListCriteria, LeadReadModel } from '../domain/lead.queries';
-import type { ILeadRepository } from '../domain/lead.repository';
+import type { IAssignableStaffLookup } from '../domain/assignable-staff.port';
+import type { ILeadRepository, LeadWrite } from '../domain/lead.repository';
 import type { ILiveVehicleLookup } from '../domain/live-vehicle.port';
+import type { IVehicleSale } from '../domain/vehicle-sale.port';
 
 export class FakeClock implements Clock {
   constructor(private current: Date) {}
@@ -40,6 +43,8 @@ export class FakeLeadRepository implements ILeadRepository {
   readonly leads = new Map<string, Lead>();
   readonly contacts = new Map<string, Contact>();
   readonly followUps: FollowUp[] = [];
+  readonly writes: LeadWrite[] = [];
+  failNextSave = false;
 
   seedLead(lead: Lead): void {
     this.leads.set(lead.id, lead);
@@ -57,10 +62,15 @@ export class FakeLeadRepository implements ILeadRepository {
     return this.contacts.get(phone.value) ?? null;
   }
 
-  async save(lead: Lead, contact: Contact | null, _statusNotes: string | null): Promise<void> {
+  async save(lead: Lead, write: LeadWrite): Promise<void> {
+    if (this.failNextSave) {
+      this.failNextSave = false;
+      throw new Error('save failed');
+    }
+    this.writes.push(write);
     this.leads.set(lead.id, lead);
-    if (contact !== null) {
-      this.contacts.set(contact.phone.value, contact);
+    if (write.contact !== undefined) {
+      this.contacts.set(write.contact.phone.value, write.contact);
     }
   }
 
@@ -96,6 +106,9 @@ export class FakeLeadQueries implements ILeadQueries {
       if (criteria.vehicleId !== undefined && lead.vehicleId !== criteria.vehicleId) {
         return false;
       }
+      if (criteria.assignedTo !== undefined && lead.assignedTo !== criteria.assignedTo) {
+        return false;
+      }
       return true;
     });
     return toPage(filtered.slice(page.offset, page.offset + page.limit), filtered.length, page);
@@ -103,5 +116,27 @@ export class FakeLeadQueries implements ILeadQueries {
 
   async getLead(id: LeadId): Promise<LeadReadModel | null> {
     return this.leads.find((lead) => lead.id === id) ?? null;
+  }
+}
+
+export class FakeAssignableStaffLookup implements IAssignableStaffLookup {
+  readonly assignable = new Set<string>();
+
+  async isAssignable(userId: UserId): Promise<boolean> {
+    return this.assignable.has(userId);
+  }
+}
+
+export class FakeVehicleSale implements IVehicleSale {
+  readonly sold: { vehicleId: VehicleId; actorId: UserId }[] = [];
+  failWith: Error | null = null;
+
+  async markSold(vehicleId: VehicleId, actorId: UserId): Promise<void> {
+    if (this.failWith !== null) {
+      throw this.failWith;
+    }
+    if (!this.sold.some((entry) => entry.vehicleId === vehicleId)) {
+      this.sold.push({ vehicleId, actorId });
+    }
   }
 }

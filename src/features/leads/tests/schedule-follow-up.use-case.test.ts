@@ -14,6 +14,7 @@ import { FakeClock, FakeIdGenerator, FakeLeadRepository } from './fakes';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const LEAD_ID = '77777777-7777-4777-8777-777777777777';
@@ -31,6 +32,7 @@ describe('ScheduleFollowUpUseCase', () => {
         showroomId: toShowroomId('b0000000-0000-4000-8000-000000000001'),
         contactId: toContactId('66666666-6666-4666-8666-666666666666'),
         vehicleId: null,
+        assignedTo: null,
         source: LeadSource.create('phone'),
         budget: null,
         preferredVehicle: null,
@@ -68,5 +70,25 @@ describe('ScheduleFollowUpUseCase', () => {
     expect(result.notificationId).toBeTruthy();
     expect(repo.followUps).toHaveLength(1);
     expect(repo.followUps[0]?.dueAt.toISOString()).toBe(result.scheduledAt);
+  });
+
+  it('assigns the follow-up to the lead owner so their reminder fires', async () => {
+    const salesId = toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+    const seeded = await repo.findById(toLeadId(LEAD_ID));
+    seeded?.assign(salesId, NOW);
+
+    await useCase.execute(
+      { leadId: LEAD_ID, scheduledAt: '2026-10-10T10:00:00.000Z', taskType: 'call', notes: null },
+      ADMIN,
+    );
+    expect(repo.followUps[0]?.assignedTo).toBe(salesId);
+  });
+
+  it('defaults the follow-up to the scheduler when the lead is unassigned', async () => {
+    await useCase.execute(
+      { leadId: LEAD_ID, scheduledAt: '2026-10-10T10:00:00.000Z', taskType: 'call', notes: null },
+      ADMIN,
+    );
+    expect(repo.followUps[0]?.assignedTo).toBe(ADMIN.userId);
   });
 });

@@ -9,7 +9,11 @@ describe('OwnerManagementPolicy', () => {
 
   it('allows an admin to manage owners', () => {
     expect(() =>
-      policy.requireAdminOrSalesperson({ userId: toUserId('admin-1'), roles: ['admin'] }),
+      policy.requireAdminOrSalesperson({
+        userId: toUserId('admin-1'),
+        roles: ['admin'],
+        showroomId: null,
+      }),
     ).not.toThrow();
   });
 
@@ -18,25 +22,34 @@ describe('OwnerManagementPolicy', () => {
       policy.requireAdminOrSalesperson({
         userId: toUserId('sales-1'),
         roles: ['salesperson'],
+        showroomId: null,
       }),
     ).not.toThrow();
   });
 
   it('rejects a buyer from managing owners', () => {
     expect(() =>
-      policy.requireAdminOrSalesperson({ userId: toUserId('buyer-1'), roles: ['buyer'] }),
+      policy.requireAdminOrSalesperson({
+        userId: toUserId('buyer-1'),
+        roles: ['buyer'],
+        showroomId: null,
+      }),
     ).toThrow(ForbiddenActionError);
   });
 
   it('allows an admin to deactivate', () => {
     expect(() =>
-      policy.requireAdmin({ userId: toUserId('admin-1'), roles: ['admin'] }),
+      policy.requireAdmin({ userId: toUserId('admin-1'), roles: ['admin'], showroomId: null }),
     ).not.toThrow();
   });
 
   it('rejects a salesperson from deactivating', () => {
     expect(() =>
-      policy.requireAdmin({ userId: toUserId('sales-1'), roles: ['salesperson'] }),
+      policy.requireAdmin({
+        userId: toUserId('sales-1'),
+        roles: ['salesperson'],
+        showroomId: null,
+      }),
     ).toThrow(ForbiddenActionError);
   });
 });

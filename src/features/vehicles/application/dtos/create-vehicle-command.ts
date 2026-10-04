@@ -1,5 +1,6 @@
 export interface CreateVehicleCommand {
-  readonly showroomId: string;
+  /** Defaults to the actor's home showroom; only admins may name another. */
+  readonly showroomId: string | null;
   readonly ownerId: string;
   readonly variantId: string;
   readonly year: number;

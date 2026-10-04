@@ -1304,6 +1304,8 @@ export type Database = {
     Functions: {
       save_lead: {
         Args: {
+          p_actor_id?: string | null;
+          p_assigned_to?: string | null;
           p_budget: number | null;
           p_contact_created_by: string | null;
           p_contact_email: string | null;
@@ -1323,6 +1325,7 @@ export type Database = {
           p_status: string;
           p_status_notes: string | null;
           p_trade_in_required: boolean | null;
+          p_update_assignee?: boolean;
           p_vehicle_id: string | null;
           p_write_history: boolean;
         };

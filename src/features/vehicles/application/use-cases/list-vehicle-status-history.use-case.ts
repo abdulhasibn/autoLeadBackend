@@ -21,7 +21,7 @@ export class ListVehicleStatusHistoryUseCase {
     page: Pagination,
     ctx: AuthenticatedContext,
   ): Promise<Page<VehicleStatusHistoryReadModel>> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const vehicleId = toVehicleId(vehicleIdRaw);
     const vehicle = await this.vehicleQueries.getVehicle(vehicleId);

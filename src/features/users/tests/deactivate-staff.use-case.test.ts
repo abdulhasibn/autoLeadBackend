@@ -18,6 +18,7 @@ const ADMIN_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId(ADMIN_ID),
   roles: ['admin'],
+  showroomId: null,
 };
 
 function seedStaff(id: string, roles: StaffRole[]): StaffUser {
@@ -76,7 +77,11 @@ describe('DeactivateStaffUseCase', () => {
 
   it('rejects a non-admin actor', async () => {
     await expect(
-      useCase.execute(TARGET_ID, { userId: toUserId(TARGET_ID), roles: ['salesperson'] }),
+      useCase.execute(TARGET_ID, {
+        userId: toUserId(TARGET_ID),
+        roles: ['salesperson'],
+        showroomId: null,
+      }),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });
 });

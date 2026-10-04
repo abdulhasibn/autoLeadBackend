@@ -17,6 +17,7 @@ const TARGET_ID = '11111111-1111-4111-8111-111111111111';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 function seedAdminTarget(): StaffUser {
@@ -68,7 +69,7 @@ describe('ReplaceStaffRolesUseCase', () => {
     await expect(
       useCase.execute(
         { userId: TARGET_ID, roles: ['admin'] },
-        { userId: toUserId(TARGET_ID), roles: ['salesperson'] },
+        { userId: toUserId(TARGET_ID), roles: ['salesperson'], showroomId: null },
       ),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });

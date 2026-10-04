@@ -1,4 +1,6 @@
-export const STAFF_ROLE_NAMES = ['admin', 'salesperson'] as const;
+import { ROLE } from '../../../domain/shared/role';
+
+export const STAFF_ROLE_NAMES = [ROLE.ADMIN, ROLE.SALESPERSON] as const;
 
 export type StaffRoleName = (typeof STAFF_ROLE_NAMES)[number];
 
@@ -11,18 +13,18 @@ export class StaffRole {
 
   static create(input: string): StaffRole {
     const normalized = input.trim().toLowerCase();
-    if (normalized !== 'admin' && normalized !== 'salesperson') {
+    if (normalized !== ROLE.ADMIN && normalized !== ROLE.SALESPERSON) {
       throw new Error('Role must be admin or salesperson');
     }
     return new StaffRole(normalized);
   }
 
   static admin(): StaffRole {
-    return new StaffRole('admin');
+    return new StaffRole(ROLE.ADMIN);
   }
 
   static salesperson(): StaffRole {
-    return new StaffRole('salesperson');
+    return new StaffRole(ROLE.SALESPERSON);
   }
 
   equals(other: StaffRole): boolean {
@@ -30,6 +32,6 @@ export class StaffRole {
   }
 
   get isAdmin(): boolean {
-    return this.name === 'admin';
+    return this.name === ROLE.ADMIN;
   }
 }

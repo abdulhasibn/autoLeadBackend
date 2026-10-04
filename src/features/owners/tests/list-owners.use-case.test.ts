@@ -11,11 +11,13 @@ import { FakeOwnerQueries } from './fakes';
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
+  showroomId: null,
 };
 
 const SALES: AuthenticatedContext = {
   userId: toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
   roles: ['salesperson'],
+  showroomId: null,
 };
 
 const MEMBER: OwnerReadModel = {
@@ -72,7 +74,7 @@ describe('ListOwnersUseCase', () => {
     await expect(
       useCase.execute(
         { page: { limit: 20, offset: 0 } },
-        { userId: toUserId(MEMBER.id), roles: ['buyer'] },
+        { userId: toUserId(MEMBER.id), roles: ['buyer'], showroomId: null },
       ),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });

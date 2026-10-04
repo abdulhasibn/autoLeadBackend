@@ -2,6 +2,7 @@ import type { ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
 
 import { AuthenticationRequiredError } from '../../../domain/errors/authentication-required.error';
+import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import { ConflictError } from '../../../domain/errors/conflict.error';
 import { ForbiddenActionError } from '../../../domain/errors/forbidden-action.error';
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
@@ -49,6 +50,9 @@ function mapError(
   }
   if (err instanceof AuthenticationRequiredError) {
     return { status: 401, body: { error: { code: err.code, message: err.message } } };
+  }
+  if (err instanceof BusinessRuleViolationError) {
+    return { status: 422, body: { error: { code: err.code, message: err.message } } };
   }
   if (err instanceof ForbiddenActionError) {
     return { status: 403, body: { error: { code: err.code, message: err.message } } };

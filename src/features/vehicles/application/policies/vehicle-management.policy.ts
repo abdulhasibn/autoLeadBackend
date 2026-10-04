@@ -1,14 +1,17 @@
-import { ForbiddenActionError } from '../../../../domain/errors/forbidden-action.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
+import { ROLE, STAFF_ROLES, requireAnyRole } from '../../../../domain/shared/role';
 
 /**
- * Vehicle intake is Admin-only in this phase. Roles come from the
+ * Admin and Salesperson handle vehicle intake (details, media, documents).
+ * Status changes and deletions stay Admin-only. Roles come from the
  * authenticated context, never from the request body.
  */
 export class VehicleManagementPolicy {
+  requireStaff(ctx: AuthenticatedContext): void {
+    requireAnyRole(ctx, STAFF_ROLES, 'Only staff can manage vehicles');
+  }
+
   requireAdmin(ctx: AuthenticatedContext): void {
-    if (!ctx.roles.includes('admin')) {
-      throw new ForbiddenActionError('Only an admin can manage vehicles');
-    }
+    requireAnyRole(ctx, [ROLE.ADMIN], 'Only an admin can perform this vehicle action');
   }
 }

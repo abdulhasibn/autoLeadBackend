@@ -28,7 +28,7 @@ export class ConfirmVehicleDocumentUseCase {
     command: ConfirmVehicleDocumentCommand,
     ctx: AuthenticatedContext,
   ): Promise<VehicleDocumentDto> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const vehicleId = toVehicleId(command.vehicleId);
     const vehicle = await this.vehicles.findById(vehicleId);
