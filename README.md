@@ -38,6 +38,7 @@ curl http://localhost:3000/health
 | `pnpm typecheck`                    | Type-check without emitting                         |
 | `pnpm lint` / `pnpm lint:fix`       | ESLint                                              |
 | `pnpm format` / `pnpm format:check` | Prettier                                            |
+| `scripts/smoke-api.sh`              | curl smoke of every route (see header for env vars) |
 
 Git hooks (Husky, installed via `pnpm install` → `prepare`):
 

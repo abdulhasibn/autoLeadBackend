@@ -80,6 +80,13 @@
   registered-buyer leads, vehicle profit, and the marketplace module.
 - api.md drift fixed: lead status / associate-vehicle responses,
   notification `entityType`, route count, "Not shipped" list.
+- Fixed `GET/PATCH/DELETE /users/:id` and `PUT /users/:id/roles` answering
+  `503` (PostgREST `PGRST201`): the `users → user_roles` embed needed the
+  `!user_id` hint, the reverse of the 088f028 fix.
+- `scripts/smoke-api.sh`: curl smoke of every route (token-free checks, plus
+  the full staff flow when `ADMIN_EMAIL` / `ADMIN_PASSWORD` are set). Ran
+  green (116/116) against all migrations on local Postgres 16 + PostgREST
+  12.2.3; not yet run against the hosted project.
 
 ### 2026-10-04 — Vehicle media, documents, inspection lifecycle
 
