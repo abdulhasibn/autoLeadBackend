@@ -1280,7 +1280,7 @@ export type Database = {
           {
             foreignKeyName: 'vehicles_sold_lead_id_fkey';
             columns: ['sold_lead_id'];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: 'leads';
             referencedColumns: ['id'];
           },
