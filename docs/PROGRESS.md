@@ -12,7 +12,7 @@
 | Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0011 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment) | 12 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file); `20261005120000_vehicle_lead_status_lifecycle` pending apply |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment) | All 13 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
@@ -42,13 +42,13 @@
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
 | Tables | 25 |
-| Migrations applied | 13 hosted rows (12 repo migrations + `lead_assignment_fix_user_id`); `vehicle_lead_status_lifecycle` pending |
+| Migrations applied | 14 hosted rows (13 repo migrations + `lead_assignment_fix_user_id`) |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
 
-1. Release ADR-0011 (branch `feat/vehicle-lead-status-lifecycle`): apply `20261005120000_vehicle_lead_status_lifecycle.sql` to the hosted project, merge to `main` right after (Vercel deploys `main`), then regenerate `database.types.ts` (hand-edited for `sold_lead_id`) and run `scripts/smoke-api.sh` against production.
-2. Run the live smoke flow against the hosted project once the release is out.
+1. **Merge `feat/vehicle-lead-status-lifecycle` into `main` now.** The hosted schema is already migrated, so the API deployed from the old `main` cannot read or write vehicles/leads until the new code ships.
+2. Run the live `scripts/smoke-api.sh` flow against production (needs `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
 3. Acquisition prices on `vehicle_financials` (Stint 2.3).
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
@@ -79,17 +79,18 @@
 - Migration `20261005120000_vehicle_lead_status_lifecycle.sql`: remaps
   existing rows, adds `sold_lead_id` + checks, recreates `save_vehicle`.
   Replayed on local Postgres 17 with all prior migrations and legacy seed
-  rows. Not yet applied to the hosted project.
-- `database.types.ts` hand-edited for `sold_lead_id` / `p_sold_lead_id`
-  (Supabase MCP unauthenticated); regenerate after applying.
+  rows, then applied to the hosted project.
 - Docs: `api.md`, `schema.dbml`, `CONTEXT.md`, ADR-0011, ADR-0010 wording,
   `scripts/smoke-api.sh`.
 - Postman: local `postman/`, the `autoLeadBackend-postman` repo (collection +
   README walkthrough) and the cloud **AutoLead API** collection are synced
   (Change Vehicle Status, Change Lead Status, Convert Lead). Cloud requests
   were patched in place so their scripts are kept.
-- Pushed to branch `feat/vehicle-lead-status-lifecycle`, not `main`: `main`
-  deploys to production and the hosted migration is not applied yet.
+- Migration applied to the hosted project via Supabase MCP (only test
+  data existed: 1 vehicle → `linked`, leads → `new` / `lost`).
+  `database.types.ts` checked against a fresh `generate_typescript_types`
+  run (`sold_lead_id` FK is not one-to-one). Code is on branch
+  `feat/vehicle-lead-status-lifecycle`; merging to `main` deploys it.
 - Hosted already has `lead_assignment` (and its `user_id` fix); the earlier
   "pending" note was stale.
 
