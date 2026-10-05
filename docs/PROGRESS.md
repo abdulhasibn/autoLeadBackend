@@ -12,7 +12,7 @@
 | Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0011 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment) | 11 applied to hosted project; `20261004120000_lead_assignment` and `20261005120000_vehicle_lead_status_lifecycle` pending apply |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment) | 12 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file); `20261005120000_vehicle_lead_status_lifecycle` pending apply |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
@@ -42,13 +42,13 @@
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
 | Tables | 25 |
-| Migrations applied | 11 (previous 10 + vehicle_media_lifecycle); 12th (`lead_assignment`) and 13th (`vehicle_lead_status_lifecycle`) pending |
+| Migrations applied | 13 hosted rows (12 repo migrations + `lead_assignment_fix_user_id`); `vehicle_lead_status_lifecycle` pending |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
 
-1. Apply `20261004120000_lead_assignment.sql`, then `20261005120000_vehicle_lead_status_lifecycle.sql`, to the hosted project; regenerate `database.types.ts` (hand-edited for `sold_lead_id`) and deploy the API in the same release.
-2. Sync the local Postman collection to the cloud workspace (Postman MCP needed re-auth).
+1. Release ADR-0011 (branch `feat/vehicle-lead-status-lifecycle`): apply `20261005120000_vehicle_lead_status_lifecycle.sql` to the hosted project, merge to `main` right after (Vercel deploys `main`), then regenerate `database.types.ts` (hand-edited for `sold_lead_id`) and run `scripts/smoke-api.sh` against production.
+2. Run the live smoke flow against the hosted project once the release is out.
 3. Acquisition prices on `vehicle_financials` (Stint 2.3).
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
@@ -83,7 +83,15 @@
 - `database.types.ts` hand-edited for `sold_lead_id` / `p_sold_lead_id`
   (Supabase MCP unauthenticated); regenerate after applying.
 - Docs: `api.md`, `schema.dbml`, `CONTEXT.md`, ADR-0011, ADR-0010 wording,
-  Postman collection (local file), `scripts/smoke-api.sh`.
+  `scripts/smoke-api.sh`.
+- Postman: local `postman/`, the `autoLeadBackend-postman` repo (collection +
+  README walkthrough) and the cloud **AutoLead API** collection are synced
+  (Change Vehicle Status, Change Lead Status, Convert Lead). Cloud requests
+  were patched in place so their scripts are kept.
+- Pushed to branch `feat/vehicle-lead-status-lifecycle`, not `main`: `main`
+  deploys to production and the hosted migration is not applied yet.
+- Hosted already has `lead_assignment` (and its `user_id` fix); the earlier
+  "pending" note was stale.
 
 ### 2026-10-04 — Salesperson access, lead assignment, inventory statuses
 
