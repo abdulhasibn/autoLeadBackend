@@ -12,7 +12,7 @@
 | Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0012 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment) | All 13 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary) | All 14 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
@@ -49,10 +49,9 @@
 ## Next up
 
 1. **Merge `feat/vehicle-lead-status-lifecycle` into `main` now.** The hosted schema is already migrated, so the API deployed from the old `main` cannot read or write vehicles/leads until the new code ships.
-2. Apply `20261005130000_dashboard_summary.sql` to the hosted project and regenerate `database.types.ts`.
-3. Run the live `scripts/smoke-api.sh` flow against production (needs `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
-4. Acquisition prices on `vehicle_financials` (Stint 2.3).
-5. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
+2. Run the live `scripts/smoke-api.sh` flow against production (needs `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
+3. Acquisition prices on `vehicle_financials` (Stint 2.3).
+4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
 
@@ -68,7 +67,10 @@
 - Migration `20261005130000_dashboard_summary.sql`: `dashboard_summary`
   RPC (service_role only), `dashboard_vehicle_label` helper, indexes on
   status-history `(to_status, changed_at)` and open follow-ups. Verified
-  against a seeded throwaway Postgres 17; **not yet applied to hosted**.
+  against a seeded throwaway Postgres 17, then applied to hosted via
+  Supabase MCP as version `20261005060133` (`dashboard_summary`); hosted
+  call as `service_role` succeeds, `anon`/`authenticated` have no execute.
+  Generated types match the hand-added `dashboard_summary` entry.
 - Follow-ups are judged per active lead by its latest open follow-up
   (there is no completion endpoint yet).
 - Deferred: revenue/profit/average price (Stint 5), salesperson view and
