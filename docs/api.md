@@ -593,6 +593,69 @@ Inbox for the **signed-in user**. Items with a future `dueAt` are omitted.
 
 Poll `GET /notifications` on the home screen. Deep-link `lead` items to the lead. For `follow_up` items, the lead appears in `GET /leads` with that follow-up as `nextFollowUp`.
 
+### Dashboard — Admin only
+
+One call for the home screen: a business snapshot plus today's work list. Salespersons get `403` (admins work every lead today).
+
+| Method | Path | Success |
+|--------|------|---------|
+| `GET` | `/dashboard?period=month&showroomId=` | `200`, `Cache-Control: private, max-age=30` |
+
+- `period` is one of `today`, `week` (Monday start), `month` or `quarter`, and defaults to `month`. Any other value returns `422 VALIDATION_ERROR`.
+- `showroomId` is optional. Leave it out to cover all showrooms.
+
+```json
+{
+  "generatedAt": "2026-10-05T09:30:00.000Z",
+  "period": { "key": "month", "from": "2026-10-01", "to": "2026-10-31", "timezone": "Asia/Kolkata" },
+  "kpis": {
+    "carsSold":       { "value": 7,    "previous": 5 },
+    "newLeads":       { "value": 42,   "previous": 38 },
+    "conversionRate": { "value": 0.18, "previous": 0.13 },
+    "inStock":        { "value": 31 }
+  },
+  "attention": {
+    "overdueFollowUps":     { "total": 6, "items": [ /* FollowUpCard */ ] },
+    "leadsWithoutFollowUp": { "total": 4, "items": [ /* LeadCard */ ] },
+    "agedStock":            { "total": 5, "items": [ /* VehicleCard */ ] }
+  },
+  "today": { "total": 5, "items": [ /* FollowUpCard */ ] },
+  "pipeline":  { "new": 12, "not_now": 9, "booking_confirmed": 4 },
+  "inventory": { "open": 19, "linked": 12 }
+}
+```
+
+Each list holds at most 5 rows, oldest or most urgent first. `total` is the full count, so link "see all" to `GET /leads` or `GET /vehicles`.
+
+| Card | Fields |
+|------|--------|
+| FollowUpCard | `followUpId`, `leadId`, `taskType`, `scheduledAt`, `contactName`, `contactPhone`, `vehicleLabel` |
+| LeadCard | `leadId`, `status`, `source`, `contactName`, `contactPhone`, `vehicleLabel`, `createdAt` |
+| VehicleCard | `vehicleId`, `vehicleLabel`, `status`, `daysListed`, `activeLeads` |
+
+`vehicleLabel` reads like `"2019 Maruti Swift VXi · KA01AB1234"`. It is `null` when the lead has no vehicle.
+
+**How each number is counted**
+
+- **Day and period boundaries** use the business timezone (`BUSINESS_TIMEZONE`, default `Asia/Kolkata`).
+- **Period KPIs are period to date.** `previous` covers the same elapsed span of the previous period, so Oct 1–5 is compared with Sep 1–5.
+- **Follow-ups are counted per active lead.** Each active lead is judged by its **latest** open follow-up, so scheduling a new follow-up replaces the old one. Follow-ups on closed leads are ignored.
+
+| Field | Meaning |
+|-------|---------|
+| `carsSold` | Vehicles moved to `sold` in the period |
+| `newLeads` | Leads created in the period |
+| `conversionRate` | converted ÷ (converted + lost), counting leads closed in the period. `null` when none closed |
+| `inStock` | Listed vehicles (`open` + `linked`) right now |
+| `attention.overdueFollowUps` | Active leads whose current follow-up is in the past |
+| `attention.leadsWithoutFollowUp` | Active leads with no open follow-up |
+| `attention.agedStock` | Listed vehicles added more than 45 days ago |
+| `today` | Active leads whose current follow-up is due between now and midnight |
+| `pipeline` | Active leads by status, right now |
+| `inventory` | Listed vehicles by status, right now |
+
+Revenue, profit and average selling price arrive with finance (Stint 5).
+
 ---
 
 ## Suggested admin UI map
@@ -601,6 +664,7 @@ Poll `GET /notifications` on the home screen. Deep-link `lead` items to the lead
 |--------|-----------|
 | Login | `POST /auth/login`, then `GET /auth/me` |
 | App shell | `GET /auth/me` for name + roles; `GET /notifications` badge |
+| Home (admin) | `GET /dashboard?period=` |
 | Owners list / form | `GET/POST/PATCH /owners`, `GET /owners/:id` |
 | Vehicle create | `GET /catalog/makes` → models → variants, then `POST /vehicles` |
 | Vehicle list / detail | `GET /vehicles`, `GET /vehicles/:id`, `PATCH /vehicles/:id`, `POST /vehicles/:id/status`, `GET /vehicles/:id/status-history` |
@@ -609,7 +673,7 @@ Poll `GET /notifications` on the home screen. Deep-link `lead` items to the lead
 | Inbox | `GET /notifications`, `PATCH /notifications/:id/read` |
 | Staff settings | `/users` (admin only) |
 
-For `salesperson`, show owners, catalog, vehicles, leads, and the inbox, and hide staff settings, lead assignment, vehicle status buttons, media/document delete, and owner deactivate. Show everything for `admin`.
+For `salesperson`, show owners, catalog, vehicles, leads, and the inbox, and hide the dashboard, staff settings, lead assignment, vehicle status buttons, media/document delete, and owner deactivate. Show everything for `admin`.
 
 ---
 

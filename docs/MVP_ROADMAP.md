@@ -82,7 +82,7 @@ Foundation (shipped)
 | 4.2 | Buyer inquiry → internal lead creation | `src/features/leads/` | §17, §19, §20 | Todo |
 | 4.3 | Lead assignment, status pipeline, follow-ups | `leads` | §21–§23 | Done — admin assignment, salesperson-scoped leads, follow-ups to assignee |
 | 4.4 | Test drive requests | `leads` or `sales` | §24 | Todo |
-| 4.5 | Salesperson dashboard queries | `src/features/sales/` | §25 | Todo |
+| 4.5 | Salesperson dashboard queries | `src/features/dashboard/` | §25 | Partial — admins work leads today, so `GET /dashboard` (admin) carries the daily work list; salesperson-scoped view Todo (ADR-0012) |
 
 **Exit criteria:** Buyer submits inquiry on listed vehicle → lead appears for Admin/Salesperson → assign → follow-up → status update.
 
@@ -111,7 +111,7 @@ Foundation (shipped)
 |---|-----------|-------|-----|--------|
 | 6.1 | Notifications (in-app / email for MVP) | `src/features/notifications/` | §33 | Partial — in-app inbox for staff; `follow_up_due` + `lead_assigned`. Email Todo |
 | 6.2 | Audit trail writes (status changes, assignments, financial) | cross-cutting in use cases | §38 | Partial — status history tables + lead assignment in `audit_logs`; financial Todo |
-| 6.3 | Admin dashboard aggregate queries | `sales` / reporting slice | §26 | Todo |
+| 6.3 | Admin dashboard aggregate queries | `src/features/dashboard/` | §26 | Partial — `GET /dashboard` inventory/lead/sales counts (ADR-0012); revenue/profit after Stint 5 |
 
 **Exit criteria:** Lead assignment triggers salesperson notification; vehicle status change writes audit row; Admin dashboard returns inventory/lead/sales summaries.
 

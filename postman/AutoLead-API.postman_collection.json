@@ -1180,6 +1180,93 @@
           }
         }
       ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('has period, kpis, attention, today', () => {",
+                  "  pm.expect(body).to.include.keys('period', 'kpis', 'attention', 'today', 'pipeline', 'inventory');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard?period=month",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month",
+                  "description": "today | week | month | quarter (default month)"
+                },
+                {
+                  "key": "showroomId",
+                  "value": "",
+                  "description": "Optional showroom UUID; omit for all showrooms",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /dashboard \u2014 Admin only (salesperson 403). Period-to-date KPIs with `previous` (same elapsed span of the prior period), attention lists (overdue follow-ups, active leads without a follow-up, aged stock > 45 days), today's follow-ups, pipeline and inventory. Lists hold up to 5 rows plus `total`. Invalid `period` \u2192 422. See docs/api.md#dashboard--admin-only."
+          },
+          "response": [
+            {
+              "name": "200 Dashboard",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/dashboard?period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["dashboard"],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "today | week | month | quarter (default month)"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "",
+                      "description": "Optional showroom UUID; omit for all showrooms",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "private, max-age=30"
+                }
+              ],
+              "body": "{\n  \"generatedAt\": \"2026-10-05T09:30:00.000Z\",\n  \"period\": {\n    \"key\": \"month\",\n    \"from\": \"2026-10-01\",\n    \"to\": \"2026-10-31\",\n    \"timezone\": \"Asia/Kolkata\"\n  },\n  \"kpis\": {\n    \"carsSold\": {\n      \"value\": 1,\n      \"previous\": 1\n    },\n    \"newLeads\": {\n      \"value\": 2,\n      \"previous\": 2\n    },\n    \"conversionRate\": {\n      \"value\": 0.5,\n      \"previous\": null\n    },\n    \"inStock\": {\n      \"value\": 3\n    }\n  },\n  \"attention\": {\n    \"overdueFollowUps\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"followUpId\": \"a7237a73-60c0-435b-9217-a1f96c375db6\",\n          \"leadId\": \"00000000-0000-4000-8000-0000000000e2\",\n          \"taskType\": \"call\",\n          \"scheduledAt\": \"2026-10-04T05:00:00.000Z\",\n          \"contactName\": \"Vikram\",\n          \"contactPhone\": \"+919800000002\",\n          \"vehicleLabel\": null\n        }\n      ]\n    },\n    \"leadsWithoutFollowUp\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"leadId\": \"00000000-0000-4000-8000-0000000000e3\",\n          \"status\": \"booking_confirmed\",\n          \"source\": \"phone\",\n          \"contactName\": \"Meera\",\n          \"contactPhone\": \"+919800000003\",\n          \"vehicleLabel\": null,\n          \"createdAt\": \"2026-09-10T05:00:00.000Z\"\n        }\n      ]\n    },\n    \"agedStock\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"vehicleId\": \"00000000-0000-4000-8000-0000000000c1\",\n          \"vehicleLabel\": \"2019 Hyundai Santro Era Mt \u00b7 KA01AB1234\",\n          \"status\": \"open\",\n          \"daysListed\": 96,\n          \"activeLeads\": 0\n        }\n      ]\n    }\n  },\n  \"today\": {\n    \"total\": 1,\n    \"items\": [\n      {\n        \"followUpId\": \"7e397f2c-5f2f-4cce-aaa0-7016995b4208\",\n        \"leadId\": \"00000000-0000-4000-8000-0000000000e1\",\n        \"taskType\": \"test_drive\",\n        \"scheduledAt\": \"2026-10-05T12:00:00.000Z\",\n        \"contactName\": \"Asha\",\n        \"contactPhone\": \"+919800000001\",\n        \"vehicleLabel\": \"2019 Hyundai Santro Era Mt \u00b7 KA02CD5678\"\n      }\n    ]\n  },\n  \"pipeline\": {\n    \"new\": 1,\n    \"not_now\": 1,\n    \"booking_confirmed\": 1\n  },\n  \"inventory\": {\n    \"open\": 1,\n    \"linked\": 1\n  }\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

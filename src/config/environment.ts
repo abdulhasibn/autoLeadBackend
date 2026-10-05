@@ -11,12 +11,27 @@ const environmentSchema = z.object({
     .string()
     .min(32, 'SUPABASE_JWT_SECRET must be at least 32 characters')
     .optional(),
+  BUSINESS_TIMEZONE: z
+    .string()
+    .refine(isTimeZone, 'BUSINESS_TIMEZONE must be an IANA timezone')
+    .default('Asia/Kolkata'),
 });
+
+function isTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export interface AppConfig {
   readonly nodeEnv: 'development' | 'test' | 'production';
   readonly port: number;
   readonly logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
+  /** IANA timezone that day and period boundaries are computed in. */
+  readonly businessTimeZone: string;
   readonly supabase: {
     readonly url: string;
     readonly anonKey: string;
@@ -54,6 +69,7 @@ export function loadEnvironment(source: NodeJS.ProcessEnv = process.env): AppCon
     nodeEnv: env.NODE_ENV,
     port: env.PORT,
     logLevel: env.LOG_LEVEL,
+    businessTimeZone: env.BUSINESS_TIMEZONE,
     supabase: {
       url: env.SUPABASE_URL,
       anonKey: env.SUPABASE_ANON_KEY,
