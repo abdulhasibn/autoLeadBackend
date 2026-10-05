@@ -78,12 +78,12 @@ describe('CreateVehicleUseCase', () => {
     );
   });
 
-  it('creates a submitted vehicle for an admin', async () => {
+  it('creates an open vehicle for an admin', async () => {
     const result = await useCase.execute(COMMAND, ADMIN);
     expect(result).toMatchObject({
       id: ids.nextId,
       registrationNumber: 'KA01AB1234',
-      status: 'submitted',
+      status: 'open',
       acquisitionType: 'consignment',
       submittedBy: ADMIN.userId,
     });

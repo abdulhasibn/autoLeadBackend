@@ -15,7 +15,12 @@ export class ChangeVehicleStatusController {
         const params = vehicleIdParamSchema.parse(req.params);
         const body = changeVehicleStatusBodySchema.parse(req.body);
         const result = await this.changeStatus.execute(
-          { vehicleId: params.id, status: body.status, reason: body.reason },
+          {
+            vehicleId: params.id,
+            status: body.status,
+            reason: body.reason,
+            confirmUnlinkLeads: body.confirmUnlinkLeads,
+          },
           ctx,
         );
         res.status(200).json(result);

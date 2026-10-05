@@ -13,7 +13,7 @@ import type {
 import { toVehicleReadModel, type VehicleListRow } from './vehicle.mapper';
 
 const VEHICLE_LIST_COLUMNS =
-  'id, showroom_id, owner_id, variant_id, year, registration_number, fuel_type, transmission, km_driven, num_previous_owners, colour, insurance_valid_until, rc_status, service_history, accident_history, loan_status, location, description, status, acquisition_type, submitted_by, created_at, updated_at, deleted_at, variants ( name, models ( name, makes ( name ) ) )';
+  'id, showroom_id, owner_id, variant_id, year, registration_number, fuel_type, transmission, km_driven, num_previous_owners, colour, insurance_valid_until, rc_status, service_history, accident_history, loan_status, location, description, status, sold_lead_id, acquisition_type, submitted_by, created_at, updated_at, deleted_at, variants ( name, models ( name, makes ( name ) ) )';
 
 export class SupabaseVehicleQueries implements IVehicleQueries {
   constructor(private readonly db: SupabaseClient<Database>) {}

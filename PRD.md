@@ -599,6 +599,8 @@ Sensitive documents must never be visible in the public marketplace.
 
 # 10. Vehicle Lifecycle
 
+> **Superseded for the MVP by [ADR-0011](docs/adr/0011-vehicle-lead-status-lifecycle.md):** only admins add vehicles, and vehicle statuses are `open`, `linked`, `dropped`, `sold`, driven by their leads. The original lifecycle is kept below for reference.
+
 The vehicle lifecycle should be:
 
 ```text
@@ -1098,6 +1100,8 @@ Interested Vehicle
 ---
 
 # 21. Lead Lifecycle
+
+> **Superseded for the MVP by [ADR-0011](docs/adr/0011-vehicle-lead-status-lifecycle.md):** lead statuses are `new`, `not_now`, `booking_confirmed`, `converted`, `lost`, `vehicle_unavailable`. The original lifecycle is kept below for reference.
 
 The internal lead lifecycle should be:
 

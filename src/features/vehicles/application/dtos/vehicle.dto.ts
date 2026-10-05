@@ -28,6 +28,7 @@ export function toVehicleDto(vehicle: Vehicle): VehicleDto {
     location: vehicle.location,
     description: vehicle.description,
     status: vehicle.status.value,
+    soldLeadId: vehicle.soldLeadId,
     acquisitionType: vehicle.acquisitionType.value,
     submittedBy: vehicle.submittedBy,
     createdAt: vehicle.createdAt.toISOString(),

@@ -14,7 +14,11 @@ import type { Logger } from '../../../shared/logging/logger.port';
 import type { ErrorMapper, HttpErrorMapping } from './error-mapping';
 
 interface ErrorResponseBody {
-  readonly error: { readonly code: string; readonly message: string };
+  readonly error: {
+    readonly code: string;
+    readonly message: string;
+    readonly details?: Readonly<Record<string, string | number>>;
+  };
 }
 
 /**
@@ -52,7 +56,11 @@ function mapError(
     return { status: 401, body: { error: { code: err.code, message: err.message } } };
   }
   if (err instanceof BusinessRuleViolationError) {
-    return { status: 422, body: { error: { code: err.code, message: err.message } } };
+    const error =
+      err.details === undefined
+        ? { code: err.code, message: err.message }
+        : { code: err.code, message: err.message, details: err.details };
+    return { status: 422, body: { error } };
   }
   if (err instanceof ForbiddenActionError) {
     return { status: 403, body: { error: { code: err.code, message: err.message } } };

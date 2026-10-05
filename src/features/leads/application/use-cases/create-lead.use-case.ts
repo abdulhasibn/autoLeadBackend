@@ -1,6 +1,6 @@
-import { NotFoundError } from '../../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { Email } from '../../../../domain/shared/email.value-object';
+import { toLeadId } from '../../../../domain/shared/lead-id';
 import { Phone } from '../../../../domain/shared/phone.value-object';
 import { resolveShowroomId } from '../../../../domain/shared/resolve-showroom';
 import { toVehicleId } from '../../../../domain/shared/vehicle-id';
@@ -10,20 +10,22 @@ import type { CreateLeadCommand } from '../dtos/create-lead-command';
 import type { LeadDto } from '../dtos/lead.dto';
 import { toLeadDto } from '../dtos/lead.dto';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
+import { requireLinkableVehicle } from '../services/require-linkable-vehicle';
+import type { VehicleLinkRefresher } from '../services/vehicle-link-refresher';
 import { Contact } from '../../domain/contact.entity';
 import { toContactId } from '../../domain/contact-id';
 import { Budget } from '../../domain/budget.value-object';
 import { Lead } from '../../domain/lead.entity';
-import { toLeadId } from '../../domain/lead-id';
 import { LeadSource } from '../../domain/lead-source.value-object';
 import type { ILeadRepository } from '../../domain/lead.repository';
-import type { ILiveVehicleLookup } from '../../domain/live-vehicle.port';
+import type { ILinkableVehicleLookup } from '../../domain/linkable-vehicle.port';
 
 export class CreateLeadUseCase {
   constructor(
     private readonly policy: LeadManagementPolicy,
     private readonly repo: ILeadRepository,
-    private readonly vehicles: ILiveVehicleLookup,
+    private readonly vehicles: ILinkableVehicleLookup,
+    private readonly vehicleLinks: VehicleLinkRefresher,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
   ) {}
@@ -33,8 +35,8 @@ export class CreateLeadUseCase {
     const showroomId = resolveShowroomId(ctx, command.showroomId);
 
     const vehicleId = command.vehicleId === null ? null : toVehicleId(command.vehicleId);
-    if (vehicleId !== null && !(await this.vehicles.isLive(vehicleId))) {
-      throw new NotFoundError(`Vehicle not found for id ${command.vehicleId}`);
+    if (vehicleId !== null) {
+      await requireLinkableVehicle(this.vehicles, vehicleId);
     }
 
     const now = this.clock.now();
@@ -76,6 +78,9 @@ export class CreateLeadUseCase {
     });
 
     await this.repo.save(lead, { actorId: ctx.userId, contact });
+    if (vehicleId !== null) {
+      await this.vehicleLinks.refresh(vehicleId, ctx.userId);
+    }
     return toLeadDto(lead, contact);
   }
 }

@@ -1,31 +1,19 @@
-export const VEHICLE_STATUSES = [
-  'submitted',
-  'inspection_pending',
-  'under_inspection',
-  'approved',
-  'available',
-  'reserved',
-  'sold',
-  'rejected',
-  'on_hold',
-  'removed',
-] as const;
+export const VEHICLE_STATUSES = ['open', 'linked', 'dropped', 'sold'] as const;
 
 export type VehicleStatusValue = (typeof VEHICLE_STATUSES)[number];
 
-const TERMINAL: readonly VehicleStatusValue[] = ['sold', 'rejected', 'removed'];
+const TERMINAL: readonly VehicleStatusValue[] = ['sold'];
+
+// `linked` and `sold` follow the vehicle's leads; an admin only drops or re-lists.
+const ADMIN_SETTABLE: readonly VehicleStatusValue[] = ['open', 'dropped'];
+
+const LINKABLE: readonly VehicleStatusValue[] = ['open', 'linked'];
 
 const ALLOWED: Readonly<Record<VehicleStatusValue, readonly VehicleStatusValue[]>> = {
-  submitted: ['inspection_pending', 'rejected', 'on_hold', 'removed'],
-  inspection_pending: ['under_inspection', 'rejected', 'on_hold', 'removed'],
-  under_inspection: ['approved', 'rejected', 'on_hold', 'removed'],
-  approved: ['available', 'rejected', 'on_hold', 'removed'],
-  available: ['reserved', 'sold', 'on_hold', 'removed'],
-  reserved: ['available', 'sold'],
+  open: ['linked', 'dropped'],
+  linked: ['open', 'sold', 'dropped'],
+  dropped: ['open'],
   sold: [],
-  rejected: [],
-  on_hold: ['inspection_pending', 'under_inspection', 'approved', 'available', 'removed'],
-  removed: [],
 };
 
 export class VehicleStatus {
@@ -39,16 +27,33 @@ export class VehicleStatus {
     return new VehicleStatus(trimmed as VehicleStatusValue);
   }
 
+  static open(): VehicleStatus {
+    return new VehicleStatus('open');
+  }
+
+  static linked(): VehicleStatus {
+    return new VehicleStatus('linked');
+  }
+
+  static dropped(): VehicleStatus {
+    return new VehicleStatus('dropped');
+  }
+
   static sold(): VehicleStatus {
     return new VehicleStatus('sold');
   }
 
-  static submitted(): VehicleStatus {
-    return new VehicleStatus('submitted');
-  }
-
   isTerminal(): boolean {
     return TERMINAL.includes(this.value);
+  }
+
+  isAdminSettable(): boolean {
+    return ADMIN_SETTABLE.includes(this.value);
+  }
+
+  /** Whether a lead may be attached to a vehicle in this status. */
+  isLinkable(): boolean {
+    return LINKABLE.includes(this.value);
   }
 
   canTransitionTo(next: VehicleStatus): boolean {

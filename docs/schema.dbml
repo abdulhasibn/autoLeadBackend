@@ -167,7 +167,8 @@ Table vehicles {
   loan_status text [note: 'clear | active']
   location text
   description text
-  status text [not null, default: 'submitted', note: 'submitted | inspection_pending | under_inspection | approved | available | reserved | sold | rejected | on_hold | removed']
+  status text [not null, default: 'open', note: 'open | linked | dropped | sold (ADR-0011): linked/sold follow the leads']
+  sold_lead_id uuid [ref: - leads.id, note: 'the lead that bought it; set only when status = sold']
   acquisition_type text [not null, note: 'dealership_purchase | consignment | intermediary_sale']
   submitted_by uuid [not null, ref: > users.id]
   created_at timestamptz [not null, default: `now()`]
@@ -178,6 +179,7 @@ Table vehicles {
     (registration_number) [unique, name: 'vehicles_registration_active_uidx', note: 'WHERE deleted_at IS NULL']
     (showroom_id, status) [name: 'vehicles_showroom_status_idx']
     (owner_id) [name: 'vehicles_owner_id_idx']
+    (sold_lead_id) [unique, name: 'vehicles_sold_lead_id_uidx', note: 'WHERE sold_lead_id IS NOT NULL']
     (status, created_at) [name: 'vehicles_status_created_at_idx']
   }
 }
@@ -326,7 +328,7 @@ Table leads {
   contact_id uuid [ref: > contacts.id, note: 'walk-in; XOR with user_id']
   assigned_to uuid [ref: > users.id]
   source text [not null, note: 'marketplace | mobile_app | website | phone | walkin | whatsapp | instagram | facebook | referral | other']
-  status text [not null, default: 'new', note: 'new | contacted | interested | follow_up | test_drive | negotiation | booking_confirmed | sold | lost | not_interested | no_response']
+  status text [not null, default: 'new', note: 'new | not_now | booking_confirmed | converted | lost | vehicle_unavailable (ADR-0011)']
   budget numeric(12,2)
   preferred_vehicle text
   purchase_timeline text

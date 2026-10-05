@@ -6,6 +6,7 @@ export class BusinessRuleViolationError extends Error {
   constructor(
     readonly code: string,
     message: string,
+    readonly details?: Readonly<Record<string, string | number>>,
   ) {
     super(message);
     this.name = 'BusinessRuleViolationError';

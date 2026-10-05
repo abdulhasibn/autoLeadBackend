@@ -27,6 +27,7 @@ import type {
 import type { ILiveVariantLookup } from '../domain/live-variant.port';
 import type { MakeId } from '../domain/make-id';
 import type { ModelId } from '../domain/model-id';
+import type { ILinkedLeads } from '../domain/linked-leads.port';
 import type { IRegisteredOwnerLookup } from '../domain/registered-owner.port';
 import type { ShowroomId } from '../../../domain/shared/showroom-id';
 import type { VariantId } from '../domain/variant-id';
@@ -70,15 +71,25 @@ export class FakeVehicleRepository implements IVehicleRepository {
     return vehicle;
   }
 
-  async isLive(id: VehicleId): Promise<boolean> {
-    return (await this.findById(id)) !== null;
-  }
-
   async save(vehicle: Vehicle, _actorId: UserId): Promise<void> {
     if (this.saveError !== null) {
       throw this.saveError;
     }
     this.store.set(vehicle.id, vehicle);
+  }
+}
+
+export class FakeLinkedLeads implements ILinkedLeads {
+  readonly active = new Map<string, number>();
+  readonly unlinked: VehicleId[] = [];
+
+  async countActive(vehicleId: VehicleId): Promise<number> {
+    return this.active.get(vehicleId) ?? 0;
+  }
+
+  async unlinkAll(vehicleId: VehicleId, _actorId: UserId): Promise<void> {
+    this.unlinked.push(vehicleId);
+    this.active.set(vehicleId, 0);
   }
 }
 

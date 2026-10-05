@@ -2,7 +2,7 @@ import { NotFoundError } from '../../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import type { LeadDto } from '../dtos/lead.dto';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
-import { toLeadId } from '../../domain/lead-id';
+import { toLeadId } from '../../../../domain/shared/lead-id';
 import type { ILeadQueries } from '../../domain/lead.queries';
 
 export class GetLeadUseCase {

@@ -1207,6 +1207,7 @@ export type Database = {
           registration_number: string;
           service_history: string | null;
           showroom_id: string;
+          sold_lead_id: string | null;
           status: string;
           submitted_by: string;
           transmission: string;
@@ -1233,6 +1234,7 @@ export type Database = {
           registration_number: string;
           service_history?: string | null;
           showroom_id: string;
+          sold_lead_id?: string | null;
           status?: string;
           submitted_by: string;
           transmission: string;
@@ -1259,6 +1261,7 @@ export type Database = {
           registration_number?: string;
           service_history?: string | null;
           showroom_id?: string;
+          sold_lead_id?: string | null;
           status?: string;
           submitted_by?: string;
           transmission?: string;
@@ -1272,6 +1275,13 @@ export type Database = {
             columns: ['owner_id'];
             isOneToOne: false;
             referencedRelation: 'owners';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicles_sold_lead_id_fkey';
+            columns: ['sold_lead_id'];
+            isOneToOne: true;
+            referencedRelation: 'leads';
             referencedColumns: ['id'];
           },
           {
@@ -1364,6 +1374,7 @@ export type Database = {
           p_registration_number: string;
           p_service_history: string | null;
           p_showroom_id: string;
+          p_sold_lead_id?: string | null;
           p_status: string;
           p_reason?: string | null;
           p_submitted_by: string;

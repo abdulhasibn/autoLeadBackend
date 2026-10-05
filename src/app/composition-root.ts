@@ -54,16 +54,23 @@ export function composeApp(config: AppConfig): AppDependencies {
     bearerMiddleware: auth.bearerMiddleware,
     clock,
   });
+  // Vehicles and leads depend on each other at runtime (ADR-0011). Vehicles is
+  // composed first, so its ILinkedLeads port resolves `leads` per call.
   const vehicles = composeVehicles(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,
     clock,
     registeredOwnerLookup: { isLive: owners.isLiveOwner },
+    linkedLeads: {
+      countActive: (vehicleId) => leads.linkedLeads.countActive(vehicleId),
+      unlinkAll: (vehicleId, actorId) => leads.linkedLeads.unlinkAll(vehicleId, actorId),
+    },
   });
   const leads = composeLeads(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,
     clock,
-    liveVehicleLookup: { isLive: vehicles.isLiveVehicle },
-    vehicleSale: vehicles.vehicleSale,
+    linkableVehicleLookup: vehicles.vehicleLeadLink,
+    vehicleLinkSync: vehicles.vehicleLeadLink,
+    vehicleSale: vehicles.vehicleLeadLink,
   });
   const notifications = composeNotifications(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,

@@ -6,7 +6,7 @@ import type { Clock } from '../../../../shared/clock/clock';
 import type { AssignLeadCommand } from '../dtos/assign-lead-command';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
 import type { IAssignableStaffLookup } from '../../domain/assignable-staff.port';
-import { toLeadId } from '../../domain/lead-id';
+import { toLeadId } from '../../../../domain/shared/lead-id';
 import type { ILeadRepository } from '../../domain/lead.repository';
 
 export class AssignLeadUseCase {

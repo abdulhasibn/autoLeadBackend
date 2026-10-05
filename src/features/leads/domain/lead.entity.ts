@@ -1,10 +1,10 @@
 import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
+import type { LeadId } from '../../../domain/shared/lead-id';
 import type { ShowroomId } from '../../../domain/shared/showroom-id';
 import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { ContactId } from './contact-id';
 import { InvalidLeadStatusTransitionError } from './errors/invalid-lead-status-transition.error';
-import type { LeadId } from './lead-id';
 import type { LeadSource } from './lead-source.value-object';
 import { LeadStatus } from './lead-status.value-object';
 
@@ -178,7 +178,38 @@ export class Lead {
     this.updatedAtValue = at;
   }
 
+  unlinkVehicle(at: Date): void {
+    this.assertLive();
+    if (this.vehicleIdValue === null) {
+      return;
+    }
+    this.vehicleIdValue = null;
+    this.updatedAtValue = at;
+  }
+
   changeStatus(next: LeadStatus, at: Date): void {
+    if (!next.isManuallySettable()) {
+      throw new BusinessRuleViolationError(
+        'LEAD_STATUS_SYSTEM_MANAGED',
+        `Lead status ${next.value} is set automatically`,
+      );
+    }
+    if (next.requiresVehicle() && this.vehicleIdValue === null) {
+      throw new BusinessRuleViolationError(
+        'LEAD_REQUIRES_VEHICLE',
+        `Link a vehicle to this lead before moving it to ${next.value}`,
+      );
+    }
+    this.transitionTo(next, at);
+  }
+
+  /** Another lead bought this lead's vehicle: release the vehicle and park the lead. */
+  markVehicleUnavailable(at: Date): void {
+    this.transitionTo(LeadStatus.vehicleUnavailable(), at);
+    this.vehicleIdValue = null;
+  }
+
+  private transitionTo(next: LeadStatus, at: Date): void {
     this.assertLive();
     if (this.statusValue.value === next.value) {
       return;

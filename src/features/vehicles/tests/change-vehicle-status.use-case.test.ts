@@ -10,7 +10,6 @@ import { toVehicleId } from '../../../domain/shared/vehicle-id';
 import { VehicleManagementPolicy } from '../application/policies/vehicle-management.policy';
 import { ChangeVehicleStatusUseCase } from '../application/use-cases/change-vehicle-status.use-case';
 import { AcquisitionType } from '../domain/acquisition-type.value-object';
-import { InvalidVehicleStatusTransitionError } from '../domain/errors/invalid-vehicle-status-transition.error';
 import { FuelType } from '../domain/fuel-type.value-object';
 import { KilometersDriven } from '../domain/kilometers-driven.value-object';
 import { PreviousOwners } from '../domain/previous-owners.value-object';
@@ -19,7 +18,7 @@ import { Transmission } from '../domain/transmission.value-object';
 import { toVariantId } from '../domain/variant-id';
 import { Vehicle } from '../domain/vehicle.entity';
 import { VehicleYear } from '../domain/vehicle-year.value-object';
-import { FakeClock, FakeVehicleRepository } from './fakes';
+import { FakeClock, FakeLinkedLeads, FakeVehicleRepository } from './fakes';
 
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
@@ -60,54 +59,77 @@ function seedVehicle(): Vehicle {
 describe('ChangeVehicleStatusUseCase', () => {
   let useCase: ChangeVehicleStatusUseCase;
   let repo: FakeVehicleRepository;
+  let linkedLeads: FakeLinkedLeads;
 
   beforeEach(() => {
     repo = new FakeVehicleRepository();
     repo.seed(seedVehicle());
+    linkedLeads = new FakeLinkedLeads();
     useCase = new ChangeVehicleStatusUseCase(
       new VehicleManagementPolicy(),
       repo,
+      linkedLeads,
       new FakeClock(NOW),
     );
   });
 
-  it('moves a submitted vehicle to inspection_pending', async () => {
-    const result = await useCase.execute(
-      { vehicleId: VEHICLE_ID, status: 'inspection_pending', reason: 'photos in' },
-      ADMIN,
-    );
-    expect(result.status).toBe('inspection_pending');
+  const drop = {
+    vehicleId: VEHICLE_ID,
+    status: 'dropped',
+    reason: null,
+    confirmUnlinkLeads: false,
+  };
+
+  it('drops a vehicle with no active leads', async () => {
+    const result = await useCase.execute({ ...drop, reason: 'owner withdrew' }, ADMIN);
+    expect(result).toEqual({ status: 'dropped', unlinkedLeadCount: 0 });
+    expect(linkedLeads.unlinked).toHaveLength(0);
   });
 
-  it('rejects an invalid jump', async () => {
-    await expect(
-      useCase.execute({ vehicleId: VEHICLE_ID, status: 'approved', reason: null }, ADMIN),
-    ).rejects.toBeInstanceOf(InvalidVehicleStatusTransitionError);
+  it('warns before dropping a vehicle that has active leads', async () => {
+    linkedLeads.active.set(VEHICLE_ID, 2);
+    repo.saveError = new Error('must not save');
+    await expect(useCase.execute(drop, ADMIN)).rejects.toMatchObject({
+      code: 'VEHICLE_HAS_LINKED_LEADS',
+      details: { linkedLeadCount: 2 },
+    });
+    expect(linkedLeads.unlinked).toHaveLength(0);
+  });
+
+  it('unlinks the leads and drops the vehicle once confirmed', async () => {
+    linkedLeads.active.set(VEHICLE_ID, 2);
+    const result = await useCase.execute({ ...drop, confirmUnlinkLeads: true }, ADMIN);
+    expect(result).toEqual({ status: 'dropped', unlinkedLeadCount: 2 });
+    expect(linkedLeads.unlinked).toEqual([VEHICLE_ID]);
+  });
+
+  it('re-lists a dropped vehicle', async () => {
+    await useCase.execute(drop, ADMIN);
+    const result = await useCase.execute({ ...drop, status: 'open' }, ADMIN);
+    expect(result.status).toBe('open');
+  });
+
+  it('refuses lead-driven statuses', async () => {
+    for (const status of ['linked', 'sold']) {
+      await expect(useCase.execute({ ...drop, status }, ADMIN)).rejects.toMatchObject({
+        code: 'VEHICLE_STATUS_SYSTEM_MANAGED',
+      });
+    }
   });
 
   it('throws when the vehicle is missing', async () => {
     await expect(
-      useCase.execute(
-        {
-          vehicleId: '55555555-5555-4555-8555-555555555555',
-          status: 'inspection_pending',
-          reason: null,
-        },
-        ADMIN,
-      ),
+      useCase.execute({ ...drop, vehicleId: '55555555-5555-4555-8555-555555555555' }, ADMIN),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 
   it('rejects a salesperson', async () => {
     await expect(
-      useCase.execute(
-        { vehicleId: VEHICLE_ID, status: 'inspection_pending', reason: null },
-        {
-          userId: toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
-          roles: ['salesperson'],
-          showroomId: null,
-        },
-      ),
+      useCase.execute(drop, {
+        userId: toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+        roles: ['salesperson'],
+        showroomId: null,
+      }),
     ).rejects.toBeInstanceOf(ForbiddenActionError);
   });
 });

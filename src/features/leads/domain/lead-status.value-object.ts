@@ -1,33 +1,35 @@
 export const LEAD_STATUSES = [
   'new',
-  'contacted',
-  'interested',
-  'follow_up',
-  'test_drive',
-  'negotiation',
+  'not_now',
   'booking_confirmed',
-  'sold',
+  'converted',
   'lost',
-  'not_interested',
-  'no_response',
+  'vehicle_unavailable',
 ] as const;
 
 export type LeadStatusValue = (typeof LEAD_STATUSES)[number];
 
-const TERMINAL: readonly LeadStatusValue[] = ['sold', 'lost', 'not_interested', 'no_response'];
+/** Leads in these statuses keep their vehicle `linked`. */
+export const ACTIVE_LEAD_STATUSES: readonly LeadStatusValue[] = [
+  'new',
+  'not_now',
+  'booking_confirmed',
+];
+
+const TERMINAL: readonly LeadStatusValue[] = ['converted', 'lost'];
+
+const REQUIRES_VEHICLE: readonly LeadStatusValue[] = ['booking_confirmed', 'converted'];
+
+// Set only when another lead buys this lead's vehicle.
+const SYSTEM_ONLY: readonly LeadStatusValue[] = ['vehicle_unavailable'];
 
 const ALLOWED: Readonly<Record<LeadStatusValue, readonly LeadStatusValue[]>> = {
-  new: ['contacted', 'lost', 'not_interested', 'no_response'],
-  contacted: ['interested', 'lost', 'not_interested', 'no_response'],
-  interested: ['follow_up', 'lost', 'not_interested', 'no_response'],
-  follow_up: ['test_drive', 'lost', 'not_interested', 'no_response'],
-  test_drive: ['negotiation', 'lost'],
-  negotiation: ['booking_confirmed', 'lost'],
-  booking_confirmed: ['sold', 'lost'],
-  sold: [],
+  new: ['not_now', 'booking_confirmed', 'lost', 'vehicle_unavailable'],
+  not_now: ['new', 'booking_confirmed', 'lost', 'vehicle_unavailable'],
+  booking_confirmed: ['converted', 'lost', 'vehicle_unavailable'],
+  converted: [],
   lost: [],
-  not_interested: [],
-  no_response: [],
+  vehicle_unavailable: ['new', 'not_now', 'booking_confirmed', 'lost'],
 };
 
 export class LeadStatus {
@@ -45,8 +47,24 @@ export class LeadStatus {
     return new LeadStatus('new');
   }
 
+  static vehicleUnavailable(): LeadStatus {
+    return new LeadStatus('vehicle_unavailable');
+  }
+
   isTerminal(): boolean {
     return TERMINAL.includes(this.value);
+  }
+
+  isActive(): boolean {
+    return ACTIVE_LEAD_STATUSES.includes(this.value);
+  }
+
+  requiresVehicle(): boolean {
+    return REQUIRES_VEHICLE.includes(this.value);
+  }
+
+  isManuallySettable(): boolean {
+    return !SYSTEM_ONLY.includes(this.value);
   }
 
   canTransitionTo(next: LeadStatus): boolean {

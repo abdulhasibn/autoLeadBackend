@@ -1,7 +1,7 @@
 import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
-import type { LeadId } from './lead-id';
+import type { LeadId } from '../../../domain/shared/lead-id';
 import type { LeadStatusValue } from './lead-status.value-object';
 
 export interface LeadFollowUpReadModel {

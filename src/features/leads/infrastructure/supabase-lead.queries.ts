@@ -4,7 +4,7 @@ import { DatabaseUnavailableError } from '../../../domain/errors/database-unavai
 import type { Database } from '../../../infrastructure/supabase/database.types';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import { toPage } from '../../../shared/pagination/pagination';
-import type { LeadId } from '../domain/lead-id';
+import type { LeadId } from '../../../domain/shared/lead-id';
 import type { ILeadQueries, LeadListCriteria, LeadReadModel } from '../domain/lead.queries';
 import { toLeadReadModel, type LeadListRow } from './lead.mapper';
 

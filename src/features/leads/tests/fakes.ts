@@ -5,14 +5,15 @@ import type { Clock } from '../../../shared/clock/clock';
 import type { IdGenerator } from '../../../shared/ids/id-generator';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import { toPage } from '../../../shared/pagination/pagination';
+import type { LeadId } from '../../../domain/shared/lead-id';
 import type { Contact } from '../domain/contact.entity';
 import type { FollowUp } from '../domain/follow-up.entity';
 import type { Lead } from '../domain/lead.entity';
-import type { LeadId } from '../domain/lead-id';
 import type { ILeadQueries, LeadListCriteria, LeadReadModel } from '../domain/lead.queries';
 import type { IAssignableStaffLookup } from '../domain/assignable-staff.port';
 import type { ILeadRepository, LeadWrite } from '../domain/lead.repository';
-import type { ILiveVehicleLookup } from '../domain/live-vehicle.port';
+import type { ILinkableVehicleLookup, VehicleLinkability } from '../domain/linkable-vehicle.port';
+import type { IVehicleLinkSync } from '../domain/vehicle-link-sync.port';
 import type { IVehicleSale } from '../domain/vehicle-sale.port';
 
 export class FakeClock implements Clock {
@@ -58,6 +59,12 @@ export class FakeLeadRepository implements ILeadRepository {
     return this.leads.get(id) ?? null;
   }
 
+  async findActiveByVehicle(vehicleId: VehicleId): Promise<Lead[]> {
+    return [...this.leads.values()].filter(
+      (lead) => lead.vehicleId === vehicleId && lead.status.isActive() && lead.deletedAt === null,
+    );
+  }
+
   async findLiveContactByPhone(phone: Phone): Promise<Contact | null> {
     return this.contacts.get(phone.value) ?? null;
   }
@@ -76,18 +83,6 @@ export class FakeLeadRepository implements ILeadRepository {
 
   async scheduleFollowUp(followUp: FollowUp): Promise<void> {
     this.followUps.push(followUp);
-  }
-}
-
-export class FakeLiveVehicleLookup implements ILiveVehicleLookup {
-  live = new Set<string>();
-
-  seed(vehicleId: VehicleId): void {
-    this.live.add(vehicleId);
-  }
-
-  async isLive(vehicleId: VehicleId): Promise<boolean> {
-    return this.live.has(vehicleId);
   }
 }
 
@@ -127,16 +122,47 @@ export class FakeAssignableStaffLookup implements IAssignableStaffLookup {
   }
 }
 
-export class FakeVehicleSale implements IVehicleSale {
-  readonly sold: { vehicleId: VehicleId; actorId: UserId }[] = [];
-  failWith: Error | null = null;
+type FakeVehicleStatus = 'open' | 'linked' | 'dropped' | 'sold';
 
-  async markSold(vehicleId: VehicleId, actorId: UserId): Promise<void> {
-    if (this.failWith !== null) {
-      throw this.failWith;
+/** Stands in for the vehicles feature behind all three lead-side vehicle ports. */
+export class FakeVehicles implements ILinkableVehicleLookup, IVehicleLinkSync, IVehicleSale {
+  readonly statuses = new Map<string, FakeVehicleStatus>();
+  readonly soldTo = new Map<string, LeadId>();
+  saleError: Error | null = null;
+
+  seed(vehicleId: VehicleId, status: FakeVehicleStatus = 'open'): void {
+    this.statuses.set(vehicleId, status);
+  }
+
+  statusOf(vehicleId: VehicleId): FakeVehicleStatus | undefined {
+    return this.statuses.get(vehicleId);
+  }
+
+  async linkability(vehicleId: VehicleId): Promise<VehicleLinkability> {
+    const status = this.statuses.get(vehicleId);
+    if (status === undefined) {
+      return 'not_found';
     }
-    if (!this.sold.some((entry) => entry.vehicleId === vehicleId)) {
-      this.sold.push({ vehicleId, actorId });
+    return status === 'open' || status === 'linked' ? 'linkable' : 'unavailable';
+  }
+
+  async syncLinkState(vehicleId: VehicleId, hasActiveLeads: boolean): Promise<void> {
+    const status = this.statuses.get(vehicleId);
+    if (status === 'open' && hasActiveLeads) {
+      this.statuses.set(vehicleId, 'linked');
+    } else if (status === 'linked' && !hasActiveLeads) {
+      this.statuses.set(vehicleId, 'open');
     }
+  }
+
+  async markSold(vehicleId: VehicleId, leadId: LeadId): Promise<void> {
+    if (this.saleError !== null) {
+      throw this.saleError;
+    }
+    if (this.soldTo.get(vehicleId) === leadId) {
+      return;
+    }
+    this.statuses.set(vehicleId, 'sold');
+    this.soldTo.set(vehicleId, leadId);
   }
 }

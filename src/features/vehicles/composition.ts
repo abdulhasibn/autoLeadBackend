@@ -2,13 +2,12 @@ import type { RequestHandler } from 'express';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { ConflictError } from '../../domain/errors/conflict.error';
-import type { VehicleId } from '../../domain/shared/vehicle-id';
 import type { Database } from '../../infrastructure/supabase/database.types';
 import type { ErrorMapper } from '../../presentation/http/errors/error-mapping';
 import type { Clock } from '../../shared/clock/clock';
 import { UuidIdGenerator } from '../../shared/ids/id-generator';
 import { VehicleManagementPolicy } from './application/policies/vehicle-management.policy';
-import { MarkVehicleSoldService } from './application/services/mark-vehicle-sold.service';
+import { VehicleLeadLinkService } from './application/services/vehicle-lead-link.service';
 import { ChangeVehicleStatusUseCase } from './application/use-cases/change-vehicle-status.use-case';
 import { ConfirmVehicleDocumentUseCase } from './application/use-cases/confirm-vehicle-document.use-case';
 import { ConfirmVehicleMediaUseCase } from './application/use-cases/confirm-vehicle-media.use-case';
@@ -28,6 +27,7 @@ import { ListVehiclesUseCase } from './application/use-cases/list-vehicles.use-c
 import { UpdateVehicleUseCase } from './application/use-cases/update-vehicle.use-case';
 import { InvalidVehicleObjectPathError } from './domain/errors/invalid-vehicle-object-path.error';
 import { InvalidVehicleStatusTransitionError } from './domain/errors/invalid-vehicle-status-transition.error';
+import type { ILinkedLeads } from './domain/linked-leads.port';
 import type { IRegisteredOwnerLookup } from './domain/registered-owner.port';
 import { SupabaseActiveShowroomLookup } from './infrastructure/supabase-active-showroom.lookup';
 import { SupabaseCatalogQueries } from './infrastructure/supabase-catalog.queries';
@@ -64,14 +64,14 @@ export interface VehiclesComposition {
   readonly vehiclesRouter: ReturnType<typeof createVehiclesRouter>;
   readonly catalogRouter: ReturnType<typeof createCatalogRouter>;
   readonly errorMapper: ErrorMapper;
-  readonly isLiveVehicle: (vehicleId: VehicleId) => Promise<boolean>;
-  readonly vehicleSale: MarkVehicleSoldService;
+  readonly vehicleLeadLink: VehicleLeadLinkService;
 }
 
 export interface VehiclesCompositionDeps {
   readonly bearerMiddleware: RequestHandler;
   readonly clock: Clock;
   readonly registeredOwnerLookup: IRegisteredOwnerLookup;
+  readonly linkedLeads: ILinkedLeads;
 }
 
 /**
@@ -106,7 +106,12 @@ export function composeVehicles(
     ids,
   );
   const updateVehicleUseCase = new UpdateVehicleUseCase(policy, repo, deps.clock);
-  const changeVehicleStatusUseCase = new ChangeVehicleStatusUseCase(policy, repo, deps.clock);
+  const changeVehicleStatusUseCase = new ChangeVehicleStatusUseCase(
+    policy,
+    repo,
+    deps.linkedLeads,
+    deps.clock,
+  );
   const listVehiclesUseCase = new ListVehiclesUseCase(policy, queries);
   const getVehicleUseCase = new GetVehicleUseCase(policy, queries);
   const listVehicleStatusHistoryUseCase = new ListVehicleStatusHistoryUseCase(
@@ -221,7 +226,6 @@ export function composeVehicles(
     vehiclesRouter,
     catalogRouter,
     errorMapper,
-    isLiveVehicle: (vehicleId) => repo.isLive(vehicleId),
-    vehicleSale: new MarkVehicleSoldService(repo, deps.clock),
+    vehicleLeadLink: new VehicleLeadLinkService(repo, deps.clock),
   };
 }

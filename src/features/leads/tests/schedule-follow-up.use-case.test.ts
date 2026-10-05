@@ -7,7 +7,7 @@ import { LeadManagementPolicy } from '../application/policies/lead-management.po
 import { ScheduleFollowUpUseCase } from '../application/use-cases/schedule-follow-up.use-case';
 import { toContactId } from '../domain/contact-id';
 import { Lead } from '../domain/lead.entity';
-import { toLeadId } from '../domain/lead-id';
+import { toLeadId } from '../../../domain/shared/lead-id';
 import { LeadSource } from '../domain/lead-source.value-object';
 import { FakeClock, FakeIdGenerator, FakeLeadRepository } from './fakes';
 

@@ -9,7 +9,7 @@ import { LeadManagementPolicy } from '../application/policies/lead-management.po
 import { AssignLeadUseCase } from '../application/use-cases/assign-lead.use-case';
 import { toContactId } from '../domain/contact-id';
 import { Lead } from '../domain/lead.entity';
-import { toLeadId } from '../domain/lead-id';
+import { toLeadId } from '../../../domain/shared/lead-id';
 import { LeadSource } from '../domain/lead-source.value-object';
 import { LeadStatus } from '../domain/lead-status.value-object';
 import { FakeAssignableStaffLookup, FakeClock, FakeLeadRepository } from './fakes';

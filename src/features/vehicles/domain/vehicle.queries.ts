@@ -27,6 +27,7 @@ export interface VehicleReadModel {
   readonly location: string | null;
   readonly description: string | null;
   readonly status: string;
+  readonly soldLeadId: string | null;
   readonly acquisitionType: string;
   readonly submittedBy: string;
   readonly createdAt: string;
