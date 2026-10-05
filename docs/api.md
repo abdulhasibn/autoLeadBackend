@@ -139,11 +139,16 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | 409 | `LAST_ADMIN_PROTECTED` | Would remove the last admin, or deactivate yourself |
 | 422 | `VALIDATION_ERROR` | Body/query/params failed Zod |
 | 422 | `INVALID_LEAD_STATUS_TRANSITION` | Illegal lead status jump |
-| 422 | `INVALID_VEHICLE_STATUS_TRANSITION` | Illegal vehicle status jump (including `markVehicleSold` on a vehicle that is not listed) |
+| 422 | `INVALID_VEHICLE_STATUS_TRANSITION` | Illegal vehicle status jump (e.g. re-listing a sold vehicle) |
+| 422 | `VEHICLE_STATUS_SYSTEM_MANAGED` | `POST /vehicles/:id/status` with `linked` or `sold` (set automatically from leads) |
+| 422 | `VEHICLE_HAS_LINKED_LEADS` | Dropping a vehicle with active leads without `confirmUnlinkLeads: true`; `error.details.linkedLeadCount` says how many |
+| 422 | `VEHICLE_NOT_LINKABLE` | Linking a lead to a `dropped` or `sold` vehicle |
+| 422 | `VEHICLE_ALREADY_SOLD` | Converting a lead whose vehicle was sold through another lead |
 | 422 | `SHOWROOM_REQUIRED` | No `showroomId` in the body and no home showroom on your account |
-| 422 | `LEAD_CLOSED` | Assigning or attaching a vehicle to a lead in a terminal status |
+| 422 | `LEAD_CLOSED` | Assigning or attaching a vehicle to a `converted` or `lost` lead |
+| 422 | `LEAD_REQUIRES_VEHICLE` | Moving a lead with no vehicle to `booking_confirmed` or `converted` |
+| 422 | `LEAD_STATUS_SYSTEM_MANAGED` | Setting `vehicle_unavailable` by hand |
 | 422 | `ASSIGNEE_NOT_ELIGIBLE` | `assignedTo` is not an active admin or salesperson |
-| 422 | `MARK_VEHICLE_SOLD_REQUIRES_SOLD` / `LEAD_HAS_NO_VEHICLE` | `markVehicleSold` used without `status: "sold"`, or on a lead with no vehicle |
 | 503 | `DB_UNAVAILABLE` / `DB_TRANSIENT` | Database down or retryable |
 
 ---
@@ -297,7 +302,7 @@ Read-only factory catalog. Use these to populate vehicle create.
 
 ### Vehicles — Admin or Salesperson (status change and deletes are Admin)
 
-Creates a second-hand car. Status is always `submitted` on create. Photos and documents use a two-step signed upload (bytes never pass through this API). Status (inspection and listing) is a separate POST.
+Creates a second-hand car. Status is always `open` on create. Photos and documents use a two-step signed upload (bytes never pass through this API). An admin drops or re-lists a vehicle with a separate POST; `linked` and `sold` follow the vehicle's leads.
 
 | Method | Path | Success |
 |--------|------|---------|
@@ -305,7 +310,7 @@ Creates a second-hand car. Status is always `submitted` on create. Photos and do
 | `GET` | `/vehicles` | `200` page (includes catalog names) |
 | `GET` | `/vehicles/:id` | `200` vehicle |
 | `PATCH` | `/vehicles/:id` | `200` vehicle (second-hand fields only; cannot change owner/variant/showroom/status) |
-| `POST` | `/vehicles/:id/status` | `200` `{ "status" }` (Admin) |
+| `POST` | `/vehicles/:id/status` | `200` `{ "status", "unlinkedLeadCount" }` (Admin) |
 | `GET` | `/vehicles/:id/status-history` | `200` page (newest first) |
 | `POST` | `/vehicles/:id/media/uploads` | `200` signed upload ticket |
 | `POST` | `/vehicles/:id/media` | `201` media row + short-lived read URL |
@@ -357,7 +362,7 @@ Creates a second-hand car. Status is always `submitted` on create. Photos and do
 | `rcStatus` | `clear`, `hypothecation`, `under_transfer` (or `null`) |
 | `serviceHistory` | `full`, `partial`, `none`, `unknown` (or `null`) |
 | `loanStatus` | `clear`, `active` (or `null`) |
-| `status` | starts `submitted`. Change with `POST /vehicles/:id/status` |
+| `status` | `open`, `linked`, `dropped`, `sold` (starts `open`) |
 
 **Rules:** year `1900–2100`; `kmDriven` ≥ 0 integer; `numPreviousOwners` `0–32767`; registration uppercase alphanumeric, max 16, spaces stripped; `ownerId` / `variantId` / `showroomId` must exist. Duplicate live registration → `409`.
 
@@ -386,7 +391,8 @@ Creates a second-hand car. Status is always `submitted` on create. Photos and do
   "loanStatus": "clear",
   "location": "Bengaluru",
   "description": null,
-  "status": "submitted",
+  "status": "linked",
+  "soldLeadId": null,
   "acquisitionType": "consignment",
   "submittedBy": "uuid",
   "createdAt": "…",
@@ -394,21 +400,27 @@ Creates a second-hand car. Status is always `submitted` on create. Photos and do
 }
 ```
 
-**Change status:** `{ "status": "inspection_pending", "reason": null }`  
-Illegal jump → `422 INVALID_VEHICLE_STATUS_TRANSITION`. Same status is a no-op. `PATCH /vehicles/:id` still cannot set status. Detail edits stay allowed on any live vehicle.
+**Vehicle lifecycle** (see ADR-0011)
+
+| Status | Meaning |
+|--------|---------|
+| `open` | In stock with no active lead |
+| `linked` | At least one active lead (`new`, `not_now`, `booking_confirmed`) points at it. Many leads can share one vehicle |
+| `sold` | A lead converted. `soldLeadId` is that lead |
+| `dropped` | Taken out of stock by an admin |
 
 ```text
-submitted           → inspection_pending | rejected | on_hold | removed
-inspection_pending  → under_inspection | rejected | on_hold | removed
-under_inspection    → approved | rejected | on_hold | removed
-approved            → available | rejected | on_hold | removed
-available           → reserved | sold | on_hold | removed
-reserved            → available | sold
-on_hold             → inspection_pending | under_inspection | approved | available | removed
-sold / rejected / removed → (terminal)
+open    → linked (auto: first active lead links) | dropped (admin)
+linked  → open (auto: last active lead lost or moved) | sold (auto: a lead converts) | dropped (admin)
+dropped → open (admin re-lists)
+sold    → (terminal)
 ```
 
-`available` means listed for sale. `reserved → available` is the deal-fell-through path. A lead closed as `sold` with `markVehicleSold: true` moves its vehicle to `sold` through this same graph.
+**Change status (admin):** `{ "status": "dropped" | "open", "reason": null, "confirmUnlinkLeads": false }`
+
+- `linked` / `sold` → `422 VEHICLE_STATUS_SYSTEM_MANAGED`. Same status is a no-op. `PATCH /vehicles/:id` cannot set status.
+- Dropping a vehicle that still has active leads first answers `422 VEHICLE_HAS_LINKED_LEADS` with `error.details.linkedLeadCount`. Show the admin that count; on confirm resend with `"confirmUnlinkLeads": true`. Those leads keep their status but lose their `vehicleId`, and the response reports `unlinkedLeadCount`.
+- Leads can only link to `open` or `linked` vehicles (`422 VEHICLE_NOT_LINKABLE`).
 
 **Status history item**
 
@@ -416,10 +428,10 @@ sold / rejected / removed → (terminal)
 {
   "id": "uuid",
   "vehicleId": "uuid",
-  "fromStatus": "submitted",
-  "toStatus": "inspection_pending",
+  "fromStatus": "linked",
+  "toStatus": "dropped",
   "changedBy": "uuid",
-  "reason": "photos in",
+  "reason": "owner withdrew",
   "changedAt": "…"
 }
 ```
@@ -486,13 +498,13 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 `showroomId` is optional: omit it to use your home showroom (see **Roles**).  
 `source`: `marketplace`, `mobile_app`, `website`, `phone`, `walkin`, `whatsapp`, `instagram`, `facebook`, `referral`, `other`.  
 **List query:** `limit`, `offset`, optional `status`, `vehicleId`, `assignedTo` (admin only; a salesperson always gets their own leads).  
-**Associate vehicle:** `{ "vehicleId": "<uuid>" }` — vehicle must exist; lead must not be closed.  
+**Associate vehicle:** `{ "vehicleId": "<uuid>" }` — vehicle must be `open` or `linked`; lead must not be `converted` or `lost`. The new vehicle becomes `linked`; the previous one goes back to `open` if no other active lead remains.  
 **Assign:** `{ "assignedTo": "<staff uuid>" }` or `{ "assignedTo": null }` to unassign. The assignee must be an active admin or salesperson. The assignee gets a `lead_assigned` notification (not when you assign yourself), and the change is written to the audit log. Closed leads cannot be reassigned (`422 LEAD_CLOSED`).  
 **Schedule follow-up:** `{ "scheduledAt": "2026-10-10T10:00:00.000Z", "taskType": "call", "notes": null }`  
 `taskType`: `call`, `whatsapp`, `meeting`, `test_drive`, `send_quotation`, `other`.  
 The follow-up belongs to the lead's assignee (or to you if the lead is unassigned), and that person gets a `follow_up_due` notification at `scheduledAt`.  
-**Change status:** `{ "status": "contacted", "notes": null }`. Status history records who made the change.  
-**Close a sale and its vehicle:** `{ "status": "sold", "notes": null, "markVehicleSold": true }`. The lead's vehicle must be `available` or `reserved` (or already `sold`). The vehicle is updated first; if the lead update then fails, repeat the same request and it completes. `markVehicleSold` defaults to `false`.
+**Change status:** `{ "status": "not_now", "notes": null }` → `200 { "status", "vehicleSold" }`. Status history records who made the change.  
+**Convert (close the sale):** `{ "status": "converted", "notes": null }` from `booking_confirmed`. This always sells the lead's vehicle (`vehicleSold: true`, vehicle `soldLeadId` = this lead) and moves every other active lead on that vehicle to `vehicle_unavailable` with its `vehicleId` cleared. The vehicle and the other leads are updated first; if the request fails part-way, repeat it and it completes.
 
 **Lead object**
 
@@ -522,18 +534,19 @@ The follow-up belongs to the lead's assignee (or to you if the lead is unassigne
 }
 ```
 
-New leads start at `new`. Allowed transitions (skipping a step → `422 INVALID_LEAD_STATUS_TRANSITION`):
+New leads start at `new`. Active leads (`new`, `not_now`, `booking_confirmed`) keep their vehicle `linked`. Allowed transitions (anything else → `422 INVALID_LEAD_STATUS_TRANSITION`):
 
 ```text
-new            → contacted | lost | not_interested | no_response
-contacted      → interested | lost | not_interested | no_response
-interested     → follow_up | lost | not_interested | no_response
-follow_up      → test_drive | lost | not_interested | no_response
-test_drive     → negotiation | lost
-negotiation    → booking_confirmed | lost
-booking_confirmed → sold | lost
-sold / lost / not_interested / no_response  → (terminal)
+new                 → not_now | booking_confirmed | lost
+not_now             → new | booking_confirmed | lost
+booking_confirmed   → converted | lost
+vehicle_unavailable → new | not_now | booking_confirmed | lost   (link another vehicle first to book)
+converted / lost    → (terminal)
 ```
+
+- `booking_confirmed` and `converted` need a linked vehicle (`422 LEAD_REQUIRES_VEHICLE`).
+- `vehicle_unavailable` is set only by the system, when another lead buys this lead's vehicle (`422 LEAD_STATUS_SYSTEM_MANAGED` if sent).
+- Losing a lead re-opens its vehicle when no other active lead remains.
 
 **Follow-up create response**
 

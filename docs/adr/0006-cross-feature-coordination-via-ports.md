@@ -1,6 +1,6 @@
 # Cross-feature coordination via narrow ports
 
-**Status:** accepted
+**Status:** accepted (lead/vehicle example extended by [ADR-0011](./0011-vehicle-lead-status-lifecycle.md))
 
 Some workflows span features: a lead closed as `sold` may also sell its vehicle, a lead write must notify the assignee, and a lead must check that a vehicle exists. The depending feature declares a narrow port in its own `domain/` (`ILiveVehicleLookup`, `IVehicleSale`). The owning feature implements it (`MarkVehicleSoldService`), and `composition-root.ts` wires the two together. Notifications and audit rows that must be atomic with a write go into the same RPC transaction, as `schedule_follow_up` and `save_lead` do.
 

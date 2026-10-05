@@ -4,25 +4,25 @@
 
 ## Current stage
 
-**Stage:** **Staff vehicle + lead phase** — admin and salesperson intake, inspection and inventory statuses, walk-in leads with assignment, staff inbox.
+**Stage:** **Staff vehicle + lead phase** — admin and salesperson intake, linked vehicle/lead status lifecycle (ADR-0011), walk-in leads with assignment, staff inbox.
 
 | Area | Status |
 |------|--------|
 | Repo scaffold (Express / TS / Vitest / CI) | Done |
-| Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0010 | Done |
+| Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0011 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment) | 11 applied to hosted project; `20261004120000_lead_assignment` pending apply |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment) | 11 applied to hosted project; `20261004120000_lead_assignment` and `20261005120000_vehicle_lead_status_lifecycle` pending apply |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
 | Auth feature (`src/features/auth`) | Done — email + password login/refresh, bearer, /auth/me; roles from `user_roles` |
 | Users / roles (`src/features/users`) | Done — staff CRUD + email/password provision (Admin) |
 | Owners (`src/features/owners`) | Done — staff owner CRUD (Admin / Salesperson; deactivate Admin-only) |
-| Vehicles (`src/features/vehicles`) | Staff create/list/get/update, catalog reads, signed media/document uploads; Admin status changes (inspection + `available` / `reserved` / `sold`) and deletes |
+| Vehicles (`src/features/vehicles`) | Staff create/list/get/update, catalog reads, signed media/document uploads; statuses `open` / `linked` / `dropped` / `sold` (Admin drops/re-lists; `linked`/`sold` follow leads) and deletes |
 | Inventory (`src/features/inventory`) | Not started |
 | Marketplace (`src/features/marketplace`) | Not started |
-| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle, status (optional vehicle sale), follow-up + due notification; Admin assignment; salesperson sees assigned leads only |
+| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle, status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification; Admin assignment; salesperson sees assigned leads only |
 | Sales (`src/features/sales`) | Not started |
 | Finance (`src/features/finance`) | Not started |
 | Notifications (`src/features/notifications`) | Staff inbox (`due_at` filter) + mark read; `follow_up_due`, `lead_assigned` |
@@ -42,16 +42,48 @@
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
 | Tables | 25 |
-| Migrations applied | 11 (previous 10 + vehicle_media_lifecycle); 12th (`lead_assignment`) pending |
+| Migrations applied | 11 (previous 10 + vehicle_media_lifecycle); 12th (`lead_assignment`) and 13th (`vehicle_lead_status_lifecycle`) pending |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
 
-1. Apply `20261004120000_lead_assignment.sql` to the hosted project, then merge.
-2. Acquisition prices on `vehicle_financials` (Stint 2.3).
-3. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
+1. Apply `20261004120000_lead_assignment.sql`, then `20261005120000_vehicle_lead_status_lifecycle.sql`, to the hosted project; regenerate `database.types.ts` (hand-edited for `sold_lead_id`) and deploy the API in the same release.
+2. Sync the local Postman collection to the cloud workspace (Postman MCP needed re-auth).
+3. Acquisition prices on `vehicle_financials` (Stint 2.3).
+4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-10-05 — Vehicle and lead status lifecycle (ADR-0011)
+
+- Vehicle statuses replaced with `open` / `linked` / `dropped` / `sold`;
+  inspection pipeline removed (only admins add vehicles). New vehicles
+  start `open`. `vehicles.sold_lead_id` records the buying lead.
+- Lead statuses replaced with `new` / `not_now` / `booking_confirmed` /
+  `converted` / `lost` / `vehicle_unavailable`. `booking_confirmed` and
+  `converted` require a vehicle.
+- Coupling (application layer, idempotent order):
+  - Active leads keep the vehicle `linked`; losing or moving the last one
+    re-opens it.
+  - Converting sells the vehicle and moves the other active leads on it to
+    `vehicle_unavailable` (unlinked, revivable).
+  - Admin drop of a linked vehicle answers `422 VEHICLE_HAS_LINKED_LEADS`
+    with `details.linkedLeadCount`, then unlinks on `confirmUnlinkLeads`.
+- `markVehicleSold` removed from `POST /leads/:id/status`; response is
+  `{ status, vehicleSold }`. Leads may link only to `open`/`linked`
+  vehicles (`VEHICLE_NOT_LINKABLE`).
+- Ports: `ILinkableVehicleLookup`, `IVehicleLinkSync`, `IVehicleSale`
+  (leads) and `ILinkedLeads` (vehicles); `LeadId` moved to
+  `src/domain/shared`. `BusinessRuleViolationError` carries optional
+  `details`, serialized in the 422 body.
+- Migration `20261005120000_vehicle_lead_status_lifecycle.sql`: remaps
+  existing rows, adds `sold_lead_id` + checks, recreates `save_vehicle`.
+  Replayed on local Postgres 17 with all prior migrations and legacy seed
+  rows. Not yet applied to the hosted project.
+- `database.types.ts` hand-edited for `sold_lead_id` / `p_sold_lead_id`
+  (Supabase MCP unauthenticated); regenerate after applying.
+- Docs: `api.md`, `schema.dbml`, `CONTEXT.md`, ADR-0011, ADR-0010 wording,
+  Postman collection (local file), `scripts/smoke-api.sh`.
 
 ### 2026-10-04 — Salesperson access, lead assignment, inventory statuses
 

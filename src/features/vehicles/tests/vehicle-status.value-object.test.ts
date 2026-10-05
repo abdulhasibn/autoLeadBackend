@@ -2,78 +2,49 @@ import { describe, expect, it } from 'vitest';
 
 import { VehicleStatus } from '../domain/vehicle-status.value-object';
 
+const s = (value: string): VehicleStatus => VehicleStatus.create(value);
+
 describe('VehicleStatus', () => {
-  it('allows the inspection happy path', () => {
-    expect(
-      VehicleStatus.create('submitted').canTransitionTo(VehicleStatus.create('inspection_pending')),
-    ).toBe(true);
-    expect(
-      VehicleStatus.create('inspection_pending').canTransitionTo(
-        VehicleStatus.create('under_inspection'),
-      ),
-    ).toBe(true);
-    expect(
-      VehicleStatus.create('under_inspection').canTransitionTo(VehicleStatus.create('approved')),
-    ).toBe(true);
+  it('flips between open and linked', () => {
+    expect(s('open').canTransitionTo(s('linked'))).toBe(true);
+    expect(s('linked').canTransitionTo(s('open'))).toBe(true);
   });
 
-  it('blocks skipping a stage', () => {
-    expect(
-      VehicleStatus.create('submitted').canTransitionTo(VehicleStatus.create('approved')),
-    ).toBe(false);
+  it('sells only a linked vehicle', () => {
+    expect(s('linked').canTransitionTo(s('sold'))).toBe(true);
+    expect(s('open').canTransitionTo(s('sold'))).toBe(false);
+    expect(s('dropped').canTransitionTo(s('sold'))).toBe(false);
   });
 
-  it('treats rejected and removed as terminal', () => {
-    expect(VehicleStatus.create('rejected').isTerminal()).toBe(true);
-    expect(VehicleStatus.create('removed').isTerminal()).toBe(true);
-    expect(
-      VehicleStatus.create('rejected').canTransitionTo(VehicleStatus.create('submitted')),
-    ).toBe(false);
+  it('drops an open or linked vehicle and re-lists a dropped one', () => {
+    expect(s('open').canTransitionTo(s('dropped'))).toBe(true);
+    expect(s('linked').canTransitionTo(s('dropped'))).toBe(true);
+    expect(s('dropped').canTransitionTo(s('open'))).toBe(true);
+    expect(s('dropped').canTransitionTo(s('linked'))).toBe(false);
   });
 
-  it('lets on_hold return to inspection states', () => {
-    expect(VehicleStatus.create('on_hold').canTransitionTo(VehicleStatus.create('approved'))).toBe(
-      true,
-    );
-    expect(VehicleStatus.create('approved').canTransitionTo(VehicleStatus.create('on_hold'))).toBe(
-      true,
-    );
+  it('treats sold as terminal', () => {
+    expect(s('sold').isTerminal()).toBe(true);
+    expect(s('sold').canTransitionTo(s('open'))).toBe(false);
+    expect(s('dropped').isTerminal()).toBe(false);
   });
 
-  it('lists an approved vehicle and walks it through reservation to sale', () => {
-    const can = (from: string, to: string): boolean =>
-      VehicleStatus.create(from).canTransitionTo(VehicleStatus.create(to));
-    expect(can('approved', 'available')).toBe(true);
-    expect(can('available', 'reserved')).toBe(true);
-    expect(can('reserved', 'sold')).toBe(true);
-    expect(can('available', 'sold')).toBe(true);
+  it('lets an admin set only open and dropped', () => {
+    expect(s('open').isAdminSettable()).toBe(true);
+    expect(s('dropped').isAdminSettable()).toBe(true);
+    expect(s('linked').isAdminSettable()).toBe(false);
+    expect(s('sold').isAdminSettable()).toBe(false);
   });
 
-  it('returns a reserved vehicle to available when the deal falls through', () => {
-    expect(
-      VehicleStatus.create('reserved').canTransitionTo(VehicleStatus.create('available')),
-    ).toBe(true);
+  it('accepts leads only while open or linked', () => {
+    expect(s('open').isLinkable()).toBe(true);
+    expect(s('linked').isLinkable()).toBe(true);
+    expect(s('dropped').isLinkable()).toBe(false);
+    expect(s('sold').isLinkable()).toBe(false);
   });
 
-  it('lets a listed vehicle go on hold and come back', () => {
-    expect(VehicleStatus.create('available').canTransitionTo(VehicleStatus.create('on_hold'))).toBe(
-      true,
-    );
-    expect(VehicleStatus.create('on_hold').canTransitionTo(VehicleStatus.create('available'))).toBe(
-      true,
-    );
-  });
-
-  it('treats sold as terminal and blocks listing before approval', () => {
-    expect(VehicleStatus.sold().isTerminal()).toBe(true);
-    expect(VehicleStatus.create('sold').canTransitionTo(VehicleStatus.create('available'))).toBe(
-      false,
-    );
-    expect(
-      VehicleStatus.create('under_inspection').canTransitionTo(VehicleStatus.create('available')),
-    ).toBe(false);
-    expect(VehicleStatus.create('reserved').canTransitionTo(VehicleStatus.create('removed'))).toBe(
-      false,
-    );
+  it('rejects removed statuses', () => {
+    expect(() => s('submitted')).toThrow('Invalid vehicle status');
+    expect(() => s('available')).toThrow('Invalid vehicle status');
   });
 });

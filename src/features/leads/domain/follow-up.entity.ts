@@ -2,7 +2,7 @@ import type { NotificationId } from '../../../domain/shared/notification-id';
 import type { UserId } from '../../../domain/shared/user-id';
 import type { FollowUpId } from './follow-up-id';
 import type { FollowUpTaskType } from './follow-up-task-type.value-object';
-import type { LeadId } from './lead-id';
+import type { LeadId } from '../../../domain/shared/lead-id';
 
 export interface FollowUpScheduleProps {
   readonly id: FollowUpId;

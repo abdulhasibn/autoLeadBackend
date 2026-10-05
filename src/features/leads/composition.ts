@@ -6,9 +6,12 @@ import type { ErrorMapper } from '../../presentation/http/errors/error-mapping';
 import type { Clock } from '../../shared/clock/clock';
 import { UuidIdGenerator } from '../../shared/ids/id-generator';
 import { InvalidLeadStatusTransitionError } from './domain/errors/invalid-lead-status-transition.error';
-import type { ILiveVehicleLookup } from './domain/live-vehicle.port';
+import type { ILinkableVehicleLookup } from './domain/linkable-vehicle.port';
+import type { IVehicleLinkSync } from './domain/vehicle-link-sync.port';
 import type { IVehicleSale } from './domain/vehicle-sale.port';
 import { LeadManagementPolicy } from './application/policies/lead-management.policy';
+import { LeadLinkService } from './application/services/lead-link.service';
+import { VehicleLinkRefresher } from './application/services/vehicle-link-refresher';
 import { AssignLeadUseCase } from './application/use-cases/assign-lead.use-case';
 import { AssociateLeadVehicleUseCase } from './application/use-cases/associate-lead-vehicle.use-case';
 import { ChangeLeadStatusUseCase } from './application/use-cases/change-lead-status.use-case';
@@ -31,12 +34,14 @@ import { createLeadsRouter } from './presentation/leads.routes';
 export interface LeadsComposition {
   readonly router: ReturnType<typeof createLeadsRouter>;
   readonly errorMapper: ErrorMapper;
+  readonly linkedLeads: LeadLinkService;
 }
 
 export interface LeadsCompositionDeps {
   readonly bearerMiddleware: RequestHandler;
   readonly clock: Clock;
-  readonly liveVehicleLookup: ILiveVehicleLookup;
+  readonly linkableVehicleLookup: ILinkableVehicleLookup;
+  readonly vehicleLinkSync: IVehicleLinkSync;
   readonly vehicleSale: IVehicleSale;
 }
 
@@ -52,24 +57,28 @@ export function composeLeads(
   const repo = new SupabaseLeadRepository(infraClient);
   const queries = new SupabaseLeadQueries(infraClient);
   const ids = new UuidIdGenerator();
+  const vehicleLinks = new VehicleLinkRefresher(repo, deps.vehicleLinkSync);
 
   const createLeadUseCase = new CreateLeadUseCase(
     policy,
     repo,
-    deps.liveVehicleLookup,
+    deps.linkableVehicleLookup,
+    vehicleLinks,
     deps.clock,
     ids,
   );
   const associateLeadVehicleUseCase = new AssociateLeadVehicleUseCase(
     policy,
     repo,
-    deps.liveVehicleLookup,
+    deps.linkableVehicleLookup,
+    vehicleLinks,
     deps.clock,
   );
   const changeLeadStatusUseCase = new ChangeLeadStatusUseCase(
     policy,
     repo,
     deps.vehicleSale,
+    vehicleLinks,
     deps.clock,
   );
   const assignLeadUseCase = new AssignLeadUseCase(
@@ -100,5 +109,5 @@ export function composeLeads(
     return null;
   };
 
-  return { router, errorMapper };
+  return { router, errorMapper, linkedLeads: new LeadLinkService(repo, deps.clock) };
 }

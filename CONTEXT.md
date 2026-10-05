@@ -22,4 +22,7 @@ The staff member who owns a Lead (`leads.assigned_to`). A salesperson works only
 The showroom on a staff member's user record. New vehicles and leads are filed there unless an admin names another.
 
 **Listed**:
-A vehicle in status `available`. `reserved` means a buyer is committed; `sold` closes it.
+A vehicle in status `open` or `linked`, i.e. in stock and able to take leads. `linked` means at least one active lead is working it; `sold` closes it (through the lead that converted) and `dropped` takes it out of stock.
+
+**Active lead**:
+A lead in `new`, `not_now` or `booking_confirmed`. Active leads keep their vehicle `linked`; `converted` and `lost` are closed, and `vehicle_unavailable` means another lead bought the vehicle (the lead can be revived with a different vehicle).

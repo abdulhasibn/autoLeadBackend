@@ -1,4 +1,4 @@
-import type { LeadId } from '../lead-id';
+import type { LeadId } from '../../../../domain/shared/lead-id';
 
 export class InvalidLeadStatusTransitionError extends Error {
   readonly code = 'INVALID_LEAD_STATUS_TRANSITION';

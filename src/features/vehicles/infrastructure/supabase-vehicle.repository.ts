@@ -10,7 +10,7 @@ import { translateVehicleWriteError } from './translate-vehicle-write-error';
 import { toVehicle, type VehicleRow } from './vehicle.mapper';
 
 const VEHICLE_COLUMNS =
-  'id, showroom_id, owner_id, variant_id, year, registration_number, fuel_type, transmission, km_driven, num_previous_owners, colour, insurance_valid_until, rc_status, service_history, accident_history, loan_status, location, description, status, acquisition_type, submitted_by, created_at, updated_at, deleted_at';
+  'id, showroom_id, owner_id, variant_id, year, registration_number, fuel_type, transmission, km_driven, num_previous_owners, colour, insurance_valid_until, rc_status, service_history, accident_history, loan_status, location, description, status, sold_lead_id, acquisition_type, submitted_by, created_at, updated_at, deleted_at';
 
 export class SupabaseVehicleRepository implements IVehicleRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -31,11 +31,6 @@ export class SupabaseVehicleRepository implements IVehicleRepository {
     }
 
     return toVehicle(data as VehicleRow);
-  }
-
-  async isLive(id: VehicleId): Promise<boolean> {
-    const vehicle = await this.findById(id);
-    return vehicle !== null;
   }
 
   async save(vehicle: Vehicle, actorId: UserId): Promise<void> {
@@ -60,6 +55,7 @@ export class SupabaseVehicleRepository implements IVehicleRepository {
       p_location: vehicle.location,
       p_description: vehicle.description,
       p_status: vehicle.status.value,
+      p_sold_lead_id: vehicle.soldLeadId,
       p_acquisition_type: vehicle.acquisitionType.value,
       p_submitted_by: vehicle.submittedBy,
       p_deleted_at: vehicle.deletedAt === null ? null : vehicle.deletedAt.toISOString(),

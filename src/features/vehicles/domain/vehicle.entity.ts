@@ -1,4 +1,6 @@
+import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import type { CalendarDate } from '../../../domain/shared/calendar-date.value-object';
+import type { LeadId } from '../../../domain/shared/lead-id';
 import type { OwnerId } from '../../../domain/shared/owner-id';
 import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
@@ -43,6 +45,7 @@ export interface VehicleCreateProps {
 
 export interface VehicleReconstituteProps extends VehicleCreateProps {
   readonly status: VehicleStatus;
+  readonly soldLeadId: LeadId | null;
   readonly deletedAt: Date | null;
 }
 
@@ -65,8 +68,8 @@ export interface VehicleDetailsUpdate {
 }
 
 /**
- * Vehicle aggregate for admin intake. Inspection status is changed through
- * changeStatus. Owner, showroom, variant, and acquisition type stay fixed.
+ * Vehicle aggregate. Admins drop or re-list it; `linked` and `sold` follow the
+ * vehicle's leads. Owner, showroom, variant, and acquisition type stay fixed.
  */
 export class Vehicle {
   private constructor(
@@ -95,6 +98,7 @@ export class Vehicle {
     private updatedAtValue: Date,
     private deletedAtValue: Date | null,
     private statusChangeReasonValue: string | null,
+    private soldLeadIdValue: LeadId | null,
   ) {}
 
   static create(props: VehicleCreateProps): Vehicle {
@@ -117,11 +121,12 @@ export class Vehicle {
       props.loanStatus,
       normalizeOptionalText(props.location),
       normalizeOptionalText(props.description),
-      VehicleStatus.submitted(),
+      VehicleStatus.open(),
       props.acquisitionType,
       props.submittedBy,
       props.createdAt,
       props.updatedAt,
+      null,
       null,
       null,
     );
@@ -154,11 +159,20 @@ export class Vehicle {
       props.updatedAt,
       props.deletedAt,
       null,
+      props.soldLeadId,
     );
   }
 
   get status(): VehicleStatus {
     return this.statusValue;
+  }
+
+  get soldLeadId(): LeadId | null {
+    return this.soldLeadIdValue;
+  }
+
+  get isLinkable(): boolean {
+    return !this.isDeleted && this.statusValue.isLinkable();
   }
 
   get statusChangeReason(): string | null {
@@ -252,7 +266,41 @@ export class Vehicle {
     this.updatedAtValue = update.updatedAt;
   }
 
-  changeStatus(next: VehicleStatus, at: Date, reason: string | null): void {
+  /** Admin-driven status change; only `open` (re-list) and `dropped` are allowed. */
+  changeStatusByAdmin(next: VehicleStatus, at: Date, reason: string | null): void {
+    if (!next.isAdminSettable()) {
+      throw new BusinessRuleViolationError(
+        'VEHICLE_STATUS_SYSTEM_MANAGED',
+        `Vehicle status ${next.value} is set automatically from its leads`,
+      );
+    }
+    this.transitionTo(next, at, reason);
+  }
+
+  /** Flips open ⇄ linked to match whether any active lead points at the vehicle. */
+  syncLinkState(hasActiveLeads: boolean, at: Date): void {
+    if (hasActiveLeads && this.statusValue.value === 'open') {
+      this.transitionTo(VehicleStatus.linked(), at, null);
+    } else if (!hasActiveLeads && this.statusValue.value === 'linked') {
+      this.transitionTo(VehicleStatus.open(), at, null);
+    }
+  }
+
+  markSold(leadId: LeadId, at: Date, reason: string): void {
+    if (this.statusValue.value === 'sold') {
+      if (this.soldLeadIdValue === leadId) {
+        return;
+      }
+      throw new BusinessRuleViolationError(
+        'VEHICLE_ALREADY_SOLD',
+        'This vehicle was already sold through another lead',
+      );
+    }
+    this.transitionTo(VehicleStatus.sold(), at, reason);
+    this.soldLeadIdValue = leadId;
+  }
+
+  private transitionTo(next: VehicleStatus, at: Date, reason: string | null): void {
     this.assertLive();
     if (this.statusValue.value === next.value) {
       return;

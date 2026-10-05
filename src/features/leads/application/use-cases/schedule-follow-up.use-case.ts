@@ -10,7 +10,7 @@ import type { LeadManagementPolicy } from '../policies/lead-management.policy';
 import { FollowUp } from '../../domain/follow-up.entity';
 import { toFollowUpId } from '../../domain/follow-up-id';
 import { FollowUpTaskType } from '../../domain/follow-up-task-type.value-object';
-import { toLeadId } from '../../domain/lead-id';
+import { toLeadId } from '../../../../domain/shared/lead-id';
 import type { ILeadRepository } from '../../domain/lead.repository';
 import { ScheduledAt } from '../../domain/scheduled-at.value-object';
 

@@ -1,9 +1,10 @@
+import type { LeadId } from '../../../domain/shared/lead-id';
 import type { Phone } from '../../../domain/shared/phone.value-object';
 import type { UserId } from '../../../domain/shared/user-id';
+import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Contact } from './contact.entity';
 import type { FollowUp } from './follow-up.entity';
 import type { Lead } from './lead.entity';
-import type { LeadId } from './lead-id';
 
 /**
  * Command-side persistence for leads, contacts, and follow-ups.
@@ -11,6 +12,8 @@ import type { LeadId } from './lead-id';
  */
 export interface ILeadRepository {
   findById(id: LeadId): Promise<Lead | null>;
+  /** Live leads whose status keeps the vehicle `linked`. */
+  findActiveByVehicle(vehicleId: VehicleId): Promise<Lead[]>;
   findLiveContactByPhone(phone: Phone): Promise<Contact | null>;
   save(lead: Lead, write: LeadWrite): Promise<void>;
   scheduleFollowUp(followUp: FollowUp): Promise<void>;

@@ -5,7 +5,7 @@ import { toUserId } from '../../../domain/shared/user-id';
 import { FollowUp } from '../domain/follow-up.entity';
 import { toFollowUpId } from '../domain/follow-up-id';
 import { FollowUpTaskType } from '../domain/follow-up-task-type.value-object';
-import { toLeadId } from '../domain/lead-id';
+import { toLeadId } from '../../../domain/shared/lead-id';
 
 const SCHEDULED = new Date('2026-10-10T10:00:00.000Z');
 

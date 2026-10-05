@@ -8,6 +8,5 @@ import type { Vehicle } from './vehicle.entity';
  */
 export interface IVehicleRepository {
   findById(id: VehicleId): Promise<Vehicle | null>;
-  isLive(id: VehicleId): Promise<boolean>;
   save(vehicle: Vehicle, actorId: UserId): Promise<void>;
 }

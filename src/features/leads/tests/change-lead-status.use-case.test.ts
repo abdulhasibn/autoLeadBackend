@@ -1,20 +1,20 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import { NotFoundError } from '../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
+import { toLeadId } from '../../../domain/shared/lead-id';
 import { toShowroomId } from '../../../domain/shared/showroom-id';
 import { type UserId, toUserId } from '../../../domain/shared/user-id';
 import { type VehicleId, toVehicleId } from '../../../domain/shared/vehicle-id';
 import { LeadManagementPolicy } from '../application/policies/lead-management.policy';
+import { VehicleLinkRefresher } from '../application/services/vehicle-link-refresher';
 import { ChangeLeadStatusUseCase } from '../application/use-cases/change-lead-status.use-case';
 import { toContactId } from '../domain/contact-id';
 import { InvalidLeadStatusTransitionError } from '../domain/errors/invalid-lead-status-transition.error';
 import { Lead } from '../domain/lead.entity';
-import { toLeadId } from '../domain/lead-id';
 import { LeadSource } from '../domain/lead-source.value-object';
 import { LeadStatus } from '../domain/lead-status.value-object';
-import { FakeClock, FakeLeadRepository, FakeVehicleSale } from './fakes';
+import { FakeClock, FakeLeadRepository, FakeVehicles } from './fakes';
 
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
@@ -29,6 +29,8 @@ const SALES: AuthenticatedContext = {
 
 const LEAD_ID = '77777777-7777-4777-8777-777777777777';
 const CLOSING_ID = '88888888-8888-4888-8888-888888888888';
+const RIVAL_ID = '55555555-5555-4555-8555-555555555555';
+const PARKED_ID = '44444444-4444-4444-8444-444444444444';
 const VEHICLE_ID = toVehicleId('99999999-9999-4999-8999-999999999999');
 const NOW = new Date('2026-10-03T00:00:00.000Z');
 
@@ -63,107 +65,127 @@ function lead(
 describe('ChangeLeadStatusUseCase', () => {
   let useCase: ChangeLeadStatusUseCase;
   let repo: FakeLeadRepository;
-  let vehicleSale: FakeVehicleSale;
+  let vehicles: FakeVehicles;
 
   beforeEach(() => {
     repo = new FakeLeadRepository();
-    vehicleSale = new FakeVehicleSale();
+    vehicles = new FakeVehicles();
+    vehicles.seed(VEHICLE_ID, 'linked');
     repo.seedLead(lead(LEAD_ID, 'new', null, null));
     repo.seedLead(lead(CLOSING_ID, 'booking_confirmed', VEHICLE_ID, SALES.userId));
     useCase = new ChangeLeadStatusUseCase(
       new LeadManagementPolicy(),
       repo,
-      vehicleSale,
+      vehicles,
+      new VehicleLinkRefresher(repo, vehicles),
       new FakeClock(NOW),
     );
   });
 
-  it('moves a new lead to contacted and records the actor', async () => {
+  it('parks a new lead as not_now and records the actor', async () => {
     const result = await useCase.execute(
-      { leadId: LEAD_ID, status: 'contacted', notes: 'Called back', markVehicleSold: false },
+      { leadId: LEAD_ID, status: 'not_now', notes: 'Call after Diwali' },
       ADMIN,
     );
-    expect(result).toEqual({ status: 'contacted', vehicleMarkedSold: false });
-    expect(repo.writes.at(-1)).toEqual({ actorId: ADMIN.userId, statusNotes: 'Called back' });
+    expect(result).toEqual({ status: 'not_now', vehicleSold: false });
+    expect(repo.writes.at(-1)).toEqual({ actorId: ADMIN.userId, statusNotes: 'Call after Diwali' });
   });
 
   it('rejects an invalid jump', async () => {
     await expect(
-      useCase.execute(
-        { leadId: LEAD_ID, status: 'negotiation', notes: null, markVehicleSold: false },
-        ADMIN,
-      ),
+      useCase.execute({ leadId: CLOSING_ID, status: 'not_now', notes: null }, ADMIN),
     ).rejects.toBeInstanceOf(InvalidLeadStatusTransitionError);
   });
 
-  it('closes a lead as sold without touching the vehicle by default', async () => {
-    const result = await useCase.execute(
-      { leadId: CLOSING_ID, status: 'sold', notes: null, markVehicleSold: false },
-      ADMIN,
-    );
-    expect(result).toEqual({ status: 'sold', vehicleMarkedSold: false });
-    expect(vehicleSale.sold).toHaveLength(0);
+  it('requires a vehicle before booking', async () => {
+    await expect(
+      useCase.execute({ leadId: LEAD_ID, status: 'booking_confirmed', notes: null }, ADMIN),
+    ).rejects.toMatchObject({ code: 'LEAD_REQUIRES_VEHICLE' });
+    expect(repo.writes).toHaveLength(0);
   });
 
-  it('marks the linked vehicle sold when asked', async () => {
+  it('rejects vehicle_unavailable as a manual status', async () => {
+    await expect(
+      useCase.execute({ leadId: LEAD_ID, status: 'vehicle_unavailable', notes: null }, ADMIN),
+    ).rejects.toMatchObject({ code: 'LEAD_STATUS_SYSTEM_MANAGED' });
+  });
+
+  it('converting sells the vehicle to the lead', async () => {
     const result = await useCase.execute(
-      { leadId: CLOSING_ID, status: 'sold', notes: null, markVehicleSold: true },
+      { leadId: CLOSING_ID, status: 'converted', notes: null },
       SALES,
     );
-    expect(result).toEqual({ status: 'sold', vehicleMarkedSold: true });
-    expect(vehicleSale.sold).toEqual([{ vehicleId: VEHICLE_ID, actorId: SALES.userId }]);
+    expect(result).toEqual({ status: 'converted', vehicleSold: true });
+    expect(vehicles.statusOf(VEHICLE_ID)).toBe('sold');
+    expect(vehicles.soldTo.get(VEHICLE_ID)).toBe(CLOSING_ID);
   });
 
-  it('rejects markVehicleSold for any status other than sold', async () => {
+  it('converting moves the other active leads on the vehicle to vehicle_unavailable', async () => {
+    repo.seedLead(lead(RIVAL_ID, 'new', VEHICLE_ID, null));
+    repo.seedLead(lead(PARKED_ID, 'not_now', VEHICLE_ID, null));
+
+    await useCase.execute({ leadId: CLOSING_ID, status: 'converted', notes: null }, ADMIN);
+
+    for (const id of [RIVAL_ID, PARKED_ID]) {
+      const other = repo.leads.get(id);
+      expect(other?.status.value).toBe('vehicle_unavailable');
+      expect(other?.vehicleId).toBeNull();
+    }
+    expect(repo.writes).toContainEqual({
+      actorId: ADMIN.userId,
+      statusNotes: `Vehicle sold through lead ${CLOSING_ID}`,
+    });
+  });
+
+  it('leaves every lead unchanged when the vehicle cannot be sold', async () => {
+    vehicles.saleError = new Error('vehicle is dropped');
     await expect(
-      useCase.execute(
-        { leadId: LEAD_ID, status: 'contacted', notes: null, markVehicleSold: true },
-        ADMIN,
-      ),
-    ).rejects.toBeInstanceOf(BusinessRuleViolationError);
+      useCase.execute({ leadId: CLOSING_ID, status: 'converted', notes: null }, ADMIN),
+    ).rejects.toThrow('vehicle is dropped');
     expect(repo.writes).toHaveLength(0);
   });
 
-  it('rejects markVehicleSold when the lead has no vehicle', async () => {
-    repo.seedLead(lead(CLOSING_ID, 'booking_confirmed', null, null));
-    await expect(
-      useCase.execute(
-        { leadId: CLOSING_ID, status: 'sold', notes: null, markVehicleSold: true },
-        ADMIN,
-      ),
-    ).rejects.toMatchObject({ code: 'LEAD_HAS_NO_VEHICLE' });
-  });
+  it('can be retried after the converting lead write fails', async () => {
+    repo.seedLead(lead(RIVAL_ID, 'new', VEHICLE_ID, null));
+    const command = { leadId: CLOSING_ID, status: 'converted', notes: null };
 
-  it('leaves the lead unchanged when the vehicle cannot be sold', async () => {
-    vehicleSale.failWith = new Error('vehicle is not listed');
-    await expect(
-      useCase.execute(
-        { leadId: CLOSING_ID, status: 'sold', notes: null, markVehicleSold: true },
-        ADMIN,
-      ),
-    ).rejects.toThrow('vehicle is not listed');
-    expect(repo.writes).toHaveLength(0);
-  });
-
-  it('can be retried after the lead write fails', async () => {
     repo.failNextSave = true;
-    const command = { leadId: CLOSING_ID, status: 'sold', notes: null, markVehicleSold: true };
     await expect(useCase.execute(command, ADMIN)).rejects.toThrow('save failed');
 
     repo.seedLead(lead(CLOSING_ID, 'booking_confirmed', VEHICLE_ID, SALES.userId));
     await expect(useCase.execute(command, ADMIN)).resolves.toEqual({
-      status: 'sold',
-      vehicleMarkedSold: true,
+      status: 'converted',
+      vehicleSold: true,
     });
-    expect(vehicleSale.sold).toHaveLength(1);
+    expect(repo.leads.get(RIVAL_ID)?.status.value).toBe('vehicle_unavailable');
+    expect(repo.leads.get(CLOSING_ID)?.status.value).toBe('converted');
+  });
+
+  it('losing the last active lead re-opens the vehicle', async () => {
+    await useCase.execute({ leadId: CLOSING_ID, status: 'lost', notes: null }, ADMIN);
+    expect(vehicles.statusOf(VEHICLE_ID)).toBe('open');
+  });
+
+  it('keeps the vehicle linked while another active lead remains', async () => {
+    repo.seedLead(lead(PARKED_ID, 'not_now', VEHICLE_ID, null));
+    await useCase.execute({ leadId: CLOSING_ID, status: 'lost', notes: null }, ADMIN);
+    expect(vehicles.statusOf(VEHICLE_ID)).toBe('linked');
+  });
+
+  it('revives a vehicle_unavailable lead once it has a new vehicle', async () => {
+    const otherVehicle = toVehicleId('12121212-1212-4121-8121-121212121212');
+    vehicles.seed(otherVehicle, 'open');
+    repo.seedLead(lead(RIVAL_ID, 'vehicle_unavailable', otherVehicle, null));
+
+    await useCase.execute({ leadId: RIVAL_ID, status: 'new', notes: null }, ADMIN);
+
+    expect(repo.leads.get(RIVAL_ID)?.status.value).toBe('new');
+    expect(vehicles.statusOf(otherVehicle)).toBe('linked');
   });
 
   it('hides leads that are not assigned to the salesperson', async () => {
     await expect(
-      useCase.execute(
-        { leadId: LEAD_ID, status: 'contacted', notes: null, markVehicleSold: false },
-        SALES,
-      ),
+      useCase.execute({ leadId: LEAD_ID, status: 'not_now', notes: null }, SALES),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 });

@@ -7,7 +7,7 @@ The staff vehicles API requires a bearer token and returns internal fields: owne
 The marketplace gets its own feature module, `features/marketplace/`, with:
 
 - **Its own router** using an optional bearer middleware. It attaches the actor when a valid token is present and never rejects a request for lacking one.
-- **Its own query interface and public DTOs.** Only `available` vehicles are returned, with public fields only: catalog names, year, km, fuel, transmission, colour, listed price, location, and media URLs. There is no owner, acquisition type, financials or documents.
+- **Its own query interface and public DTOs.** Only listed vehicles (`open` or `linked`, see ADR-0011) are returned, with public fields only: catalog names, year, km, fuel, transmission, colour, listed price, location, and media URLs. There is no owner, acquisition type, financials or documents.
 - **No imports from `features/vehicles`.** It reads through its own Supabase query adapter.
 
 ## Considered Options

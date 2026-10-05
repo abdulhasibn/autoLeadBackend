@@ -63,7 +63,7 @@ Foundation (shipped)
 
 | # | Work item | Paths | PRD | Status |
 |---|-----------|-------|-----|--------|
-| 3.1 | Inventory management (status, pricing, listing guard) | `src/features/inventory/` | §9, §10 | Partial — `available` / `reserved` / `sold` transitions shipped on `vehicles`; pricing and listing guard Todo |
+| 3.1 | Inventory management (status, pricing, listing guard) | `src/features/inventory/` | §9, §10 | Partial — `open` / `linked` / `dropped` / `sold` lifecycle shipped on `vehicles` (ADR-0011); pricing and listing guard Todo |
 | 3.2 | Public marketplace: browse, search, filter | `src/features/marketplace/` | §11 | Todo |
 | 3.3 | Vehicle detail page API | `marketplace` | §12 | Todo |
 | 3.4 | Showroom info (name, address, hours) | `marketplace` or `config` slice | §32 | Todo |

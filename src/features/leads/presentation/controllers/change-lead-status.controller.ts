@@ -15,12 +15,7 @@ export class ChangeLeadStatusController {
         const params = leadIdParamSchema.parse(req.params);
         const body = changeLeadStatusBodySchema.parse(req.body);
         const result = await this.changeStatus.execute(
-          {
-            leadId: params.id,
-            status: body.status,
-            notes: body.notes,
-            markVehicleSold: body.markVehicleSold,
-          },
+          { leadId: params.id, status: body.status, notes: body.notes },
           ctx,
         );
         res.status(200).json(result);

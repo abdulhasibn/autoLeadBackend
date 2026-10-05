@@ -1,5 +1,6 @@
 import { DataIntegrityError } from '../../../domain/errors/data-integrity.error';
 import { CalendarDate } from '../../../domain/shared/calendar-date.value-object';
+import { toLeadId } from '../../../domain/shared/lead-id';
 import { toOwnerId } from '../../../domain/shared/owner-id';
 import { toUserId } from '../../../domain/shared/user-id';
 import { toVehicleId } from '../../../domain/shared/vehicle-id';
@@ -37,6 +38,7 @@ export interface VehicleRow {
   readonly location: string | null;
   readonly description: string | null;
   readonly status: string;
+  readonly sold_lead_id: string | null;
   readonly acquisition_type: string;
   readonly submitted_by: string;
   readonly created_at: string;
@@ -88,6 +90,7 @@ export function toVehicle(row: VehicleRow): Vehicle {
     location: row.location,
     description: row.description,
     status: mapVo(row.status, row.id, 'status', (value) => VehicleStatus.create(value)),
+    soldLeadId: row.sold_lead_id === null ? null : toLeadId(row.sold_lead_id),
     acquisitionType: mapVo(row.acquisition_type, row.id, 'acquisition_type', (value) =>
       AcquisitionType.create(value),
     ),
@@ -126,6 +129,7 @@ export function toVehicleReadModel(row: VehicleListRow): VehicleReadModel | null
     location: row.location,
     description: row.description,
     status: row.status,
+    soldLeadId: row.sold_lead_id,
     acquisitionType: row.acquisition_type,
     submittedBy: row.submitted_by,
     createdAt: new Date(row.created_at).toISOString(),

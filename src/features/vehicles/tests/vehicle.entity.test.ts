@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { toLeadId } from '../../../domain/shared/lead-id';
 import { toOwnerId } from '../../../domain/shared/owner-id';
 import { toShowroomId } from '../../../domain/shared/showroom-id';
 import { toUserId } from '../../../domain/shared/user-id';
@@ -46,9 +47,10 @@ function makeVehicle(): Vehicle {
 }
 
 describe('Vehicle entity', () => {
-  it('creates a submitted vehicle and trims text', () => {
+  it('creates an open vehicle and trims text', () => {
     const vehicle = makeVehicle();
-    expect(vehicle.status.value).toBe('submitted');
+    expect(vehicle.status.value).toBe('open');
+    expect(vehicle.soldLeadId).toBeNull();
     expect(vehicle.colour).toBe('White');
     expect(vehicle.location).toBe('Bengaluru');
     expect(vehicle.description).toBe('clean');
@@ -80,26 +82,68 @@ describe('Vehicle entity', () => {
     expect(vehicle.updatedAt).toEqual(at);
   });
 
-  it('moves along the inspection path and stores a reason', () => {
+  it('lets an admin drop and re-list a vehicle with a reason', () => {
     const vehicle = makeVehicle();
     const at = new Date('2026-10-03T12:00:00.000Z');
-    vehicle.changeStatus(VehicleStatus.create('inspection_pending'), at, '  ready  ');
-    expect(vehicle.status.value).toBe('inspection_pending');
-    expect(vehicle.statusChangeReason).toBe('ready');
+    vehicle.changeStatusByAdmin(VehicleStatus.create('dropped'), at, '  owner withdrew  ');
+    expect(vehicle.status.value).toBe('dropped');
+    expect(vehicle.statusChangeReason).toBe('owner withdrew');
     expect(vehicle.updatedAt).toEqual(at);
+    expect(vehicle.isLinkable).toBe(false);
+    vehicle.changeStatusByAdmin(VehicleStatus.create('open'), at, null);
+    expect(vehicle.status.value).toBe('open');
   });
 
-  it('rejects an invalid status jump', () => {
+  it('refuses admin changes to lead-driven statuses', () => {
     const vehicle = makeVehicle();
-    expect(() => vehicle.changeStatus(VehicleStatus.create('approved'), NOW, null)).toThrow(
-      InvalidVehicleStatusTransitionError,
-    );
+    for (const status of ['linked', 'sold']) {
+      expect(() => vehicle.changeStatusByAdmin(VehicleStatus.create(status), NOW, null)).toThrow(
+        expect.objectContaining({ code: 'VEHICLE_STATUS_SYSTEM_MANAGED' }),
+      );
+    }
   });
 
-  it('treats the same status as a no-op', () => {
+  it('follows its active leads between open and linked', () => {
     const vehicle = makeVehicle();
-    vehicle.changeStatus(VehicleStatus.create('submitted'), NOW, 'ignored');
-    expect(vehicle.status.value).toBe('submitted');
-    expect(vehicle.statusChangeReason).toBeNull();
+    vehicle.syncLinkState(true, NOW);
+    expect(vehicle.status.value).toBe('linked');
+    vehicle.syncLinkState(true, NOW);
+    expect(vehicle.status.value).toBe('linked');
+    vehicle.syncLinkState(false, NOW);
+    expect(vehicle.status.value).toBe('open');
+  });
+
+  it('ignores link sync once dropped', () => {
+    const vehicle = makeVehicle();
+    vehicle.changeStatusByAdmin(VehicleStatus.create('dropped'), NOW, null);
+    vehicle.syncLinkState(true, NOW);
+    expect(vehicle.status.value).toBe('dropped');
+  });
+
+  it('sells a linked vehicle to a lead, idempotently', () => {
+    const vehicle = makeVehicle();
+    const lead = toLeadId('77777777-7777-4777-8777-777777777777');
+    vehicle.syncLinkState(true, NOW);
+    vehicle.markSold(lead, NOW, 'Sold through lead');
+    expect(vehicle.status.value).toBe('sold');
+    expect(vehicle.soldLeadId).toBe(lead);
+    vehicle.markSold(lead, NOW, 'again');
+    expect(vehicle.soldLeadId).toBe(lead);
+  });
+
+  it('refuses to sell a vehicle twice to different leads', () => {
+    const vehicle = makeVehicle();
+    vehicle.syncLinkState(true, NOW);
+    vehicle.markSold(toLeadId('77777777-7777-4777-8777-777777777777'), NOW, 'first');
+    expect(() =>
+      vehicle.markSold(toLeadId('88888888-8888-4888-8888-888888888888'), NOW, 'second'),
+    ).toThrow(expect.objectContaining({ code: 'VEHICLE_ALREADY_SOLD' }));
+  });
+
+  it('refuses to sell a vehicle without a linked lead', () => {
+    const vehicle = makeVehicle();
+    expect(() =>
+      vehicle.markSold(toLeadId('77777777-7777-4777-8777-777777777777'), NOW, 'sold'),
+    ).toThrow(InvalidVehicleStatusTransitionError);
   });
 });

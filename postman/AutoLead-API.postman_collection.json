@@ -763,7 +763,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"inspection_pending\",\n  \"reason\": \"photos in\"\n}",
+              "raw": "{\n  \"status\": \"dropped\",\n  \"reason\": \"owner withdrew\",\n  \"confirmUnlinkLeads\": false\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -771,7 +771,7 @@
               }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/status",
-            "description": "POST /vehicles/:id/status (Admin) \u2014 200 `{ status }`. Graph: submitted \u2192 inspection_pending \u2192 under_inspection \u2192 approved \u2192 available \u2192 reserved \u2192 sold; reserved \u2192 available when a deal falls through. Invalid transition \u2192 422 INVALID_VEHICLE_STATUS_TRANSITION."
+            "description": "POST /vehicles/:id/status (Admin) \u2014 200 `{ status, unlinkedLeadCount }`. Only `dropped` and `open` (re-list) are accepted; `linked` / `sold` follow the vehicle's leads \u2192 422 VEHICLE_STATUS_SYSTEM_MANAGED. Graph: open \u21c4 linked (auto), linked \u2192 sold (auto, lead converts), open/linked \u2192 dropped, dropped \u2192 open. Dropping a vehicle with active leads \u2192 422 VEHICLE_HAS_LINKED_LEADS with `error.details.linkedLeadCount`; resend with `confirmUnlinkLeads: true` to unlink those leads and drop it."
           }
         },
         {
@@ -1108,7 +1108,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"contacted\",\n  \"notes\": null\n}",
+              "raw": "{\n  \"status\": \"not_now\",\n  \"notes\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1116,11 +1116,11 @@
               }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/status",
-            "description": "POST /leads/:id/status \u2014 200 `{ status, vehicleMarkedSold }`. Invalid transition \u2192 422."
+            "description": "POST /leads/:id/status \u2014 200 `{ status, vehicleSold }`. new \u2192 not_now | booking_confirmed | lost; not_now \u2192 new | booking_confirmed | lost; booking_confirmed \u2192 converted | lost; vehicle_unavailable \u2192 new | not_now | booking_confirmed | lost. booking_confirmed/converted need a vehicle (422 LEAD_REQUIRES_VEHICLE); vehicle_unavailable is system-only. Invalid transition \u2192 422."
           }
         },
         {
-          "name": "Close Lead As Sold With Vehicle",
+          "name": "Convert Lead",
           "request": {
             "method": "POST",
             "header": [
@@ -1131,7 +1131,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"sold\",\n  \"notes\": null,\n  \"markVehicleSold\": true\n}",
+              "raw": "{\n  \"status\": \"converted\",\n  \"notes\": null\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1139,7 +1139,7 @@
               }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/status",
-            "description": "POST /leads/:id/status from booking_confirmed \u2014 also sells the linked vehicle (must be available or reserved). Safe to repeat if the lead write fails."
+            "description": "POST /leads/:id/status from booking_confirmed \u2014 sells the lead's vehicle to this lead (vehicle `soldLeadId`) and moves every other active lead on that vehicle to vehicle_unavailable (vehicle unlinked). Safe to repeat if it fails part-way."
           }
         }
       ]

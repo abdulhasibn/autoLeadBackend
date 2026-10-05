@@ -5,4 +5,5 @@ import { optionalTextSchema, vehicleStatusSchema } from './vehicle-fields.schema
 export const changeVehicleStatusBodySchema = z.object({
   status: vehicleStatusSchema,
   reason: optionalTextSchema,
+  confirmUnlinkLeads: z.boolean().optional().default(false),
 });

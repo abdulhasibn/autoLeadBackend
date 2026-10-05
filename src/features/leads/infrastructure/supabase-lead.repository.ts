@@ -1,12 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
+import type { LeadId } from '../../../domain/shared/lead-id';
 import type { Phone } from '../../../domain/shared/phone.value-object';
+import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
 import type { Contact } from '../domain/contact.entity';
 import type { FollowUp } from '../domain/follow-up.entity';
 import type { Lead } from '../domain/lead.entity';
-import type { LeadId } from '../domain/lead-id';
+import { ACTIVE_LEAD_STATUSES } from '../domain/lead-status.value-object';
 import type { ILeadRepository, LeadWrite } from '../domain/lead.repository';
 import { toContact, toLead, type ContactRow, type LeadRow } from './lead.mapper';
 import { translateLeadWriteError } from './translate-lead-write-error';
@@ -33,6 +35,21 @@ export class SupabaseLeadRepository implements ILeadRepository {
     }
 
     return toLead(data as LeadRow);
+  }
+
+  async findActiveByVehicle(vehicleId: VehicleId): Promise<Lead[]> {
+    const { data, error } = await this.db
+      .from('leads')
+      .select(LEAD_COLUMNS)
+      .eq('vehicle_id', vehicleId)
+      .in('status', [...ACTIVE_LEAD_STATUSES])
+      .is('deleted_at', null);
+
+    if (error !== null) {
+      throw new DatabaseUnavailableError(`Failed to load vehicle leads: ${error.message}`);
+    }
+
+    return (data as LeadRow[]).map(toLead);
   }
 
   async findLiveContactByPhone(phone: Phone): Promise<Contact | null> {

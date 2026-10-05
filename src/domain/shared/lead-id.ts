@@ -1,4 +1,4 @@
-import type { Brand } from '../../../shared/primitives/brand';
+import type { Brand } from '../../shared/primitives/brand';
 
 export type LeadId = Brand<string, 'LeadId'>;
 

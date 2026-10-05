@@ -9,7 +9,7 @@
 # With credentials it also runs the full staff flow against the real
 # database: it creates a temporary salesperson, owner, vehicle and leads
 # (names start with "ZZ Smoke"), then deactivates the salesperson and closes
-# the leads. The vehicle ends `sold` because sold is terminal.
+# the leads. The first vehicle ends `sold` (terminal); the second ends `dropped`.
 set -uo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:3000}"
@@ -134,12 +134,17 @@ check 'PATCH /vehicles/:id' 200 "$(call PATCH "/vehicles/$VEHICLE_ID" "$ADMIN" "
 check 'GET /vehicles/:id/media' 200 "$(call GET "/vehicles/$VEHICLE_ID/media" "$ADMIN")"
 check 'GET /vehicles/:id/documents' 200 "$(call GET "/vehicles/$VEHICLE_ID/documents" "$ADMIN")"
 
-for status in inspection_pending under_inspection approved available reserved available reserved; do
-  check "POST /vehicles/:id/status -> $status" 200 \
-    "$(call POST "/vehicles/$VEHICLE_ID/status" "$ADMIN" "{\"status\":\"$status\",\"reason\":\"smoke\"}")"
+call GET "/vehicles/$VEHICLE_ID" "$ADMIN" >/dev/null
+check 'new vehicle starts open' open "$(field .status)"
+for status in linked sold; do
+  check "admin cannot set vehicle $status" 422 \
+    "$(call POST "/vehicles/$VEHICLE_ID/status" "$ADMIN" "{\"status\":\"$status\",\"reason\":null}")"
+  check "  ... code VEHICLE_STATUS_SYSTEM_MANAGED" VEHICLE_STATUS_SYSTEM_MANAGED "$(field .error.code)"
 done
-check 'vehicle reserved -> approved is rejected' 422 \
-  "$(call POST "/vehicles/$VEHICLE_ID/status" "$ADMIN" '{"status":"approved","reason":null}')"
+check 'POST /vehicles/:id/status -> dropped (no leads)' 200 \
+  "$(call POST "/vehicles/$VEHICLE_ID/status" "$ADMIN" '{"status":"dropped","reason":"smoke"}')"
+check 'POST /vehicles/:id/status -> open (re-list)' 200 \
+  "$(call POST "/vehicles/$VEHICLE_ID/status" "$ADMIN" '{"status":"open","reason":"smoke"}')"
 check 'GET /vehicles/:id/status-history' 200 "$(call GET "/vehicles/$VEHICLE_ID/status-history" "$ADMIN")"
 
 check 'POST /leads (admin, with vehicle)' 201 "$(call POST /leads "$ADMIN" "{
@@ -149,6 +154,8 @@ check 'POST /leads (admin, with vehicle)' 201 "$(call POST /leads "$ADMIN" "{
   \"currentVehicle\":null,\"tradeInRequired\":false,\"notes\":\"smoke test\"}")"
 LEAD_ID="$(field .id)"
 check 'admin lead starts unassigned' null "$(field .assignedTo)"
+call GET "/vehicles/$VEHICLE_ID" "$ADMIN" >/dev/null
+check 'vehicle is linked once a lead points at it' linked "$(field .status)"
 
 check 'POST /leads (admin, second lead stays unassigned)' 201 "$(call POST /leads "$ADMIN" "{
   \"showroomId\":\"$SHOWROOM_ID\",\"fullName\":\"ZZ Smoke Other $RUN\",\"phone\":\"+9173${SUFFIX}44\",
@@ -188,7 +195,7 @@ NOTIFICATION_ID="$(field "[.items[] | select(.type == \"lead_assigned\")][0].id"
 check 'PATCH /notifications/:id/read (salesperson)' 204 \
   "$(call PATCH "/notifications/$NOTIFICATION_ID/read" "$SALES")"
 check 'salesperson cannot change vehicle status' 403 \
-  "$(call POST "/vehicles/$VEHICLE_ID/status" "$SALES" '{"status":"available","reason":null}')"
+  "$(call POST "/vehicles/$VEHICLE_ID/status" "$SALES" '{"status":"dropped","reason":null}')"
 check 'salesperson cannot assign leads' 403 \
   "$(call PUT "/leads/$LEAD_ID/assignment" "$SALES" "{\"assignedTo\":\"$SALES_ID\"}")"
 check 'GET /vehicles/:id (salesperson)' 200 "$(call GET "/vehicles/$VEHICLE_ID" "$SALES")"
@@ -208,21 +215,58 @@ check 'POST /leads/:id/follow-ups (salesperson)' 201 "$(call POST "/leads/$LEAD_
   '{"scheduledAt":"2030-01-01T10:00:00.000Z","taskType":"call","notes":"smoke"}')"
 check 'follow-up assigned to lead owner' "$SALES_ID" "$(field .assignedTo)"
 
-check 'markVehicleSold with a non-sold status' 422 \
-  "$(call POST "/leads/$LEAD_ID/status" "$SALES" '{"status":"contacted","notes":null,"markVehicleSold":true}')"
-for status in contacted interested follow_up test_drive negotiation booking_confirmed; do
+check 'vehicle_unavailable cannot be set by hand' 422 \
+  "$(call POST "/leads/$OWN_LEAD_ID/status" "$SALES" '{"status":"vehicle_unavailable","notes":null}')"
+check 'booking without a vehicle is rejected' 422 \
+  "$(call POST "/leads/$OWN_LEAD_ID/status" "$SALES" '{"status":"booking_confirmed","notes":null}')"
+check '  ... code LEAD_REQUIRES_VEHICLE' LEAD_REQUIRES_VEHICLE "$(field .error.code)"
+for status in not_now new booking_confirmed; do
   check "POST /leads/:id/status -> $status (salesperson)" 200 \
     "$(call POST "/leads/$LEAD_ID/status" "$SALES" "{\"status\":\"$status\",\"notes\":\"smoke\"}")"
 done
-check 'close lead as sold with markVehicleSold' 200 \
-  "$(call POST "/leads/$LEAD_ID/status" "$SALES" '{"status":"sold","notes":"smoke","markVehicleSold":true}')"
-check 'response vehicleMarkedSold' true "$(field .vehicleMarkedSold)"
-check 'repeat close is a no-op' 200 \
-  "$(call POST "/leads/$LEAD_ID/status" "$SALES" '{"status":"sold","notes":null,"markVehicleSold":true}')"
+check 'convert the lead' 200 \
+  "$(call POST "/leads/$LEAD_ID/status" "$SALES" '{"status":"converted","notes":"smoke"}')"
+check 'response vehicleSold' true "$(field .vehicleSold)"
+check 'repeat convert is a no-op' 200 \
+  "$(call POST "/leads/$LEAD_ID/status" "$SALES" '{"status":"converted","notes":null}')"
 call GET "/vehicles/$VEHICLE_ID" "$ADMIN" >/dev/null
 check 'vehicle is now sold' sold "$(field .status)"
+check 'vehicle soldLeadId is the converted lead' "$LEAD_ID" "$(field .soldLeadId)"
+call GET "/leads/$OTHER_LEAD_ID" "$ADMIN" >/dev/null
+check 'other lead on the vehicle -> vehicle_unavailable' vehicle_unavailable "$(field .status)"
+check 'other lead lost its vehicle' null "$(field .vehicleId)"
 check 'closed lead cannot be reassigned' 422 \
   "$(call PUT "/leads/$LEAD_ID/assignment" "$ADMIN" '{"assignedTo":null}')"
+check 'cannot link a lead to a sold vehicle' 422 \
+  "$(call PATCH "/leads/$OTHER_LEAD_ID/vehicle" "$ADMIN" "{\"vehicleId\":\"$VEHICLE_ID\"}")"
+check '  ... code VEHICLE_NOT_LINKABLE' VEHICLE_NOT_LINKABLE "$(field .error.code)"
+
+echo
+echo "== Revive and drop"
+check 'POST /vehicles (second vehicle)' 201 "$(call POST /vehicles "$ADMIN" "{
+  \"ownerId\":\"$OWNER_ID\",\"variantId\":\"$VARIANT_ID\",
+  \"year\":2020,\"registrationNumber\":\"ZY${SUFFIX}\",\"fuelType\":\"diesel\",
+  \"transmission\":\"automatic\",\"kmDriven\":30000,\"numPreviousOwners\":0,\"colour\":\"Black\",
+  \"insuranceValidUntil\":null,\"rcStatus\":null,\"serviceHistory\":null,
+  \"accidentHistory\":false,\"loanStatus\":null,\"location\":null,
+  \"description\":\"smoke test\",\"acquisitionType\":\"consignment\"}")"
+VEHICLE2_ID="$(field .id)"
+check 'link the vehicle_unavailable lead to the second vehicle' 200 \
+  "$(call PATCH "/leads/$OTHER_LEAD_ID/vehicle" "$ADMIN" "{\"vehicleId\":\"$VEHICLE2_ID\"}")"
+check 'revive the lead to new' 200 \
+  "$(call POST "/leads/$OTHER_LEAD_ID/status" "$ADMIN" '{"status":"new","notes":"smoke"}')"
+call GET "/vehicles/$VEHICLE2_ID" "$ADMIN" >/dev/null
+check 'second vehicle is linked' linked "$(field .status)"
+check 'drop a linked vehicle without confirming' 422 \
+  "$(call POST "/vehicles/$VEHICLE2_ID/status" "$ADMIN" '{"status":"dropped","reason":"smoke"}')"
+check '  ... code VEHICLE_HAS_LINKED_LEADS' VEHICLE_HAS_LINKED_LEADS "$(field .error.code)"
+check '  ... details.linkedLeadCount' 1 "$(field .error.details.linkedLeadCount)"
+check 'drop it with confirmUnlinkLeads' 200 \
+  "$(call POST "/vehicles/$VEHICLE2_ID/status" "$ADMIN" '{"status":"dropped","reason":"smoke","confirmUnlinkLeads":true}')"
+check '  ... unlinkedLeadCount' 1 "$(field .unlinkedLeadCount)"
+call GET "/leads/$OTHER_LEAD_ID" "$ADMIN" >/dev/null
+check 'dropped vehicle unlinked from the lead' null "$(field .vehicleId)"
+check 'lead kept its status' new "$(field .status)"
 
 echo
 echo "== Cleanup"

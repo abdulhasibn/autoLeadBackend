@@ -7,7 +7,7 @@ import { toVehicleId } from '../../../domain/shared/vehicle-id';
 import { Contact } from '../domain/contact.entity';
 import { toContactId } from '../domain/contact-id';
 import { Lead } from '../domain/lead.entity';
-import { toLeadId } from '../domain/lead-id';
+import { toLeadId } from '../../../domain/shared/lead-id';
 import type { LeadFollowUpReadModel, LeadReadModel } from '../domain/lead.queries';
 import { LeadSource } from '../domain/lead-source.value-object';
 import { LeadStatus } from '../domain/lead-status.value-object';
