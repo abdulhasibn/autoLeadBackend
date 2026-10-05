@@ -1312,6 +1312,20 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      dashboard_summary: {
+        Args: {
+          p_aged_before: string;
+          p_assignee_id: string | null;
+          p_from: string;
+          p_list_limit: number;
+          p_now: string;
+          p_prev_from: string;
+          p_prev_until: string;
+          p_showroom_id: string | null;
+          p_today_end: string;
+        };
+        Returns: Json;
+      };
       save_lead: {
         Args: {
           p_actor_id?: string | null;

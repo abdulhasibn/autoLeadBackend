@@ -9,7 +9,7 @@
 | Area | Status |
 |------|--------|
 | Repo scaffold (Express / TS / Vitest / CI) | Done |
-| Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0011 | Done |
+| Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0012 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
 | SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment) | All 13 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
@@ -24,6 +24,7 @@
 | Marketplace (`src/features/marketplace`) | Not started |
 | Leads (`src/features/leads`) | Staff walk-in create, associate vehicle, status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification; Admin assignment; salesperson sees assigned leads only |
 | Sales (`src/features/sales`) | Not started |
+| Dashboard (`src/features/dashboard`) | Admin `GET /dashboard` — KPIs, attention lists, today's follow-ups (ADR-0012); money metrics after finance |
 | Finance (`src/features/finance`) | Not started |
 | Notifications (`src/features/notifications`) | Staff inbox (`due_at` filter) + mark read; `follow_up_due`, `lead_assigned` |
 | Audit trail (cross-cutting) | Partial — status history tables; lead assignment in `audit_logs` |
@@ -48,11 +49,30 @@
 ## Next up
 
 1. **Merge `feat/vehicle-lead-status-lifecycle` into `main` now.** The hosted schema is already migrated, so the API deployed from the old `main` cannot read or write vehicles/leads until the new code ships.
-2. Run the live `scripts/smoke-api.sh` flow against production (needs `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
-3. Acquisition prices on `vehicle_financials` (Stint 2.3).
-4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
+2. Apply `20261005130000_dashboard_summary.sql` to the hosted project and regenerate `database.types.ts`.
+3. Run the live `scripts/smoke-api.sh` flow against production (needs `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
+4. Acquisition prices on `vehicle_financials` (Stint 2.3).
+5. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-10-05 — Admin dashboard (ADR-0012)
+
+- `GET /dashboard?period=today|week|month|quarter&showroomId=` (admin only;
+  salesperson 403). Returns period-to-date KPIs with `previous` (same elapsed
+  span of the prior period), `attention` lists (overdue follow-ups, active
+  leads without follow-up, aged stock > 45 days), `today` follow-ups,
+  pipeline and inventory. Lists capped at 5 with `total`.
+- New slice `src/features/dashboard/`; period windows resolved in
+  `BUSINESS_TIMEZONE` (new env var, default `Asia/Kolkata`).
+- Migration `20261005130000_dashboard_summary.sql`: `dashboard_summary`
+  RPC (service_role only), `dashboard_vehicle_label` helper, indexes on
+  status-history `(to_status, changed_at)` and open follow-ups. Verified
+  against a seeded throwaway Postgres 17; **not yet applied to hosted**.
+- Follow-ups are judged per active lead by its latest open follow-up
+  (there is no completion endpoint yet).
+- Deferred: revenue/profit/average price (Stint 5), salesperson view and
+  team block, follow-up completion endpoint.
 
 ### 2026-10-05 — Vehicle and lead status lifecycle (ADR-0011)
 

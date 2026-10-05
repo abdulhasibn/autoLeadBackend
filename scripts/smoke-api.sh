@@ -59,7 +59,7 @@ PROTECTED=(
   "GET /vehicles/$ID/documents" "DELETE /vehicles/$ID/documents/$ID" "GET /leads"
   "POST /leads" "GET /leads/$ID" "PATCH /leads/$ID/vehicle" "PUT /leads/$ID/assignment"
   "POST /leads/$ID/status" "POST /leads/$ID/follow-ups" "GET /notifications"
-  "PATCH /notifications/$ID/read"
+  "PATCH /notifications/$ID/read" "GET /dashboard"
 )
 for route in "${PROTECTED[@]}"; do
   check "$route without token" 401 "$(call ${route% *} ${route#* })"
@@ -86,6 +86,10 @@ check 'me.roles includes admin' true "$(field '.roles | index("admin") != null')
 for path in /users /owners /catalog/makes /vehicles /leads /notifications; do
   check "GET $path (admin baseline)" 200 "$(call GET "$path?limit=1" "$ADMIN")"
 done
+check 'GET /dashboard (admin)' 200 "$(call GET '/dashboard?period=month' "$ADMIN")"
+check 'dashboard period.key=month' month "$(field .period.key)"
+check 'dashboard has kpis.inStock' true "$(field '.kpis.inStock.value | type == "number"')"
+check 'GET /dashboard?period=year rejected' 422 "$(call GET '/dashboard?period=year' "$ADMIN")"
 
 SALES_EMAIL="zz.smoke.$RUN@example.com"
 SALES_PASSWORD="smoke-$RUN"
@@ -196,6 +200,7 @@ check 'PATCH /notifications/:id/read (salesperson)' 204 \
   "$(call PATCH "/notifications/$NOTIFICATION_ID/read" "$SALES")"
 check 'salesperson cannot change vehicle status' 403 \
   "$(call POST "/vehicles/$VEHICLE_ID/status" "$SALES" '{"status":"dropped","reason":null}')"
+check 'salesperson cannot view the dashboard' 403 "$(call GET /dashboard "$SALES")"
 check 'salesperson cannot assign leads' 403 \
   "$(call PUT "/leads/$LEAD_ID/assignment" "$SALES" "{\"assignedTo\":\"$SALES_ID\"}")"
 check 'GET /vehicles/:id (salesperson)' 200 "$(call GET "/vehicles/$VEHICLE_ID" "$SALES")"
