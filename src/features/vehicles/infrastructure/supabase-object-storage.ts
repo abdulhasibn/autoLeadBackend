@@ -69,6 +69,32 @@ export class SupabaseObjectStorage implements ObjectStoragePort {
     return { url: data.signedUrl };
   }
 
+  async createSignedReadUrls(input: {
+    readonly kind: VehicleStorageKind;
+    readonly storagePaths: readonly string[];
+    readonly expiresInSeconds: number;
+  }): Promise<ReadonlyMap<string, string>> {
+    if (input.storagePaths.length === 0) {
+      return new Map();
+    }
+
+    const { data, error } = await this.db.storage
+      .from(BUCKETS[input.kind])
+      .createSignedUrls([...input.storagePaths], input.expiresInSeconds);
+
+    if (error !== null) {
+      throw new DatabaseUnavailableError(`Failed to create signed read URLs: ${error.message}`);
+    }
+
+    const urls = new Map<string, string>();
+    for (const item of data) {
+      if (item.error === null && item.path !== null && item.signedUrl !== null) {
+        urls.set(item.path, item.signedUrl);
+      }
+    }
+    return urls;
+  }
+
   async remove(kind: VehicleStorageKind, storagePath: string): Promise<void> {
     const { error } = await this.db.storage.from(BUCKETS[kind]).remove([storagePath]);
     if (error !== null) {

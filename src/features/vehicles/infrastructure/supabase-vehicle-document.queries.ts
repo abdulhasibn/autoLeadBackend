@@ -12,7 +12,7 @@ import type {
 import { toVehicleDocumentReadModel, type VehicleDocumentRow } from './vehicle-document.mapper';
 
 const DOCUMENT_COLUMNS =
-  'id, vehicle_id, storage_path, doc_type, is_sensitive, uploaded_by, uploaded_at';
+  'id, vehicle_id, storage_path, doc_type, file_name, is_sensitive, uploaded_by, uploaded_at';
 
 export class SupabaseVehicleDocumentQueries implements IVehicleDocumentQueries {
   constructor(private readonly db: SupabaseClient<Database>) {}

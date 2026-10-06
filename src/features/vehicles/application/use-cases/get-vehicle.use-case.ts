@@ -3,12 +3,14 @@ import type { AuthenticatedContext } from '../../../../domain/shared/auth-contex
 import { toVehicleId } from '../../../../domain/shared/vehicle-id';
 import type { VehicleDto } from '../dtos/vehicle.dto';
 import type { VehicleManagementPolicy } from '../policies/vehicle-management.policy';
+import type { VehicleFrontImages } from '../services/vehicle-front-images';
 import type { IVehicleQueries } from '../../domain/vehicle.queries';
 
 export class GetVehicleUseCase {
   constructor(
     private readonly policy: VehicleManagementPolicy,
     private readonly queries: IVehicleQueries,
+    private readonly frontImages: VehicleFrontImages,
   ) {}
 
   async execute(vehicleIdRaw: string, ctx: AuthenticatedContext): Promise<VehicleDto> {
@@ -19,6 +21,7 @@ export class GetVehicleUseCase {
       throw new NotFoundError(`Vehicle not found for id ${vehicleIdRaw}`);
     }
 
-    return vehicle;
+    const [withImage] = await this.frontImages.attach([vehicle]);
+    return withImage ?? { ...vehicle, frontImageUrl: null, frontImageUrlExpiresAt: null };
   }
 }

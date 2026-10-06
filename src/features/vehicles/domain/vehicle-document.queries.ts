@@ -6,6 +6,7 @@ export interface VehicleDocumentReadModel {
   readonly vehicleId: string;
   readonly storagePath: string;
   readonly docType: string | null;
+  readonly fileName: string | null;
   readonly isSensitive: boolean;
   readonly uploadedBy: string;
   readonly uploadedAt: string;

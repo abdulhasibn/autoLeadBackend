@@ -1,7 +1,11 @@
 import type { VehicleReadModel } from '../../domain/vehicle.queries';
 import type { Vehicle } from '../../domain/vehicle.entity';
 
-export type VehicleDto = VehicleReadModel;
+export interface VehicleDto extends VehicleReadModel {
+  /** Signed URL of the cover (`front`) photo; null when the vehicle has none. */
+  readonly frontImageUrl: string | null;
+  readonly frontImageUrlExpiresAt: string | null;
+}
 
 export function toVehicleDto(vehicle: Vehicle): VehicleDto {
   return {
@@ -33,5 +37,7 @@ export function toVehicleDto(vehicle: Vehicle): VehicleDto {
     submittedBy: vehicle.submittedBy,
     createdAt: vehicle.createdAt.toISOString(),
     updatedAt: vehicle.updatedAt.toISOString(),
+    frontImageUrl: null,
+    frontImageUrlExpiresAt: null,
   };
 }

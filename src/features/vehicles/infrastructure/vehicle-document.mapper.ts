@@ -1,6 +1,7 @@
 import { DataIntegrityError } from '../../../domain/errors/data-integrity.error';
 import { toUserId } from '../../../domain/shared/user-id';
 import { toVehicleId } from '../../../domain/shared/vehicle-id';
+import { DocumentFileName } from '../domain/document-file-name.value-object';
 import { toDocumentId } from '../domain/document-id';
 import { DocumentType } from '../domain/document-type.value-object';
 import { VehicleDocument } from '../domain/vehicle-document.entity';
@@ -12,6 +13,7 @@ export interface VehicleDocumentRow {
   readonly vehicle_id: string;
   readonly storage_path: string;
   readonly doc_type: string | null;
+  readonly file_name: string | null;
   readonly is_sensitive: boolean;
   readonly uploaded_by: string;
   readonly uploaded_at: string;
@@ -28,6 +30,7 @@ export function toVehicleDocument(row: VehicleDocumentRow): VehicleDocument {
       vehicleId: toVehicleId(row.vehicle_id),
       storagePath: VehicleObjectPath.create(toVehicleId(row.vehicle_id), row.storage_path),
       docType: DocumentType.create(row.doc_type),
+      fileName: row.file_name === null ? null : DocumentFileName.create(row.file_name),
       isSensitive: row.is_sensitive,
       uploadedBy: toUserId(row.uploaded_by),
       uploadedAt: new Date(row.uploaded_at),
@@ -43,6 +46,7 @@ export function toVehicleDocumentReadModel(row: VehicleDocumentRow): VehicleDocu
     vehicleId: row.vehicle_id,
     storagePath: row.storage_path,
     docType: row.doc_type,
+    fileName: row.file_name,
     isSensitive: row.is_sensitive,
     uploadedBy: row.uploaded_by,
     uploadedAt: new Date(row.uploaded_at).toISOString(),

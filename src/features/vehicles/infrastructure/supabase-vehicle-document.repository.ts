@@ -9,7 +9,7 @@ import { translateVehicleWriteError } from './translate-vehicle-write-error';
 import { toVehicleDocument, type VehicleDocumentRow } from './vehicle-document.mapper';
 
 const DOCUMENT_COLUMNS =
-  'id, vehicle_id, storage_path, doc_type, is_sensitive, uploaded_by, uploaded_at';
+  'id, vehicle_id, storage_path, doc_type, file_name, is_sensitive, uploaded_by, uploaded_at';
 
 export class SupabaseVehicleDocumentRepository implements IVehicleDocumentRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -37,6 +37,7 @@ export class SupabaseVehicleDocumentRepository implements IVehicleDocumentReposi
       vehicle_id: document.vehicleId,
       storage_path: document.storagePath.value,
       doc_type: document.docType.value,
+      file_name: document.fileName === null ? null : document.fileName.value,
       is_sensitive: document.isSensitive,
       uploaded_by: document.uploadedBy,
       uploaded_at: document.uploadedAt.toISOString(),

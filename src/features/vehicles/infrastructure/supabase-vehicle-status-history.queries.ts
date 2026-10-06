@@ -10,7 +10,10 @@ import type {
   VehicleStatusHistoryReadModel,
 } from '../domain/vehicle-status-history.queries';
 
-const HISTORY_COLUMNS = 'id, vehicle_id, from_status, to_status, changed_by, reason, changed_at';
+// `users!changed_by`: name the FK so the embed stays unambiguous if another
+// users reference is ever added to this table.
+const HISTORY_COLUMNS =
+  'id, vehicle_id, from_status, to_status, changed_by, reason, changed_at, actor:users!changed_by ( full_name )';
 
 interface HistoryRow {
   readonly id: string;
@@ -20,6 +23,7 @@ interface HistoryRow {
   readonly changed_by: string;
   readonly reason: string | null;
   readonly changed_at: string;
+  readonly actor: { readonly full_name: string } | null;
 }
 
 export class SupabaseVehicleStatusHistoryQueries implements IVehicleStatusHistoryQueries {
@@ -40,12 +44,13 @@ export class SupabaseVehicleStatusHistoryQueries implements IVehicleStatusHistor
       throw new DatabaseUnavailableError(`Failed to list vehicle status history: ${error.message}`);
     }
 
-    const items = ((data ?? []) as HistoryRow[]).map((row) => ({
+    const items = ((data ?? []) as unknown as HistoryRow[]).map((row) => ({
       id: row.id,
       vehicleId: row.vehicle_id,
       fromStatus: row.from_status,
       toStatus: row.to_status,
       changedBy: row.changed_by,
+      changedByName: row.actor?.full_name ?? null,
       reason: row.reason,
       changedAt: new Date(row.changed_at).toISOString(),
     }));

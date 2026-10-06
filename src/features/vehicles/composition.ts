@@ -7,6 +7,7 @@ import type { ErrorMapper } from '../../presentation/http/errors/error-mapping';
 import type { Clock } from '../../shared/clock/clock';
 import { UuidIdGenerator } from '../../shared/ids/id-generator';
 import { VehicleManagementPolicy } from './application/policies/vehicle-management.policy';
+import { VehicleFrontImages } from './application/services/vehicle-front-images';
 import { VehicleLeadLinkService } from './application/services/vehicle-lead-link.service';
 import { ChangeVehicleStatusUseCase } from './application/use-cases/change-vehicle-status.use-case';
 import { ConfirmVehicleDocumentUseCase } from './application/use-cases/confirm-vehicle-document.use-case';
@@ -27,9 +28,11 @@ import { ListVehiclesUseCase } from './application/use-cases/list-vehicles.use-c
 import { UpdateVehicleUseCase } from './application/use-cases/update-vehicle.use-case';
 import { InvalidVehicleObjectPathError } from './domain/errors/invalid-vehicle-object-path.error';
 import { InvalidVehicleStatusTransitionError } from './domain/errors/invalid-vehicle-status-transition.error';
+import type { ICatalogLineage } from './domain/catalog-lineage.port';
 import type { ILinkedLeads } from './domain/linked-leads.port';
 import type { IRegisteredOwnerLookup } from './domain/registered-owner.port';
 import { SupabaseActiveShowroomLookup } from './infrastructure/supabase-active-showroom.lookup';
+import { SupabaseCatalogLineageLookup } from './infrastructure/supabase-catalog-lineage.lookup';
 import { SupabaseCatalogQueries } from './infrastructure/supabase-catalog.queries';
 import { SupabaseLiveVariantLookup } from './infrastructure/supabase-live-variant.lookup';
 import { SupabaseObjectStorage } from './infrastructure/supabase-object-storage';
@@ -65,6 +68,8 @@ export interface VehiclesComposition {
   readonly catalogRouter: ReturnType<typeof createCatalogRouter>;
   readonly errorMapper: ErrorMapper;
   readonly vehicleLeadLink: VehicleLeadLinkService;
+  /** Read-only catalog lineage for features that reference catalog ids (leads). */
+  readonly catalogLineage: ICatalogLineage;
 }
 
 export interface VehiclesCompositionDeps {
@@ -112,8 +117,9 @@ export function composeVehicles(
     deps.linkedLeads,
     deps.clock,
   );
-  const listVehiclesUseCase = new ListVehiclesUseCase(policy, queries);
-  const getVehicleUseCase = new GetVehicleUseCase(policy, queries);
+  const frontImages = new VehicleFrontImages(mediaQueries, storage, deps.clock);
+  const listVehiclesUseCase = new ListVehiclesUseCase(policy, queries, frontImages);
+  const getVehicleUseCase = new GetVehicleUseCase(policy, queries, frontImages);
   const listVehicleStatusHistoryUseCase = new ListVehicleStatusHistoryUseCase(
     policy,
     queries,
@@ -227,5 +233,6 @@ export function composeVehicles(
     catalogRouter,
     errorMapper,
     vehicleLeadLink: new VehicleLeadLinkService(repo, deps.clock),
+    catalogLineage: new SupabaseCatalogLineageLookup(infraClient),
   };
 }

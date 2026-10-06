@@ -16,6 +16,7 @@ import type { MediaId } from '../domain/media-id';
 import type { VehicleDocument } from '../domain/vehicle-document.entity';
 import type { IVehicleDocumentRepository } from '../domain/vehicle-document.repository';
 import type { VehicleMedia } from '../domain/vehicle-media.entity';
+import type { IVehicleMediaQueries, VehicleMediaReadModel } from '../domain/vehicle-media.queries';
 import type { IVehicleMediaRepository } from '../domain/vehicle-media.repository';
 import type { IActiveShowroomLookup } from '../domain/active-showroom.port';
 import type {
@@ -131,6 +132,9 @@ export class FakeVehicleDocumentRepository implements IVehicleDocumentRepository
 
 export class FakeObjectStorage implements ObjectStoragePort {
   readonly objects = new Set<string>();
+  /** Paths the batch signer reports as failed (e.g. the object was removed). */
+  readonly unsignable = new Set<string>();
+  batchSignCalls = 0;
 
   seed(kind: VehicleStorageKind, storagePath: string): void {
     this.objects.add(`${kind}:${storagePath}`);
@@ -157,6 +161,19 @@ export class FakeObjectStorage implements ObjectStoragePort {
     readonly expiresInSeconds: number;
   }): Promise<SignedReadUrl> {
     return { url: `https://storage.example/read/${input.kind}/${input.storagePath}` };
+  }
+
+  async createSignedReadUrls(input: {
+    readonly kind: VehicleStorageKind;
+    readonly storagePaths: readonly string[];
+    readonly expiresInSeconds: number;
+  }): Promise<ReadonlyMap<string, string>> {
+    this.batchSignCalls += 1;
+    return new Map(
+      input.storagePaths
+        .filter((path) => !this.unsignable.has(path))
+        .map((path) => [path, `https://storage.example/read/${input.kind}/${path}`]),
+    );
   }
 
   async remove(kind: VehicleStorageKind, storagePath: string): Promise<void> {
@@ -254,5 +271,42 @@ export class FakeCatalogQueries implements ICatalogQueries {
   async listVariants(modelId: ModelId, page: Pagination): Promise<Page<VariantReadModel>> {
     const filtered = this.variants.filter((variant) => variant.modelId === modelId);
     return toPage(filtered.slice(page.offset, page.offset + page.limit), filtered.length, page);
+  }
+}
+
+export class FakeVehicleMediaQueries implements IVehicleMediaQueries {
+  readonly media: VehicleMediaReadModel[] = [];
+
+  seed(media: VehicleMediaReadModel): void {
+    this.media.push(media);
+  }
+
+  async listByVehicle(
+    vehicleId: VehicleId,
+    page: Pagination,
+  ): Promise<Page<VehicleMediaReadModel>> {
+    const filtered = this.media.filter((item) => item.vehicleId === vehicleId);
+    return toPage(filtered.slice(page.offset, page.offset + page.limit), filtered.length, page);
+  }
+
+  async findFrontImagePaths(
+    vehicleIds: readonly VehicleId[],
+  ): Promise<ReadonlyMap<VehicleId, string>> {
+    const best = new Map<VehicleId, VehicleMediaReadModel>();
+    for (const item of this.media) {
+      const vehicleId = item.vehicleId as VehicleId;
+      if (item.category !== 'front' || !vehicleIds.includes(vehicleId)) {
+        continue;
+      }
+      const current = best.get(vehicleId);
+      if (
+        current === undefined ||
+        item.sortOrder < current.sortOrder ||
+        (item.sortOrder === current.sortOrder && item.uploadedAt < current.uploadedAt)
+      ) {
+        best.set(vehicleId, item);
+      }
+    }
+    return new Map([...best].map(([vehicleId, item]) => [vehicleId, item.storagePath]));
   }
 }
