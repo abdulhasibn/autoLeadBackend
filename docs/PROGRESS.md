@@ -12,7 +12,7 @@
 | Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0012 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name) | 14 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file); `lead_preference_and_document_file_name` **pending** |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name) | All 15 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
@@ -43,12 +43,12 @@
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
 | Tables | 25 |
-| Migrations applied | 14 hosted rows (13 repo migrations + `lead_assignment_fix_user_id`) |
+| Migrations applied | 16 hosted rows (15 repo migrations + `lead_assignment_fix_user_id`) |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
 
-1. Apply `lead_preference_and_document_file_name` to the hosted project, then merge `feat/dealer-handoff-gaps` (the migration is backward compatible, so it goes first).
+1. Merge `feat/dealer-handoff-gaps` (its migration is already on hosted), then smoke-test the new fields against production.
 2. Run the live `scripts/smoke-api.sh` flow against production (needs `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
 3. Acquisition prices on `vehicle_financials` (Stint 2.3).
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
@@ -64,7 +64,7 @@ Closes five open items from the dealer app's `docs/BACKEND_HANDOFF.md` (vehicle 
 - Structured lead preference: `leads.preferred_make_id` / `preferred_model_id` / `preferred_variant_id` (FKs + chain CHECK + partial indexes), `PreferredCatalog` VO, `resolvePreferredCatalog` fills in parents from the narrowest id via the new `ICatalogLineageLookup` port (vehicles provides `SupabaseCatalogLineageLookup`). Accepted on `POST /leads` and the new `PUT /leads/:id/preference`; `GET /leads` filters by any of the three. `save_lead` recreated with three trailing defaulted params. Free-text `preferredVehicle` unchanged.
 - `GET /vehicles/:id/status-history` items carry `changedByName` (`users!changed_by` embed).
 - `vehicle_documents.file_name`: optional `fileName` on document confirm (`DocumentFileName` VO strips folder parts, 1–255 chars), returned on list/confirm.
-- Migration `20261006120000_lead_preference_and_document_file_name.sql`; `database.types.ts` and `docs/schema.dbml` updated by hand to match. Not yet replayed locally (Docker not running) or applied to hosted.
+- Migration `20261006120000_lead_preference_and_document_file_name.sql` applied to hosted 2026-10-06 (hosted `save_lead` matched the repo before replace; columns, indexes and the new `save_lead` signature verified). Generated types match the hand-edited `database.types.ts`; security advisors unchanged. Not replayed locally (Docker not running).
 
 ### 2026-10-05 — Admin dashboard (ADR-0012)
 
