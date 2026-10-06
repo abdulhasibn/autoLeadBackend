@@ -7,6 +7,8 @@ export interface VehicleStatusHistoryReadModel {
   readonly fromStatus: string | null;
   readonly toStatus: string;
   readonly changedBy: string;
+  /** Actor's full name; null only if the user row is unreadable. */
+  readonly changedByName: string | null;
   readonly reason: string | null;
   readonly changedAt: string;
 }

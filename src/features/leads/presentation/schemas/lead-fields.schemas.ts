@@ -130,6 +130,15 @@ export const optionalBooleanSchema = z
   .optional()
   .transform((val) => val ?? null);
 
+export function optionalCatalogIdSchema(field: string) {
+  return z
+    .string()
+    .uuid(`${field} must be a UUID`)
+    .nullable()
+    .optional()
+    .transform((val) => val ?? null);
+}
+
 export const optionalVehicleIdSchema = z
   .string()
   .uuid('vehicleId must be a UUID')

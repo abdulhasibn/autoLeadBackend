@@ -24,6 +24,16 @@ export interface ObjectStoragePort {
     readonly expiresInSeconds: number;
   }): Promise<SignedReadUrl>;
 
+  /**
+   * Signs many objects in one call. Keyed by storage path; a path the store
+   * could not sign (for example, the object is gone) is absent from the map.
+   */
+  createSignedReadUrls(input: {
+    readonly kind: VehicleStorageKind;
+    readonly storagePaths: readonly string[];
+    readonly expiresInSeconds: number;
+  }): Promise<ReadonlyMap<string, string>>;
+
   remove(kind: VehicleStorageKind, storagePath: string): Promise<void>;
 }
 

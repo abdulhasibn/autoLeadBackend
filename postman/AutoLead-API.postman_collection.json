@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "AutoLead API",
-    "description": "AutoLead backend \u2014 used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only). **Catalog, Vehicles, Leads, Notifications** accept Admin or Salesperson; lead assignment, vehicle status changes, and media/document deletes are Admin-only. A salesperson only sees leads assigned to them.\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login \u2192 create owner \u2192 pick catalog variant \u2192 create vehicle \u2192 create lead \u2192 associate vehicle \u2192 assign lead \u2192 schedule follow-up \u2192 change status \u2192 inbox.",
+    "description": "AutoLead backend — used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only). **Catalog, Vehicles, Leads, Notifications** accept Admin or Salesperson; lead assignment, vehicle status changes, and media/document deletes are Admin-only. A salesperson only sees leads assigned to them.\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login → create owner → pick catalog variant → create vehicle → create lead → associate vehicle → assign lead → schedule follow-up → change status → inbox.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -127,7 +127,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/health",
-            "description": "GET /health \u2014 200 `{ status, timestamp }`."
+            "description": "GET /health — 200 `{ status, timestamp }`."
           }
         }
       ]
@@ -190,7 +190,7 @@
               }
             },
             "url": "{{baseUrl}}/auth/login",
-            "description": "POST /auth/login \u2014 200 `{ accessToken, refreshToken }`. Invalid credentials \u2192 401 INVALID_CREDENTIALS."
+            "description": "POST /auth/login — 200 `{ accessToken, refreshToken }`. Invalid credentials → 401 INVALID_CREDENTIALS."
           }
         },
         {
@@ -242,7 +242,7 @@
               }
             },
             "url": "{{baseUrl}}/auth/refresh",
-            "description": "POST /auth/refresh \u2014 200 rotated `{ accessToken, refreshToken }`."
+            "description": "POST /auth/refresh — 200 rotated `{ accessToken, refreshToken }`."
           }
         },
         {
@@ -251,7 +251,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/auth/me",
-            "description": "Returns the authenticated user's profile and live roles.\n\n**Auth:** Bearer token required.\n\n**200** \u2014 Profile returned successfully.\n\n**401** \u2014 Missing or invalid token (`AUTHENTICATION_FAILED`).\n\n**404** \u2014 Token valid but user record no longer exists (`NOT_FOUND`).\n\n**503** \u2014 Database unavailable (`DB_UNAVAILABLE`). Previously caused by an ambiguous PostgREST FK embed on `user_roles \u2192 users`; fixed by disambiguating with `users!user_id!inner(deleted_at)`."
+            "description": "Returns the authenticated user's profile and live roles.\n\n**Auth:** Bearer token required.\n\n**200** — Profile returned successfully.\n\n**401** — Missing or invalid token (`AUTHENTICATION_FAILED`).\n\n**404** — Token valid but user record no longer exists (`NOT_FOUND`).\n\n**503** — Database unavailable (`DB_UNAVAILABLE`). Previously caused by an ambiguous PostgREST FK embed on `user_roles → users`; fixed by disambiguating with `users!user_id!inner(deleted_at)`."
           },
           "response": [
             {
@@ -364,7 +364,7 @@
               }
             },
             "url": "{{baseUrl}}/users",
-            "description": "POST /users \u2014 201. Provisions Auth user (email + password) + profile + staff roles."
+            "description": "POST /users — 201. Provisions Auth user (email + password) + profile + staff roles."
           }
         },
         {
@@ -380,7 +380,7 @@
                 {
                   "key": "limit",
                   "value": "20",
-                  "description": "Page size, 1\u2013100, default 20"
+                  "description": "Page size, 1–100, default 20"
                 },
                 {
                   "key": "offset",
@@ -395,7 +395,7 @@
                 }
               ]
             },
-            "description": "GET /users \u2014 paginated. Optional `role=admin` or `role=salesperson`."
+            "description": "GET /users — paginated. Optional `role=admin` or `role=salesperson`."
           }
         },
         {
@@ -404,7 +404,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/users/{{staffUserId}}",
-            "description": "GET /users/:id \u2014 200 staff member or 404."
+            "description": "GET /users/:id — 200 staff member or 404."
           }
         },
         {
@@ -427,7 +427,7 @@
               }
             },
             "url": "{{baseUrl}}/users/{{staffUserId}}",
-            "description": "PATCH /users/:id \u2014 name, phone, email, showroomId. Email is required."
+            "description": "PATCH /users/:id — name, phone, email, showroomId. Email is required."
           }
         },
         {
@@ -450,7 +450,7 @@
               }
             },
             "url": "{{baseUrl}}/users/{{staffUserId}}/roles",
-            "description": "PUT /users/:id/roles \u2014 replace set, min 1. Cannot drop the last admin."
+            "description": "PUT /users/:id/roles — replace set, min 1. Cannot drop the last admin."
           }
         },
         {
@@ -459,7 +459,7 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/users/{{staffUserId}}",
-            "description": "DELETE /users/:id \u2014 204 soft-deactivate. Cannot deactivate self or last admin."
+            "description": "DELETE /users/:id — 204 soft-deactivate. Cannot deactivate self or last admin."
           }
         }
       ]
@@ -513,7 +513,7 @@
               }
             },
             "url": "{{baseUrl}}/owners",
-            "description": "POST /owners \u2014 201. Duplicate live phone \u2192 409 CONFLICT."
+            "description": "POST /owners — 201. Duplicate live phone → 409 CONFLICT."
           }
         },
         {
@@ -529,7 +529,7 @@
                 {
                   "key": "limit",
                   "value": "20",
-                  "description": "Page size, 1\u2013100, default 20"
+                  "description": "Page size, 1–100, default 20"
                 },
                 {
                   "key": "offset",
@@ -550,7 +550,7 @@
                 }
               ]
             },
-            "description": "GET /owners \u2014 paginated. Optional `city` and `phone` filters."
+            "description": "GET /owners — paginated. Optional `city` and `phone` filters."
           }
         },
         {
@@ -559,7 +559,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/owners/{{ownerId}}",
-            "description": "GET /owners/:id \u2014 200 owner or 404."
+            "description": "GET /owners/:id — 200 owner or 404."
           }
         },
         {
@@ -582,7 +582,7 @@
               }
             },
             "url": "{{baseUrl}}/owners/{{ownerId}}",
-            "description": "PATCH /owners/:id \u2014 profile fields. Duplicate live phone \u2192 409."
+            "description": "PATCH /owners/:id — profile fields. Duplicate live phone → 409."
           }
         },
         {
@@ -591,7 +591,7 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/owners/{{ownerId}}",
-            "description": "DELETE /owners/:id \u2014 204 soft-deactivate. Admin only."
+            "description": "DELETE /owners/:id — 204 soft-deactivate. Admin only."
           }
         }
       ]
@@ -619,7 +619,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/catalog/makes?limit=20&offset=0",
-            "description": "GET /catalog/makes \u2014 paginated makes. Admin or Salesperson."
+            "description": "GET /catalog/makes — paginated makes. Admin or Salesperson."
           }
         },
         {
@@ -642,7 +642,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/catalog/makes/{{makeId}}/models?limit=20&offset=0",
-            "description": "GET /catalog/makes/:makeId/models \u2014 Admin."
+            "description": "GET /catalog/makes/:makeId/models — Admin."
           }
         },
         {
@@ -665,7 +665,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/catalog/models/{{modelId}}/variants?limit=20&offset=0",
-            "description": "GET /catalog/models/:modelId/variants \u2014 includes factory fuel, transmission, ex-showroom price."
+            "description": "GET /catalog/models/:modelId/variants — includes factory fuel, transmission, ex-showroom price."
           }
         }
       ]
@@ -707,7 +707,7 @@
               }
             },
             "url": "{{baseUrl}}/vehicles",
-            "description": "POST /vehicles \u2014 Admin or Salesperson. `showroomId` is optional: it defaults to your home showroom, and only admins may name another. Duplicate live registration \u2192 409."
+            "description": "POST /vehicles — Admin or Salesperson. `showroomId` is optional: it defaults to your home showroom, and only admins may name another. Duplicate live registration → 409."
           }
         },
         {
@@ -716,7 +716,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/vehicles?limit=20&offset=0",
-            "description": "GET /vehicles \u2014 filters: status, ownerId, showroomId, registration."
+            "description": "GET /vehicles — filters: status, ownerId, showroomId, registration. Each item carries `frontImageUrl` / `frontImageUrlExpiresAt` (signed URL of the lowest-sortOrder `front` photo, ~10 min; both null when there is none) for list thumbnails."
           }
         },
         {
@@ -725,7 +725,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}",
-            "description": "GET /vehicles/:id \u2014 catalog names included."
+            "description": "GET /vehicles/:id — catalog names and `frontImageUrl` / `frontImageUrlExpiresAt` included."
           }
         },
         {
@@ -748,7 +748,7 @@
               }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}",
-            "description": "PATCH /vehicles/:id \u2014 second-hand details only."
+            "description": "PATCH /vehicles/:id — second-hand details only."
           }
         },
         {
@@ -771,7 +771,7 @@
               }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/status",
-            "description": "POST /vehicles/:id/status (Admin) \u2014 200 `{ status, unlinkedLeadCount }`. Only `dropped` and `open` (re-list) are accepted; `linked` / `sold` follow the vehicle's leads \u2192 422 VEHICLE_STATUS_SYSTEM_MANAGED. Graph: open \u21c4 linked (auto), linked \u2192 sold (auto, lead converts), open/linked \u2192 dropped, dropped \u2192 open. Dropping a vehicle with active leads \u2192 422 VEHICLE_HAS_LINKED_LEADS with `error.details.linkedLeadCount`; resend with `confirmUnlinkLeads: true` to unlink those leads and drop it."
+            "description": "POST /vehicles/:id/status (Admin) — 200 `{ status, unlinkedLeadCount }`. Only `dropped` and `open` (re-list) are accepted; `linked` / `sold` follow the vehicle's leads → 422 VEHICLE_STATUS_SYSTEM_MANAGED. Graph: open ⇄ linked (auto), linked → sold (auto, lead converts), open/linked → dropped, dropped → open. Dropping a vehicle with active leads → 422 VEHICLE_HAS_LINKED_LEADS with `error.details.linkedLeadCount`; resend with `confirmUnlinkLeads: true` to unlink those leads and drop it."
           }
         },
         {
@@ -780,7 +780,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/status-history?limit=20&offset=0",
-            "description": "GET /vehicles/:id/status-history \u2014 newest first."
+            "description": "GET /vehicles/:id/status-history — newest first. Each item has `changedBy` (user id) and `changedByName` (that user's full name)."
           }
         },
         {
@@ -817,7 +817,7 @@
               }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media/uploads",
-            "description": "POST /vehicles/:id/media/uploads \u2014 then PUT bytes to uploadUrl."
+            "description": "POST /vehicles/:id/media/uploads — then PUT bytes to uploadUrl."
           }
         },
         {
@@ -854,7 +854,7 @@
               }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media",
-            "description": "POST /vehicles/:id/media \u2014 object must already exist in storage."
+            "description": "POST /vehicles/:id/media — object must already exist in storage."
           }
         },
         {
@@ -863,7 +863,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media?limit=20&offset=0",
-            "description": "GET /vehicles/:id/media \u2014 includes short-lived signed read URLs."
+            "description": "GET /vehicles/:id/media — includes short-lived signed read URLs."
           }
         },
         {
@@ -872,7 +872,7 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media/{{mediaId}}",
-            "description": "DELETE /vehicles/:id/media/:mediaId (Admin) \u2014 204."
+            "description": "DELETE /vehicles/:id/media/:mediaId (Admin) — 204."
           }
         },
         {
@@ -909,7 +909,7 @@
               }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents/uploads",
-            "description": "POST /vehicles/:id/documents/uploads \u2014 then PUT bytes to uploadUrl."
+            "description": "POST /vehicles/:id/documents/uploads — then PUT bytes to uploadUrl."
           }
         },
         {
@@ -938,7 +938,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"storagePath\": \"{{documentStoragePath}}\",\n  \"docType\": \"rc\"\n}",
+              "raw": "{\n  \"storagePath\": \"{{documentStoragePath}}\",\n  \"docType\": \"rc\",\n  \"fileName\": \"RC_Document.pdf\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -946,7 +946,7 @@
               }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents",
-            "description": "POST /vehicles/:id/documents \u2014 object must already exist in storage."
+            "description": "POST /vehicles/:id/documents — object must already exist in storage. Optional `fileName` (display name; folder part dropped, 1–255 chars) is stored and returned as `fileName`."
           }
         },
         {
@@ -955,7 +955,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents?limit=20&offset=0",
-            "description": "GET /vehicles/:id/documents \u2014 signed read URLs only; always sensitive."
+            "description": "GET /vehicles/:id/documents — signed read URLs only; always sensitive. `fileName` is the uploader's original name, or null for older uploads (fall back to docType)."
           }
         },
         {
@@ -964,7 +964,7 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/documents/{{documentId}}",
-            "description": "DELETE /vehicles/:id/documents/:documentId (Admin) \u2014 204."
+            "description": "DELETE /vehicles/:id/documents/:documentId (Admin) — 204."
           }
         }
       ]
@@ -998,7 +998,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"showroomId\": \"{{showroomId}}\",\n  \"fullName\": \"Rahul Sharma\",\n  \"phone\": \"+919811122233\",\n  \"email\": null,\n  \"source\": \"phone\",\n  \"vehicleId\": null,\n  \"budget\": 800000,\n  \"preferredVehicle\": null,\n  \"purchaseTimeline\": null,\n  \"financeRequired\": false,\n  \"currentVehicle\": null,\n  \"tradeInRequired\": false,\n  \"notes\": \"called the showroom\"\n}",
+              "raw": "{\n  \"showroomId\": \"{{showroomId}}\",\n  \"fullName\": \"Rahul Sharma\",\n  \"phone\": \"+919811122233\",\n  \"email\": null,\n  \"source\": \"phone\",\n  \"vehicleId\": null,\n  \"budget\": 800000,\n  \"preferredVehicle\": null,\n  \"preferredMakeId\": null,\n  \"preferredModelId\": \"{{modelId}}\",\n  \"preferredVariantId\": null,\n  \"purchaseTimeline\": null,\n  \"financeRequired\": false,\n  \"currentVehicle\": null,\n  \"tradeInRequired\": false,\n  \"notes\": \"called the showroom\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1006,7 +1006,7 @@
               }
             },
             "url": "{{baseUrl}}/leads",
-            "description": "POST /leads \u2014 walk-in contact by phone. Admin or Salesperson; a salesperson's lead is assigned to them. `showroomId` is optional."
+            "description": "POST /leads — walk-in contact by phone. Admin or Salesperson; a salesperson's lead is assigned to them. `showroomId` is optional. Optional catalog preference `preferredMakeId` / `preferredModelId` / `preferredVariantId` (send only the narrowest; parents are filled in; mismatched parents → 422 PREFERRED_CATALOG_MISMATCH; unknown id → 404)."
           }
         },
         {
@@ -1015,7 +1015,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/leads?limit=20&offset=0",
-            "description": "GET /leads \u2014 filters: status, vehicleId, assignedTo (admin only). A salesperson only sees leads assigned to them."
+            "description": "GET /leads — filters: status, vehicleId, assignedTo (admin only), preferredMakeId, preferredModelId, preferredVariantId. A salesperson only sees leads assigned to them. Items include `linkedVehicle` ({ id, makeName, modelName, variantName, year, registrationNumber } or null) and the preferred catalog ids + names."
           }
         },
         {
@@ -1024,7 +1024,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/leads/{{leadId}}",
-            "description": "GET /leads/:id \u2014 includes next follow-up."
+            "description": "GET /leads/:id — includes next follow-up, `linkedVehicle` summary, and preferred catalog ids + names."
           }
         },
         {
@@ -1047,7 +1047,30 @@
               }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/assignment",
-            "description": "PUT /leads/:id/assignment (Admin) \u2014 200 `{ id, assignedTo }`. assignedTo must be an active admin or salesperson, or null to unassign. Notifies the assignee (`lead_assigned`). Closed lead \u2192 422 LEAD_CLOSED."
+            "description": "PUT /leads/:id/assignment (Admin) — 200 `{ id, assignedTo }`. assignedTo must be an active admin or salesperson, or null to unassign. Notifies the assignee (`lead_assigned`). Closed lead → 422 LEAD_CLOSED."
+          }
+        },
+        {
+          "name": "Set Lead Preference",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"preferredMakeId\": null,\n  \"preferredModelId\": null,\n  \"preferredVariantId\": \"{{variantId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/leads/{{leadId}}/preference",
+            "description": "PUT /leads/:id/preference (Admin, or the assigned Salesperson) — 200 `{ preferredMakeId, preferredModelId, preferredVariantId }`. Replaces the whole catalog preference; omitted ids count as null and all-null clears it. Send only the narrowest id and the server fills in its parents. Mismatched parents → 422 PREFERRED_CATALOG_MISMATCH; unknown/deleted id → 404; closed lead → 422 LEAD_CLOSED."
           }
         },
         {
@@ -1070,7 +1093,7 @@
               }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/vehicle",
-            "description": "PATCH /leads/:id/vehicle \u2014 attach a live vehicle."
+            "description": "PATCH /leads/:id/vehicle — attach a live vehicle."
           }
         },
         {
@@ -1093,7 +1116,7 @@
               }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/follow-ups",
-            "description": "POST /leads/:id/follow-ups \u2014 assigned to the lead's assignee (or you if unassigned), who gets the due notification."
+            "description": "POST /leads/:id/follow-ups — assigned to the lead's assignee (or you if unassigned), who gets the due notification."
           }
         },
         {
@@ -1116,7 +1139,7 @@
               }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/status",
-            "description": "POST /leads/:id/status \u2014 200 `{ status, vehicleSold }`. new \u2192 not_now | booking_confirmed | lost; not_now \u2192 new | booking_confirmed | lost; booking_confirmed \u2192 converted | lost; vehicle_unavailable \u2192 new | not_now | booking_confirmed | lost. booking_confirmed/converted need a vehicle (422 LEAD_REQUIRES_VEHICLE); vehicle_unavailable is system-only. Invalid transition \u2192 422."
+            "description": "POST /leads/:id/status — 200 `{ status, vehicleSold }`. new → not_now | booking_confirmed | lost; not_now → new | booking_confirmed | lost; booking_confirmed → converted | lost; vehicle_unavailable → new | not_now | booking_confirmed | lost. booking_confirmed/converted need a vehicle (422 LEAD_REQUIRES_VEHICLE); vehicle_unavailable is system-only. Invalid transition → 422."
           }
         },
         {
@@ -1139,7 +1162,7 @@
               }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/status",
-            "description": "POST /leads/:id/status from booking_confirmed \u2014 sells the lead's vehicle to this lead (vehicle `soldLeadId`) and moves every other active lead on that vehicle to vehicle_unavailable (vehicle unlinked). Safe to repeat if it fails part-way."
+            "description": "POST /leads/:id/status from booking_confirmed — sells the lead's vehicle to this lead (vehicle `soldLeadId`) and moves every other active lead on that vehicle to vehicle_unavailable (vehicle unlinked). Safe to repeat if it fails part-way."
           }
         }
       ]
@@ -1167,7 +1190,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/notifications?limit=20&offset=0",
-            "description": "GET /notifications \u2014 the caller's inbox (Admin or Salesperson): `lead_assigned` right away, `follow_up_due` at the scheduled time."
+            "description": "GET /notifications — the caller's inbox (Admin or Salesperson): `lead_assigned` right away, `follow_up_due` at the scheduled time."
           }
         },
         {
@@ -1176,7 +1199,7 @@
             "method": "PATCH",
             "header": [],
             "url": "{{baseUrl}}/notifications/{{notificationId}}/read",
-            "description": "PATCH /notifications/:id/read \u2014 204. Own notifications only."
+            "description": "PATCH /notifications/:id/read — 204. Own notifications only."
           }
         }
       ]
@@ -1222,7 +1245,7 @@
                 }
               ]
             },
-            "description": "GET /dashboard \u2014 Admin only (salesperson 403). Period-to-date KPIs with `previous` (same elapsed span of the prior period), attention lists (overdue follow-ups, active leads without a follow-up, aged stock > 45 days), today's follow-ups, pipeline and inventory. Lists hold up to 5 rows plus `total`. Invalid `period` \u2192 422. See docs/api.md#dashboard--admin-only."
+            "description": "GET /dashboard — Admin only (salesperson 403). Period-to-date KPIs with `previous` (same elapsed span of the prior period), attention lists (overdue follow-ups, active leads without a follow-up, aged stock > 45 days), today's follow-ups, pipeline and inventory. Lists hold up to 5 rows plus `total`. Invalid `period` → 422. See docs/api.md#dashboard--admin-only."
           },
           "response": [
             {
@@ -1262,7 +1285,7 @@
                   "value": "private, max-age=30"
                 }
               ],
-              "body": "{\n  \"generatedAt\": \"2026-10-05T09:30:00.000Z\",\n  \"period\": {\n    \"key\": \"month\",\n    \"from\": \"2026-10-01\",\n    \"to\": \"2026-10-31\",\n    \"timezone\": \"Asia/Kolkata\"\n  },\n  \"kpis\": {\n    \"carsSold\": {\n      \"value\": 1,\n      \"previous\": 1\n    },\n    \"newLeads\": {\n      \"value\": 2,\n      \"previous\": 2\n    },\n    \"conversionRate\": {\n      \"value\": 0.5,\n      \"previous\": null\n    },\n    \"inStock\": {\n      \"value\": 3\n    }\n  },\n  \"attention\": {\n    \"overdueFollowUps\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"followUpId\": \"a7237a73-60c0-435b-9217-a1f96c375db6\",\n          \"leadId\": \"00000000-0000-4000-8000-0000000000e2\",\n          \"taskType\": \"call\",\n          \"scheduledAt\": \"2026-10-04T05:00:00.000Z\",\n          \"contactName\": \"Vikram\",\n          \"contactPhone\": \"+919800000002\",\n          \"vehicleLabel\": null\n        }\n      ]\n    },\n    \"leadsWithoutFollowUp\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"leadId\": \"00000000-0000-4000-8000-0000000000e3\",\n          \"status\": \"booking_confirmed\",\n          \"source\": \"phone\",\n          \"contactName\": \"Meera\",\n          \"contactPhone\": \"+919800000003\",\n          \"vehicleLabel\": null,\n          \"createdAt\": \"2026-09-10T05:00:00.000Z\"\n        }\n      ]\n    },\n    \"agedStock\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"vehicleId\": \"00000000-0000-4000-8000-0000000000c1\",\n          \"vehicleLabel\": \"2019 Hyundai Santro Era Mt \u00b7 KA01AB1234\",\n          \"status\": \"open\",\n          \"daysListed\": 96,\n          \"activeLeads\": 0\n        }\n      ]\n    }\n  },\n  \"today\": {\n    \"total\": 1,\n    \"items\": [\n      {\n        \"followUpId\": \"7e397f2c-5f2f-4cce-aaa0-7016995b4208\",\n        \"leadId\": \"00000000-0000-4000-8000-0000000000e1\",\n        \"taskType\": \"test_drive\",\n        \"scheduledAt\": \"2026-10-05T12:00:00.000Z\",\n        \"contactName\": \"Asha\",\n        \"contactPhone\": \"+919800000001\",\n        \"vehicleLabel\": \"2019 Hyundai Santro Era Mt \u00b7 KA02CD5678\"\n      }\n    ]\n  },\n  \"pipeline\": {\n    \"new\": 1,\n    \"not_now\": 1,\n    \"booking_confirmed\": 1\n  },\n  \"inventory\": {\n    \"open\": 1,\n    \"linked\": 1\n  }\n}"
+              "body": "{\n  \"generatedAt\": \"2026-10-05T09:30:00.000Z\",\n  \"period\": {\n    \"key\": \"month\",\n    \"from\": \"2026-10-01\",\n    \"to\": \"2026-10-31\",\n    \"timezone\": \"Asia/Kolkata\"\n  },\n  \"kpis\": {\n    \"carsSold\": {\n      \"value\": 1,\n      \"previous\": 1\n    },\n    \"newLeads\": {\n      \"value\": 2,\n      \"previous\": 2\n    },\n    \"conversionRate\": {\n      \"value\": 0.5,\n      \"previous\": null\n    },\n    \"inStock\": {\n      \"value\": 3\n    }\n  },\n  \"attention\": {\n    \"overdueFollowUps\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"followUpId\": \"a7237a73-60c0-435b-9217-a1f96c375db6\",\n          \"leadId\": \"00000000-0000-4000-8000-0000000000e2\",\n          \"taskType\": \"call\",\n          \"scheduledAt\": \"2026-10-04T05:00:00.000Z\",\n          \"contactName\": \"Vikram\",\n          \"contactPhone\": \"+919800000002\",\n          \"vehicleLabel\": null\n        }\n      ]\n    },\n    \"leadsWithoutFollowUp\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"leadId\": \"00000000-0000-4000-8000-0000000000e3\",\n          \"status\": \"booking_confirmed\",\n          \"source\": \"phone\",\n          \"contactName\": \"Meera\",\n          \"contactPhone\": \"+919800000003\",\n          \"vehicleLabel\": null,\n          \"createdAt\": \"2026-09-10T05:00:00.000Z\"\n        }\n      ]\n    },\n    \"agedStock\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"vehicleId\": \"00000000-0000-4000-8000-0000000000c1\",\n          \"vehicleLabel\": \"2019 Hyundai Santro Era Mt · KA01AB1234\",\n          \"status\": \"open\",\n          \"daysListed\": 96,\n          \"activeLeads\": 0\n        }\n      ]\n    }\n  },\n  \"today\": {\n    \"total\": 1,\n    \"items\": [\n      {\n        \"followUpId\": \"7e397f2c-5f2f-4cce-aaa0-7016995b4208\",\n        \"leadId\": \"00000000-0000-4000-8000-0000000000e1\",\n        \"taskType\": \"test_drive\",\n        \"scheduledAt\": \"2026-10-05T12:00:00.000Z\",\n        \"contactName\": \"Asha\",\n        \"contactPhone\": \"+919800000001\",\n        \"vehicleLabel\": \"2019 Hyundai Santro Era Mt · KA02CD5678\"\n      }\n    ]\n  },\n  \"pipeline\": {\n    \"new\": 1,\n    \"not_now\": 1,\n    \"booking_confirmed\": 1\n  },\n  \"inventory\": {\n    \"open\": 1,\n    \"linked\": 1\n  }\n}"
             }
           ]
         }

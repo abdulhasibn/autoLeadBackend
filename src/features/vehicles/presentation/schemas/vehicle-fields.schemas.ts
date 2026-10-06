@@ -9,6 +9,7 @@ import { RegistrationNumber } from '../../domain/registration-number.value-objec
 import { Transmission } from '../../domain/transmission.value-object';
 import { parseLoanStatus, parseRcStatus, parseServiceHistory } from '../../domain/vehicle-details';
 import { DocumentContentType } from '../../domain/document-content-type.value-object';
+import { DocumentFileName } from '../../domain/document-file-name.value-object';
 import { DocumentType } from '../../domain/document-type.value-object';
 import { MediaCategory } from '../../domain/media-category.value-object';
 import { MediaContentType } from '../../domain/media-content-type.value-object';
@@ -167,6 +168,19 @@ export const documentTypeSchema = z
   .string({ error: 'docType is required' })
   .superRefine(refineVo((val) => DocumentType.create(val)))
   .transform((val) => DocumentType.create(val).value);
+
+/** Optional display name; blank counts as not sent. */
+export const optionalDocumentFileNameSchema = z
+  .string()
+  .nullable()
+  .optional()
+  .transform((val) => (val === null || val === undefined || val.trim().length === 0 ? null : val))
+  .superRefine((val, ctx) => {
+    if (val !== null) {
+      refineVo((name) => DocumentFileName.create(name))(val, ctx);
+    }
+  })
+  .transform((val) => (val === null ? null : DocumentFileName.create(val).value));
 
 export const documentContentTypeSchema = z
   .string({ error: 'contentType is required' })

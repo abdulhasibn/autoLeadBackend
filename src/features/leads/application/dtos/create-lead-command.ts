@@ -8,6 +8,10 @@ export interface CreateLeadCommand {
   readonly vehicleId: string | null;
   readonly budget: number | null;
   readonly preferredVehicle: string | null;
+  /** Catalog interest; only the narrowest id is needed, parents are filled in. */
+  readonly preferredMakeId: string | null;
+  readonly preferredModelId: string | null;
+  readonly preferredVariantId: string | null;
   readonly purchaseTimeline: string | null;
   readonly financeRequired: boolean | null;
   readonly currentVehicle: string | null;

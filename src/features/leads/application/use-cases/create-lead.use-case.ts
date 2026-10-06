@@ -11,6 +11,7 @@ import type { LeadDto } from '../dtos/lead.dto';
 import { toLeadDto } from '../dtos/lead.dto';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
 import { requireLinkableVehicle } from '../services/require-linkable-vehicle';
+import { resolvePreferredCatalog } from '../services/resolve-preferred-catalog';
 import type { VehicleLinkRefresher } from '../services/vehicle-link-refresher';
 import { Contact } from '../../domain/contact.entity';
 import { toContactId } from '../../domain/contact-id';
@@ -19,6 +20,7 @@ import { Lead } from '../../domain/lead.entity';
 import { LeadSource } from '../../domain/lead-source.value-object';
 import type { ILeadRepository } from '../../domain/lead.repository';
 import type { ILinkableVehicleLookup } from '../../domain/linkable-vehicle.port';
+import type { ICatalogLineageLookup } from '../../domain/catalog-lineage.port';
 
 export class CreateLeadUseCase {
   constructor(
@@ -26,6 +28,7 @@ export class CreateLeadUseCase {
     private readonly repo: ILeadRepository,
     private readonly vehicles: ILinkableVehicleLookup,
     private readonly vehicleLinks: VehicleLinkRefresher,
+    private readonly catalog: ICatalogLineageLookup,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
   ) {}
@@ -38,6 +41,11 @@ export class CreateLeadUseCase {
     if (vehicleId !== null) {
       await requireLinkableVehicle(this.vehicles, vehicleId);
     }
+    const preferredCatalog = await resolvePreferredCatalog(this.catalog, {
+      makeId: command.preferredMakeId,
+      modelId: command.preferredModelId,
+      variantId: command.preferredVariantId,
+    });
 
     const now = this.clock.now();
     const phone = Phone.create(command.phone);
@@ -67,6 +75,7 @@ export class CreateLeadUseCase {
       source: LeadSource.create(command.source),
       budget: command.budget === null ? null : Budget.create(command.budget).value,
       preferredVehicle: command.preferredVehicle,
+      preferredCatalog,
       purchaseTimeline: command.purchaseTimeline,
       financeRequired: command.financeRequired,
       currentVehicle: command.currentVehicle,

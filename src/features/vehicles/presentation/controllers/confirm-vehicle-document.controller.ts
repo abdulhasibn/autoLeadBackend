@@ -15,7 +15,12 @@ export class ConfirmVehicleDocumentController {
         const params = vehicleIdParamSchema.parse(req.params);
         const body = confirmDocumentBodySchema.parse(req.body);
         const result = await this.confirmDocument.execute(
-          { vehicleId: params.id, storagePath: body.storagePath, docType: body.docType },
+          {
+            vehicleId: params.id,
+            storagePath: body.storagePath,
+            docType: body.docType,
+            fileName: body.fileName,
+          },
           ctx,
         );
         res.status(201).json(result);

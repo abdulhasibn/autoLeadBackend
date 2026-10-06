@@ -6,6 +6,7 @@ import type { ErrorMapper } from '../../presentation/http/errors/error-mapping';
 import type { Clock } from '../../shared/clock/clock';
 import { UuidIdGenerator } from '../../shared/ids/id-generator';
 import { InvalidLeadStatusTransitionError } from './domain/errors/invalid-lead-status-transition.error';
+import type { ICatalogLineageLookup } from './domain/catalog-lineage.port';
 import type { ILinkableVehicleLookup } from './domain/linkable-vehicle.port';
 import type { IVehicleLinkSync } from './domain/vehicle-link-sync.port';
 import type { IVehicleSale } from './domain/vehicle-sale.port';
@@ -19,6 +20,7 @@ import { CreateLeadUseCase } from './application/use-cases/create-lead.use-case'
 import { GetLeadUseCase } from './application/use-cases/get-lead.use-case';
 import { ListLeadsUseCase } from './application/use-cases/list-leads.use-case';
 import { ScheduleFollowUpUseCase } from './application/use-cases/schedule-follow-up.use-case';
+import { SetLeadPreferenceUseCase } from './application/use-cases/set-lead-preference.use-case';
 import { SupabaseAssignableStaffLookup } from './infrastructure/supabase-assignable-staff.lookup';
 import { SupabaseLeadQueries } from './infrastructure/supabase-lead.queries';
 import { SupabaseLeadRepository } from './infrastructure/supabase-lead.repository';
@@ -29,6 +31,7 @@ import { CreateLeadController } from './presentation/controllers/create-lead.con
 import { GetLeadController } from './presentation/controllers/get-lead.controller';
 import { ListLeadsController } from './presentation/controllers/list-leads.controller';
 import { ScheduleFollowUpController } from './presentation/controllers/schedule-follow-up.controller';
+import { SetLeadPreferenceController } from './presentation/controllers/set-lead-preference.controller';
 import { createLeadsRouter } from './presentation/leads.routes';
 
 export interface LeadsComposition {
@@ -43,6 +46,7 @@ export interface LeadsCompositionDeps {
   readonly linkableVehicleLookup: ILinkableVehicleLookup;
   readonly vehicleLinkSync: IVehicleLinkSync;
   readonly vehicleSale: IVehicleSale;
+  readonly catalogLineage: ICatalogLineageLookup;
 }
 
 /**
@@ -64,6 +68,7 @@ export function composeLeads(
     repo,
     deps.linkableVehicleLookup,
     vehicleLinks,
+    deps.catalogLineage,
     deps.clock,
     ids,
   );
@@ -87,6 +92,12 @@ export function composeLeads(
     new SupabaseAssignableStaffLookup(infraClient),
     deps.clock,
   );
+  const setLeadPreferenceUseCase = new SetLeadPreferenceUseCase(
+    policy,
+    repo,
+    deps.catalogLineage,
+    deps.clock,
+  );
   const scheduleFollowUpUseCase = new ScheduleFollowUpUseCase(policy, repo, deps.clock, ids);
   const listLeadsUseCase = new ListLeadsUseCase(policy, queries);
   const getLeadUseCase = new GetLeadUseCase(policy, queries);
@@ -100,6 +111,7 @@ export function composeLeads(
     assignLeadController: new AssignLeadController(assignLeadUseCase),
     changeLeadStatusController: new ChangeLeadStatusController(changeLeadStatusUseCase),
     scheduleFollowUpController: new ScheduleFollowUpController(scheduleFollowUpUseCase),
+    setLeadPreferenceController: new SetLeadPreferenceController(setLeadPreferenceUseCase),
   });
 
   const errorMapper: ErrorMapper = (err) => {

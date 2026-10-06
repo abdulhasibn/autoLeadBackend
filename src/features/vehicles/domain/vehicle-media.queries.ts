@@ -13,4 +13,10 @@ export interface VehicleMediaReadModel {
 
 export interface IVehicleMediaQueries {
   listByVehicle(vehicleId: VehicleId, page: Pagination): Promise<Page<VehicleMediaReadModel>>;
+  /**
+   * Storage path of each vehicle's cover photo: its `front` photo with the
+   * lowest sort order (earliest upload breaks ties). Vehicles with no front
+   * photo are absent from the map.
+   */
+  findFrontImagePaths(vehicleIds: readonly VehicleId[]): Promise<ReadonlyMap<VehicleId, string>>;
 }

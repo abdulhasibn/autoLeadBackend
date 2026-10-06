@@ -306,9 +306,9 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
 
 | Method | Path | Success |
 |--------|------|---------|
-| `POST` | `/vehicles` | `201` vehicle (`makeName` / `modelName` / `variantName` are `null` until you GET) |
-| `GET` | `/vehicles` | `200` page (includes catalog names) |
-| `GET` | `/vehicles/:id` | `200` vehicle |
+| `POST` | `/vehicles` | `201` vehicle (`makeName` / `modelName` / `variantName` / `frontImageUrl` are `null` until you GET) |
+| `GET` | `/vehicles` | `200` page (includes catalog names and `frontImageUrl`) |
+| `GET` | `/vehicles/:id` | `200` vehicle (includes `frontImageUrl`) |
 | `PATCH` | `/vehicles/:id` | `200` vehicle (second-hand fields only; cannot change owner/variant/showroom/status) |
 | `POST` | `/vehicles/:id/status` | `200` `{ "status", "unlinkedLeadCount" }` (Admin) |
 | `GET` | `/vehicles/:id/status-history` | `200` page (newest first) |
@@ -396,9 +396,13 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
   "acquisitionType": "consignment",
   "submittedBy": "uuid",
   "createdAt": "…",
-  "updatedAt": "…"
+  "updatedAt": "…",
+  "frontImageUrl": "https://…",
+  "frontImageUrlExpiresAt": "…"
 }
 ```
+
+`frontImageUrl` is a short-lived signed URL (about 10 minutes, see `frontImageUrlExpiresAt`) for the cover photo: the vehicle's `front` photo with the lowest `sortOrder` (earliest upload breaks ties). Both fields are `null` when the vehicle has no front photo. Use it for list thumbnails instead of calling `GET /vehicles/:id/media` per car; refetch the list once it expires. `PATCH /vehicles/:id` returns them as `null`.
 
 **Vehicle lifecycle** (see ADR-0011)
 
@@ -431,6 +435,7 @@ sold    → (terminal)
   "fromStatus": "linked",
   "toStatus": "dropped",
   "changedBy": "uuid",
+  "changedByName": "Priya Nair",
   "reason": "owner withdrew",
   "changedAt": "…"
 }
@@ -442,6 +447,8 @@ sold    → (terminal)
 2. `PUT` the bytes to `uploadUrl` using the returned `token` (Supabase signed upload).
 3. `POST /vehicles/:id/media` with `{ "storagePath", "category", "sortOrder" }` — `storagePath` must be the one from step 1 and the object must exist.
 4. `GET` lists include `url` and `urlExpiresAt` (about 10 minutes). Documents stay `isSensitive: true`.
+
+Documents also accept an optional `"fileName"` on step 3 (`{ "storagePath", "docType", "fileName": "RC_Document.pdf" }`), the name to show in the document list. Any folder part is dropped and it must be 1–255 characters. Document rows return `fileName` (`null` for documents uploaded without one; fall back to `docType`).
 
 Upload ticket:
 
@@ -467,13 +474,14 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 
 | Method | Path | Success |
 |--------|------|---------|
-| `POST` | `/leads` | `201` lead (`nextFollowUp` is `null`) |
+| `POST` | `/leads` | `201` lead (`nextFollowUp`, `linkedVehicle` and the `preferred…Name` fields are `null` until you GET) |
 | `GET` | `/leads` | `200` page |
 | `GET` | `/leads/:id` | `200` lead (includes `nextFollowUp` if scheduled) |
 | `PATCH` | `/leads/:id/vehicle` | `200` `{ "vehicleId" }` |
 | `PUT` | `/leads/:id/assignment` | `200` `{ "id", "assignedTo" }` (Admin) |
+| `PUT` | `/leads/:id/preference` | `200` `{ "preferredMakeId", "preferredModelId", "preferredVariantId" }` |
 | `POST` | `/leads/:id/follow-ups` | `201` follow-up |
-| `POST` | `/leads/:id/status` | `200` `{ "status", "vehicleMarkedSold" }` |
+| `POST` | `/leads/:id/status` | `200` `{ "status", "vehicleSold" }` |
 
 **Create body**
 
@@ -487,6 +495,9 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
   "vehicleId": null,
   "budget": 800000,
   "preferredVehicle": null,
+  "preferredMakeId": null,
+  "preferredModelId": "<model uuid>",
+  "preferredVariantId": null,
   "purchaseTimeline": null,
   "financeRequired": false,
   "currentVehicle": null,
@@ -497,7 +508,9 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 
 `showroomId` is optional: omit it to use your home showroom (see **Roles**).  
 `source`: `marketplace`, `mobile_app`, `website`, `phone`, `walkin`, `whatsapp`, `instagram`, `facebook`, `referral`, `other`.  
-**List query:** `limit`, `offset`, optional `status`, `vehicleId`, `assignedTo` (admin only; a salesperson always gets their own leads).  
+**List query:** `limit`, `offset`, optional `status`, `vehicleId`, `assignedTo` (admin only; a salesperson always gets their own leads), `preferredMakeId`, `preferredModelId`, `preferredVariantId`.  
+**Preferred catalog:** the buyer's interest as catalog ids from `/catalog/makes`, `/catalog/makes/:id/models` and `/catalog/models/:id/variants` (the same ids as car create). Send only the narrowest pick: a variant alone is enough, and the server fills in its model and make. Any parent you also send must match (`422 PREFERRED_CATALOG_MISMATCH`); an unknown or deleted id is `404`. Because parents are always stored, filtering by `preferredMakeId` also finds leads that picked a model or variant of that make. `preferredVehicle` stays as optional free text and is not derived from the ids.  
+**Set preference:** `PUT /leads/:id/preference` with `{ "preferredMakeId", "preferredModelId", "preferredVariantId" }` replaces the whole preference (omitted ids count as `null`; all `null` clears it). Same validation as create; closed leads (`converted`, `lost`) answer `422 LEAD_CLOSED`.  
 **Associate vehicle:** `{ "vehicleId": "<uuid>" }` — vehicle must be `open` or `linked`; lead must not be `converted` or `lost`. The new vehicle becomes `linked`; the previous one goes back to `open` if no other active lead remains.  
 **Assign:** `{ "assignedTo": "<staff uuid>" }` or `{ "assignedTo": null }` to unassign. The assignee must be an active admin or salesperson. The assignee gets a `lead_assigned` notification (not when you assign yourself), and the change is written to the audit log. Closed leads cannot be reassigned (`422 LEAD_CLOSED`).  
 **Schedule follow-up:** `{ "scheduledAt": "2026-10-10T10:00:00.000Z", "taskType": "call", "notes": null }`  
@@ -512,7 +525,15 @@ The follow-up belongs to the lead's assignee (or to you if the lead is unassigne
 {
   "id": "uuid",
   "showroomId": "uuid",
-  "vehicleId": null,
+  "vehicleId": "uuid",
+  "linkedVehicle": {
+    "id": "uuid",
+    "makeName": "Hyundai",
+    "modelName": "Creta",
+    "variantName": "SX",
+    "year": 2019,
+    "registrationNumber": "KA01AB1234"
+  },
   "assignedTo": "uuid or null",
   "contactId": "uuid",
   "contactFullName": "Rahul Sharma",
@@ -522,6 +543,12 @@ The follow-up belongs to the lead's assignee (or to you if the lead is unassigne
   "status": "new",
   "budget": 800000,
   "preferredVehicle": null,
+  "preferredMakeId": "uuid",
+  "preferredMakeName": "Hyundai",
+  "preferredModelId": "uuid",
+  "preferredModelName": "Creta",
+  "preferredVariantId": null,
+  "preferredVariantName": null,
   "purchaseTimeline": null,
   "financeRequired": false,
   "currentVehicle": null,
@@ -533,6 +560,8 @@ The follow-up belongs to the lead's assignee (or to you if the lead is unassigne
   "updatedAt": "…"
 }
 ```
+
+`linkedVehicle` summarises the vehicle in `vehicleId` for pipeline cards, so you do not need `GET /vehicles/:id` per lead. It is `null` when no vehicle is linked.
 
 New leads start at `new`. Active leads (`new`, `not_now`, `booking_confirmed`) keep their vehicle `linked`. Allowed transitions (anything else → `422 INVALID_LEAD_STATUS_TRANSITION`):
 

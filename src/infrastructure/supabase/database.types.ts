@@ -436,6 +436,9 @@ export type Database = {
           finance_required: boolean | null;
           id: string;
           notes: string | null;
+          preferred_make_id: string | null;
+          preferred_model_id: string | null;
+          preferred_variant_id: string | null;
           preferred_vehicle: string | null;
           purchase_timeline: string | null;
           showroom_id: string;
@@ -457,6 +460,9 @@ export type Database = {
           finance_required?: boolean | null;
           id?: string;
           notes?: string | null;
+          preferred_make_id?: string | null;
+          preferred_model_id?: string | null;
+          preferred_variant_id?: string | null;
           preferred_vehicle?: string | null;
           purchase_timeline?: string | null;
           showroom_id: string;
@@ -478,6 +484,9 @@ export type Database = {
           finance_required?: boolean | null;
           id?: string;
           notes?: string | null;
+          preferred_make_id?: string | null;
+          preferred_model_id?: string | null;
+          preferred_variant_id?: string | null;
           preferred_vehicle?: string | null;
           purchase_timeline?: string | null;
           showroom_id?: string;
@@ -508,6 +517,27 @@ export type Database = {
             columns: ['created_by'];
             isOneToOne: false;
             referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'leads_preferred_make_id_fkey';
+            columns: ['preferred_make_id'];
+            isOneToOne: false;
+            referencedRelation: 'makes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'leads_preferred_model_id_fkey';
+            columns: ['preferred_model_id'];
+            isOneToOne: false;
+            referencedRelation: 'models';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'leads_preferred_variant_id_fkey';
+            columns: ['preferred_variant_id'];
+            isOneToOne: false;
+            referencedRelation: 'variants';
             referencedColumns: ['id'];
           },
           {
@@ -989,6 +1019,7 @@ export type Database = {
       vehicle_documents: {
         Row: {
           doc_type: string | null;
+          file_name: string | null;
           id: string;
           is_sensitive: boolean;
           storage_path: string;
@@ -998,6 +1029,7 @@ export type Database = {
         };
         Insert: {
           doc_type?: string | null;
+          file_name?: string | null;
           id?: string;
           is_sensitive?: boolean;
           storage_path: string;
@@ -1007,6 +1039,7 @@ export type Database = {
         };
         Update: {
           doc_type?: string | null;
+          file_name?: string | null;
           id?: string;
           is_sensitive?: boolean;
           storage_path?: string;
@@ -1342,6 +1375,9 @@ export type Database = {
           p_finance_required: boolean | null;
           p_id: string;
           p_notes: string | null;
+          p_preferred_make_id?: string | null;
+          p_preferred_model_id?: string | null;
+          p_preferred_variant_id?: string | null;
           p_preferred_vehicle: string | null;
           p_purchase_timeline: string | null;
           p_showroom_id: string;

@@ -11,10 +11,21 @@ export interface LeadFollowUpReadModel {
   readonly notes: string | null;
 }
 
+/** Just enough of the linked vehicle to label a pipeline card. */
+export interface LinkedVehicleReadModel {
+  readonly id: string;
+  readonly makeName: string | null;
+  readonly modelName: string | null;
+  readonly variantName: string | null;
+  readonly year: number;
+  readonly registrationNumber: string;
+}
+
 export interface LeadReadModel {
   readonly id: string;
   readonly showroomId: string;
   readonly vehicleId: string | null;
+  readonly linkedVehicle: LinkedVehicleReadModel | null;
   readonly assignedTo: string | null;
   readonly contactId: string;
   readonly contactFullName: string;
@@ -24,6 +35,12 @@ export interface LeadReadModel {
   readonly status: string;
   readonly budget: number | null;
   readonly preferredVehicle: string | null;
+  readonly preferredMakeId: string | null;
+  readonly preferredMakeName: string | null;
+  readonly preferredModelId: string | null;
+  readonly preferredModelName: string | null;
+  readonly preferredVariantId: string | null;
+  readonly preferredVariantName: string | null;
   readonly purchaseTimeline: string | null;
   readonly financeRequired: boolean | null;
   readonly currentVehicle: string | null;
@@ -39,6 +56,9 @@ export interface LeadListCriteria {
   readonly status?: LeadStatusValue;
   readonly vehicleId?: VehicleId;
   readonly assignedTo?: UserId;
+  readonly preferredMakeId?: string;
+  readonly preferredModelId?: string;
+  readonly preferredVariantId?: string;
 }
 
 export interface ILeadQueries {

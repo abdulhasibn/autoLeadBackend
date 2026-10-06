@@ -6,6 +6,7 @@ import type { IdGenerator } from '../../../../shared/ids/id-generator';
 import type { ConfirmVehicleDocumentCommand } from '../dtos/confirm-vehicle-document-command';
 import type { VehicleDocumentDto } from '../dtos/vehicle-document.dto';
 import type { VehicleManagementPolicy } from '../policies/vehicle-management.policy';
+import { DocumentFileName } from '../../domain/document-file-name.value-object';
 import { toDocumentId } from '../../domain/document-id';
 import { DocumentType } from '../../domain/document-type.value-object';
 import { SIGNED_READ_TTL_SECONDS, type ObjectStoragePort } from '../../domain/object-storage.port';
@@ -47,6 +48,7 @@ export class ConfirmVehicleDocumentUseCase {
       vehicleId,
       storagePath,
       docType: DocumentType.create(command.docType),
+      fileName: command.fileName === null ? null : DocumentFileName.create(command.fileName),
       uploadedBy: ctx.userId,
       uploadedAt: now,
     });
@@ -63,6 +65,7 @@ export class ConfirmVehicleDocumentUseCase {
       vehicleId: document.vehicleId,
       storagePath: document.storagePath.value,
       docType: document.docType.value,
+      fileName: document.fileName === null ? null : document.fileName.value,
       isSensitive: document.isSensitive,
       uploadedBy: document.uploadedBy,
       uploadedAt: document.uploadedAt.toISOString(),

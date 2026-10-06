@@ -23,6 +23,7 @@ const LEAD: LeadReadModel = {
   id: '77777777-7777-4777-8777-777777777777',
   showroomId: 'b0000000-0000-4000-8000-000000000001',
   vehicleId: null,
+  linkedVehicle: null,
   assignedTo: null,
   contactId: '66666666-6666-4666-8666-666666666666',
   contactFullName: 'Rahul Sharma',
@@ -32,6 +33,12 @@ const LEAD: LeadReadModel = {
   status: 'new',
   budget: null,
   preferredVehicle: null,
+  preferredMakeId: null,
+  preferredMakeName: null,
+  preferredModelId: null,
+  preferredModelName: null,
+  preferredVariantId: null,
+  preferredVariantName: null,
   purchaseTimeline: null,
   financeRequired: null,
   currentVehicle: null,
@@ -73,5 +80,24 @@ describe('ListLeadsUseCase', () => {
       SALES,
     );
     expect(page.items.map((lead) => lead.assignedTo)).toEqual([SALES.userId]);
+  });
+
+  it('filters by preferred model', async () => {
+    const queries = new FakeLeadQueries();
+    queries.seed(LEAD);
+    queries.seed({
+      ...LEAD,
+      id: '99999999-9999-4999-8999-999999999999',
+      preferredMakeId: 'c0000000-0000-4000-8000-000000000001',
+      preferredModelId: 'c0000000-0000-4000-8000-000000000002',
+    });
+    const filtered = new ListLeadsUseCase(new LeadManagementPolicy(), queries);
+
+    const page = await filtered.execute(
+      { preferredModelId: 'c0000000-0000-4000-8000-000000000002', page: { limit: 20, offset: 0 } },
+      ADMIN,
+    );
+
+    expect(page.items.map((lead) => lead.id)).toEqual(['99999999-9999-4999-8999-999999999999']);
   });
 });

@@ -8,9 +8,14 @@ import { Contact } from '../domain/contact.entity';
 import { toContactId } from '../domain/contact-id';
 import { Lead } from '../domain/lead.entity';
 import { toLeadId } from '../../../domain/shared/lead-id';
-import type { LeadFollowUpReadModel, LeadReadModel } from '../domain/lead.queries';
+import type {
+  LeadFollowUpReadModel,
+  LeadReadModel,
+  LinkedVehicleReadModel,
+} from '../domain/lead.queries';
 import { LeadSource } from '../domain/lead-source.value-object';
 import { LeadStatus } from '../domain/lead-status.value-object';
+import { PreferredCatalog } from '../domain/preferred-catalog.value-object';
 
 export interface ContactRow {
   readonly id: string;
@@ -33,6 +38,9 @@ export interface LeadRow {
   readonly status: string;
   readonly budget: number | null;
   readonly preferred_vehicle: string | null;
+  readonly preferred_make_id: string | null;
+  readonly preferred_model_id: string | null;
+  readonly preferred_variant_id: string | null;
   readonly purchase_timeline: string | null;
   readonly finance_required: boolean | null;
   readonly current_vehicle: string | null;
@@ -61,6 +69,25 @@ export interface LeadListRow extends LeadRow {
     readonly deleted_at: string | null;
   } | null;
   readonly follow_ups: FollowUpEmbed[] | null;
+  readonly linked_vehicle: LinkedVehicleEmbed | null;
+  readonly preferred_make: NameEmbed | null;
+  readonly preferred_model: NameEmbed | null;
+  readonly preferred_variant: NameEmbed | null;
+}
+
+interface NameEmbed {
+  readonly name: string;
+}
+
+export interface LinkedVehicleEmbed {
+  readonly id: string;
+  readonly year: number;
+  readonly registration_number: string;
+  readonly deleted_at: string | null;
+  readonly variants: {
+    readonly name: string;
+    readonly models: { readonly name: string; readonly makes: NameEmbed | null } | null;
+  } | null;
 }
 
 export function toContact(row: ContactRow): Contact {
@@ -92,6 +119,13 @@ export function toLead(row: LeadRow): Lead {
     status: mapVo(row.status, row.id, 'status', (value) => LeadStatus.create(value)),
     budget: row.budget,
     preferredVehicle: row.preferred_vehicle,
+    preferredCatalog: mapVo(row, row.id, 'preferred catalog', (value) =>
+      PreferredCatalog.create({
+        makeId: value.preferred_make_id,
+        modelId: value.preferred_model_id,
+        variantId: value.preferred_variant_id,
+      }),
+    ),
     purchaseTimeline: row.purchase_timeline,
     financeRequired: row.finance_required,
     currentVehicle: row.current_vehicle,
@@ -116,6 +150,7 @@ export function toLeadReadModel(row: LeadListRow): LeadReadModel | null {
     id: row.id,
     showroomId: row.showroom_id,
     vehicleId: row.vehicle_id,
+    linkedVehicle: toLinkedVehicle(row.linked_vehicle),
     assignedTo: row.assigned_to,
     contactId: row.contact_id,
     contactFullName: row.contacts.full_name,
@@ -125,6 +160,12 @@ export function toLeadReadModel(row: LeadListRow): LeadReadModel | null {
     status: row.status,
     budget: row.budget,
     preferredVehicle: row.preferred_vehicle,
+    preferredMakeId: row.preferred_make_id,
+    preferredMakeName: row.preferred_make?.name ?? null,
+    preferredModelId: row.preferred_model_id,
+    preferredModelName: row.preferred_model?.name ?? null,
+    preferredVariantId: row.preferred_variant_id,
+    preferredVariantName: row.preferred_variant?.name ?? null,
     purchaseTimeline: row.purchase_timeline,
     financeRequired: row.finance_required,
     currentVehicle: row.current_vehicle,
@@ -134,6 +175,20 @@ export function toLeadReadModel(row: LeadListRow): LeadReadModel | null {
     createdBy: row.created_by,
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
+  };
+}
+
+function toLinkedVehicle(embed: LinkedVehicleEmbed | null): LinkedVehicleReadModel | null {
+  if (embed === null || embed.deleted_at !== null) {
+    return null;
+  }
+  return {
+    id: embed.id,
+    makeName: embed.variants?.models?.makes?.name ?? null,
+    modelName: embed.variants?.models?.name ?? null,
+    variantName: embed.variants?.name ?? null,
+    year: embed.year,
+    registrationNumber: embed.registration_number,
   };
 }
 

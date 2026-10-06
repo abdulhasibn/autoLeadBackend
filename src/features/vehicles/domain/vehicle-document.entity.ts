@@ -1,5 +1,6 @@
 import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
+import type { DocumentFileName } from './document-file-name.value-object';
 import type { DocumentId } from './document-id';
 import type { DocumentType } from './document-type.value-object';
 import type { VehicleObjectPath } from './vehicle-object-path.value-object';
@@ -9,6 +10,7 @@ export interface VehicleDocumentProps {
   readonly vehicleId: VehicleId;
   readonly storagePath: VehicleObjectPath;
   readonly docType: DocumentType;
+  readonly fileName: DocumentFileName | null;
   readonly uploadedBy: UserId;
   readonly uploadedAt: Date;
 }
@@ -19,6 +21,7 @@ export class VehicleDocument {
     readonly vehicleId: VehicleId,
     readonly storagePath: VehicleObjectPath,
     readonly docType: DocumentType,
+    readonly fileName: DocumentFileName | null,
     readonly isSensitive: boolean,
     readonly uploadedBy: UserId,
     readonly uploadedAt: Date,
@@ -30,6 +33,7 @@ export class VehicleDocument {
       props.vehicleId,
       props.storagePath,
       props.docType,
+      props.fileName,
       true,
       props.uploadedBy,
       props.uploadedAt,
@@ -44,6 +48,7 @@ export class VehicleDocument {
       props.vehicleId,
       props.storagePath,
       props.docType,
+      props.fileName,
       props.isSensitive,
       props.uploadedBy,
       props.uploadedAt,

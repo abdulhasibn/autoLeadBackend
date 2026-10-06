@@ -25,6 +25,9 @@ export class ListLeadsUseCase {
           ctx,
           query.assignedTo === undefined ? undefined : toUserId(query.assignedTo),
         ),
+        preferredMakeId: query.preferredMakeId,
+        preferredModelId: query.preferredModelId,
+        preferredVariantId: query.preferredVariantId,
       },
       query.page,
     );

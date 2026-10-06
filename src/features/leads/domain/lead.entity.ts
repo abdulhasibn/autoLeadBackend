@@ -7,6 +7,7 @@ import type { ContactId } from './contact-id';
 import { InvalidLeadStatusTransitionError } from './errors/invalid-lead-status-transition.error';
 import type { LeadSource } from './lead-source.value-object';
 import { LeadStatus } from './lead-status.value-object';
+import { PreferredCatalog } from './preferred-catalog.value-object';
 
 export interface LeadCreateProps {
   readonly id: LeadId;
@@ -17,6 +18,8 @@ export interface LeadCreateProps {
   readonly source: LeadSource;
   readonly budget: number | null;
   readonly preferredVehicle: string | null;
+  /** Defaults to no preference. */
+  readonly preferredCatalog?: PreferredCatalog;
   readonly purchaseTimeline: string | null;
   readonly financeRequired: boolean | null;
   readonly currentVehicle: string | null;
@@ -28,6 +31,7 @@ export interface LeadCreateProps {
 }
 
 export interface LeadReconstituteProps extends LeadCreateProps {
+  readonly preferredCatalog: PreferredCatalog;
   readonly status: LeadStatus;
   readonly deletedAt: Date | null;
 }
@@ -43,6 +47,7 @@ export class Lead {
     private statusValue: LeadStatus,
     private budgetValue: number | null,
     private preferredVehicleValue: string | null,
+    private preferredCatalogValue: PreferredCatalog,
     private purchaseTimelineValue: string | null,
     private financeRequiredValue: boolean | null,
     private currentVehicleValue: string | null,
@@ -67,6 +72,7 @@ export class Lead {
       LeadStatus.initial(),
       props.budget,
       normalizeOptionalText(props.preferredVehicle),
+      props.preferredCatalog ?? PreferredCatalog.none(),
       normalizeOptionalText(props.purchaseTimeline),
       props.financeRequired,
       normalizeOptionalText(props.currentVehicle),
@@ -92,6 +98,7 @@ export class Lead {
       props.status,
       props.budget,
       props.preferredVehicle,
+      props.preferredCatalog,
       props.purchaseTimeline,
       props.financeRequired,
       props.currentVehicle,
@@ -124,6 +131,10 @@ export class Lead {
 
   get preferredVehicle(): string | null {
     return this.preferredVehicleValue;
+  }
+
+  get preferredCatalog(): PreferredCatalog {
+    return this.preferredCatalogValue;
   }
 
   get purchaseTimeline(): string | null {
@@ -175,6 +186,15 @@ export class Lead {
   associateVehicle(vehicleId: VehicleId, at: Date): void {
     this.assertOpen('Cannot associate a vehicle with a closed lead');
     this.vehicleIdValue = vehicleId;
+    this.updatedAtValue = at;
+  }
+
+  setPreferredCatalog(preference: PreferredCatalog, at: Date): void {
+    this.assertOpen('Cannot change the preference of a closed lead');
+    if (this.preferredCatalogValue.equals(preference)) {
+      return;
+    }
+    this.preferredCatalogValue = preference;
     this.updatedAtValue = at;
   }
 
