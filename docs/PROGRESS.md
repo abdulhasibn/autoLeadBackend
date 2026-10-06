@@ -12,17 +12,17 @@
 | Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0012 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary) | All 14 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name) | 14 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file); `lead_preference_and_document_file_name` **pending** |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
 | Auth feature (`src/features/auth`) | Done — email + password login/refresh, bearer, /auth/me; roles from `user_roles` |
 | Users / roles (`src/features/users`) | Done — staff CRUD + email/password provision (Admin) |
 | Owners (`src/features/owners`) | Done — staff owner CRUD (Admin / Salesperson; deactivate Admin-only) |
-| Vehicles (`src/features/vehicles`) | Staff create/list/get/update, catalog reads, signed media/document uploads; statuses `open` / `linked` / `dropped` / `sold` (Admin drops/re-lists; `linked`/`sold` follow leads) and deletes |
+| Vehicles (`src/features/vehicles`) | Staff create/list/get/update, catalog reads, signed media/document uploads (list/get carry a signed `frontImageUrl`; documents keep `fileName`; status history names the actor); statuses `open` / `linked` / `dropped` / `sold` (Admin drops/re-lists; `linked`/`sold` follow leads) and deletes |
 | Inventory (`src/features/inventory`) | Not started |
 | Marketplace (`src/features/marketplace`) | Not started |
-| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle, status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification; Admin assignment; salesperson sees assigned leads only |
+| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle (`linkedVehicle` summary on reads), structured catalog preference (make → model → variant, set on create or `PUT /leads/:id/preference`, list filters), status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification; Admin assignment; salesperson sees assigned leads only |
 | Sales (`src/features/sales`) | Not started |
 | Dashboard (`src/features/dashboard`) | Admin `GET /dashboard` — KPIs, attention lists, today's follow-ups (ADR-0012); money metrics after finance |
 | Finance (`src/features/finance`) | Not started |
@@ -48,12 +48,23 @@
 
 ## Next up
 
-1. **Merge `feat/vehicle-lead-status-lifecycle` into `main` now.** The hosted schema is already migrated, so the API deployed from the old `main` cannot read or write vehicles/leads until the new code ships.
+1. Apply `lead_preference_and_document_file_name` to the hosted project, then merge `feat/dealer-handoff-gaps` (the migration is backward compatible, so it goes first).
 2. Run the live `scripts/smoke-api.sh` flow against production (needs `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
 3. Acquisition prices on `vehicle_financials` (Stint 2.3).
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-10-06 — Dealer app handoff gaps
+
+Closes five open items from the dealer app's `docs/BACKEND_HANDOFF.md` (vehicle financials deferred).
+
+- `GET /vehicles` and `GET /vehicles/:id` return `frontImageUrl` / `frontImageUrlExpiresAt`: the lowest-`sortOrder` `front` photo, signed in one batch per page (`ObjectStoragePort.createSignedReadUrls`, `IVehicleMediaQueries.findFrontImagePaths`, `VehicleFrontImages` service). No per-row fan-out.
+- `GET /leads` and `GET /leads/:id` embed `linkedVehicle` (`id`, make/model/variant names, year, registration) through `vehicles!vehicle_id` (the hint is required because `vehicles.sold_lead_id` also links the tables).
+- Structured lead preference: `leads.preferred_make_id` / `preferred_model_id` / `preferred_variant_id` (FKs + chain CHECK + partial indexes), `PreferredCatalog` VO, `resolvePreferredCatalog` fills in parents from the narrowest id via the new `ICatalogLineageLookup` port (vehicles provides `SupabaseCatalogLineageLookup`). Accepted on `POST /leads` and the new `PUT /leads/:id/preference`; `GET /leads` filters by any of the three. `save_lead` recreated with three trailing defaulted params. Free-text `preferredVehicle` unchanged.
+- `GET /vehicles/:id/status-history` items carry `changedByName` (`users!changed_by` embed).
+- `vehicle_documents.file_name`: optional `fileName` on document confirm (`DocumentFileName` VO strips folder parts, 1–255 chars), returned on list/confirm.
+- Migration `20261006120000_lead_preference_and_document_file_name.sql`; `database.types.ts` and `docs/schema.dbml` updated by hand to match. Not yet replayed locally (Docker not running) or applied to hosted.
 
 ### 2026-10-05 — Admin dashboard (ADR-0012)
 
