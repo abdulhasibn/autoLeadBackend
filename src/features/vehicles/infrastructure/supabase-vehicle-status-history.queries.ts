@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
+import { emptyPageIfPastEnd } from '../../../infrastructure/supabase/range-not-satisfiable';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import { toPage } from '../../../shared/pagination/pagination';
 import type {
@@ -41,6 +42,10 @@ export class SupabaseVehicleStatusHistoryQueries implements IVehicleStatusHistor
       .range(page.offset, page.offset + page.limit - 1);
 
     if (error !== null) {
+      const pastEnd = emptyPageIfPastEnd(error, page);
+      if (pastEnd !== null) {
+        return pastEnd;
+      }
       throw new DatabaseUnavailableError(`Failed to list vehicle status history: ${error.message}`);
     }
 

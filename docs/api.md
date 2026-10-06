@@ -481,7 +481,7 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 | `PUT` | `/leads/:id/assignment` | `200` `{ "id", "assignedTo" }` (Admin) |
 | `PUT` | `/leads/:id/preference` | `200` `{ "preferredMakeId", "preferredModelId", "preferredVariantId" }` |
 | `POST` | `/leads/:id/follow-ups` | `201` follow-up |
-| `POST` | `/leads/:id/status` | `200` `{ "status", "vehicleMarkedSold" }` |
+| `POST` | `/leads/:id/status` | `200` `{ "status", "vehicleSold" }` |
 
 **Create body**
 
