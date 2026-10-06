@@ -221,6 +221,7 @@ Table vehicle_documents {
   vehicle_id uuid [not null, ref: > vehicles.id]
   doc_type text [note: 'rc | insurance | service_record | loan_clearance | inspection_report | other']
   storage_path text [not null]
+  file_name text [note: 'original upload name for display; 1–255 chars, no folder part']
   is_sensitive boolean [not null, default: true]
   uploaded_by uuid [not null, ref: > users.id]
   uploaded_at timestamptz [not null, default: `now()`]
@@ -330,7 +331,10 @@ Table leads {
   source text [not null, note: 'marketplace | mobile_app | website | phone | walkin | whatsapp | instagram | facebook | referral | other']
   status text [not null, default: 'new', note: 'new | not_now | booking_confirmed | converted | lost | vehicle_unavailable (ADR-0011)']
   budget numeric(12,2)
-  preferred_vehicle text
+  preferred_vehicle text [note: 'legacy free text; not derived from the catalog ids']
+  preferred_make_id uuid [ref: > makes.id]
+  preferred_model_id uuid [ref: > models.id]
+  preferred_variant_id uuid [ref: > variants.id]
   purchase_timeline text
   finance_required boolean
   current_vehicle text
@@ -341,10 +345,13 @@ Table leads {
   updated_at timestamptz [not null, default: `now()`]
   deleted_at timestamptz
 
-  Note: 'CHECK: exactly one of user_id or contact_id is set'
+  Note: 'CHECK: exactly one of user_id or contact_id is set. CHECK: preferred variant needs model, preferred model needs make'
 
   indexes {
     (showroom_id, status, created_at) [name: 'leads_showroom_status_created_idx']
+    (preferred_make_id) [name: 'leads_preferred_make_idx', note: 'partial: live rows with a make']
+    (preferred_model_id) [name: 'leads_preferred_model_idx', note: 'partial: live rows with a model']
+    (preferred_variant_id) [name: 'leads_preferred_variant_idx', note: 'partial: live rows with a variant']
     (assigned_to, status) [name: 'leads_assigned_status_idx']
     (vehicle_id) [name: 'leads_vehicle_id_idx']
   }
