@@ -5,5 +5,8 @@ export interface ListLeadsQuery {
   readonly vehicleId?: string;
   /** Admin-only filter; a salesperson always sees their own leads. */
   readonly assignedTo?: string;
+  readonly preferredMakeId?: string;
+  readonly preferredModelId?: string;
+  readonly preferredVariantId?: string;
   readonly page: Pagination;
 }

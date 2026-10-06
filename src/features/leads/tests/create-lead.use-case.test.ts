@@ -12,9 +12,18 @@ import { VehicleLinkRefresher } from '../application/services/vehicle-link-refre
 import { CreateLeadUseCase } from '../application/use-cases/create-lead.use-case';
 import { Contact } from '../domain/contact.entity';
 import { toContactId } from '../domain/contact-id';
-import { FakeClock, FakeIdGenerator, FakeLeadRepository, FakeVehicles } from './fakes';
+import {
+  FakeCatalogLineage,
+  FakeClock,
+  FakeIdGenerator,
+  FakeLeadRepository,
+  FakeVehicles,
+} from './fakes';
 
 const VEHICLE_ID = '33333333-3333-4333-8333-333333333333';
+const MAKE_ID = 'c0000000-0000-4000-8000-000000000001';
+const MODEL_ID = 'c0000000-0000-4000-8000-000000000002';
+const VARIANT_ID = 'c0000000-0000-4000-8000-000000000003';
 
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
@@ -31,6 +40,9 @@ const COMMAND = {
   vehicleId: null,
   budget: 800000,
   preferredVehicle: null,
+  preferredMakeId: null,
+  preferredModelId: null,
+  preferredVariantId: null,
   purchaseTimeline: null,
   financeRequired: null,
   currentVehicle: null,
@@ -43,16 +55,20 @@ describe('CreateLeadUseCase', () => {
   let repo: FakeLeadRepository;
   let ids: FakeIdGenerator;
   let vehicles: FakeVehicles;
+  let catalog: FakeCatalogLineage;
 
   beforeEach(() => {
     repo = new FakeLeadRepository();
     ids = new FakeIdGenerator();
     vehicles = new FakeVehicles();
+    catalog = new FakeCatalogLineage();
+    catalog.seed(MAKE_ID, MODEL_ID, VARIANT_ID);
     useCase = new CreateLeadUseCase(
       new LeadManagementPolicy(),
       repo,
       vehicles,
       new VehicleLinkRefresher(repo, vehicles),
+      catalog,
       new FakeClock(new Date('2026-10-03T00:00:00.000Z')),
       ids,
     );
@@ -127,6 +143,42 @@ describe('CreateLeadUseCase', () => {
   it('rejects an unknown vehicle', async () => {
     await expect(
       useCase.execute({ ...COMMAND, vehicleId: VEHICLE_ID }, ADMIN),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('fills in the make and model when only a variant is preferred', async () => {
+    const result = await useCase.execute({ ...COMMAND, preferredVariantId: VARIANT_ID }, ADMIN);
+
+    expect(result).toMatchObject({
+      preferredMakeId: MAKE_ID,
+      preferredModelId: MODEL_ID,
+      preferredVariantId: VARIANT_ID,
+    });
+    const saved = [...repo.leads.values()][0];
+    expect(saved?.preferredCatalog.modelId).toBe(MODEL_ID);
+  });
+
+  it('rejects a preferred model that does not belong to the preferred make', async () => {
+    catalog.seed('c0000000-0000-4000-8000-0000000000ff');
+    await expect(
+      useCase.execute(
+        {
+          ...COMMAND,
+          preferredMakeId: 'c0000000-0000-4000-8000-0000000000ff',
+          preferredModelId: MODEL_ID,
+        },
+        ADMIN,
+      ),
+    ).rejects.toMatchObject({ code: 'PREFERRED_CATALOG_MISMATCH' });
+    expect(repo.leads.size).toBe(0);
+  });
+
+  it('rejects an unknown preferred variant', async () => {
+    await expect(
+      useCase.execute(
+        { ...COMMAND, preferredVariantId: 'c0000000-0000-4000-8000-0000000000aa' },
+        ADMIN,
+      ),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 

@@ -14,7 +14,7 @@ import { toContact, toLead, type ContactRow, type LeadRow } from './lead.mapper'
 import { translateLeadWriteError } from './translate-lead-write-error';
 
 const LEAD_COLUMNS =
-  'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget, preferred_vehicle, purchase_timeline, finance_required, current_vehicle, trade_in_required, notes, created_by, created_at, updated_at, deleted_at';
+  'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget, preferred_vehicle, preferred_make_id, preferred_model_id, preferred_variant_id, purchase_timeline, finance_required, current_vehicle, trade_in_required, notes, created_by, created_at, updated_at, deleted_at';
 
 export class SupabaseLeadRepository implements ILeadRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -99,6 +99,9 @@ export class SupabaseLeadRepository implements ILeadRepository {
       p_assigned_to: lead.assignedTo,
       p_update_assignee: lead.hasAssigneeChanged,
       p_actor_id: write.actorId,
+      p_preferred_make_id: lead.preferredCatalog.makeId,
+      p_preferred_model_id: lead.preferredCatalog.modelId,
+      p_preferred_variant_id: lead.preferredCatalog.variantId,
     });
 
     if (error !== null) {

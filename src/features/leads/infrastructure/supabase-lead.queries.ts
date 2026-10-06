@@ -8,8 +8,20 @@ import type { LeadId } from '../../../domain/shared/lead-id';
 import type { ILeadQueries, LeadListCriteria, LeadReadModel } from '../domain/lead.queries';
 import { toLeadReadModel, type LeadListRow } from './lead.mapper';
 
-const LEAD_LIST_COLUMNS =
-  'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget, preferred_vehicle, purchase_timeline, finance_required, current_vehicle, trade_in_required, notes, created_by, created_at, updated_at, deleted_at, contacts ( full_name, phone, email, deleted_at ), follow_ups ( id, task_type, scheduled_at, notes, completed_at, deleted_at )';
+// FK hints are required: vehicles.sold_lead_id also links vehicles and leads,
+// and makes/models/variants are reachable both directly and via the vehicle.
+const LEAD_LIST_COLUMNS = [
+  'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget',
+  'preferred_vehicle, preferred_make_id, preferred_model_id, preferred_variant_id',
+  'purchase_timeline, finance_required, current_vehicle, trade_in_required, notes',
+  'created_by, created_at, updated_at, deleted_at',
+  'contacts ( full_name, phone, email, deleted_at )',
+  'follow_ups ( id, task_type, scheduled_at, notes, completed_at, deleted_at )',
+  'linked_vehicle:vehicles!vehicle_id ( id, year, registration_number, deleted_at, variants ( name, models ( name, makes ( name ) ) ) )',
+  'preferred_make:makes!preferred_make_id ( name )',
+  'preferred_model:models!preferred_model_id ( name )',
+  'preferred_variant:variants!preferred_variant_id ( name )',
+].join(', ');
 
 export class SupabaseLeadQueries implements ILeadQueries {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -29,6 +41,15 @@ export class SupabaseLeadQueries implements ILeadQueries {
     }
     if (criteria.assignedTo !== undefined) {
       query = query.eq('assigned_to', criteria.assignedTo);
+    }
+    if (criteria.preferredMakeId !== undefined) {
+      query = query.eq('preferred_make_id', criteria.preferredMakeId);
+    }
+    if (criteria.preferredModelId !== undefined) {
+      query = query.eq('preferred_model_id', criteria.preferredModelId);
+    }
+    if (criteria.preferredVariantId !== undefined) {
+      query = query.eq('preferred_variant_id', criteria.preferredVariantId);
     }
 
     const { data, error, count } = await query.range(page.offset, page.offset + page.limit - 1);

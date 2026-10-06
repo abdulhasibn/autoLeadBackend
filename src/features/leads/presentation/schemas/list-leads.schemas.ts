@@ -9,4 +9,7 @@ export const listLeadsQuerySchema = z.object({
   status: optionalLeadStatusSchema,
   vehicleId: z.string().uuid('vehicleId must be a UUID').optional(),
   assignedTo: z.string().uuid('assignedTo must be a UUID').optional(),
+  preferredMakeId: z.string().uuid('preferredMakeId must be a UUID').optional(),
+  preferredModelId: z.string().uuid('preferredModelId must be a UUID').optional(),
+  preferredVariantId: z.string().uuid('preferredVariantId must be a UUID').optional(),
 });

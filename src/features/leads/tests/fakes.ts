@@ -11,6 +11,7 @@ import type { FollowUp } from '../domain/follow-up.entity';
 import type { Lead } from '../domain/lead.entity';
 import type { ILeadQueries, LeadListCriteria, LeadReadModel } from '../domain/lead.queries';
 import type { IAssignableStaffLookup } from '../domain/assignable-staff.port';
+import type { ICatalogLineageLookup } from '../domain/catalog-lineage.port';
 import type { ILeadRepository, LeadWrite } from '../domain/lead.repository';
 import type { ILinkableVehicleLookup, VehicleLinkability } from '../domain/linkable-vehicle.port';
 import type { IVehicleLinkSync } from '../domain/vehicle-link-sync.port';
@@ -104,6 +105,24 @@ export class FakeLeadQueries implements ILeadQueries {
       if (criteria.assignedTo !== undefined && lead.assignedTo !== criteria.assignedTo) {
         return false;
       }
+      if (
+        criteria.preferredMakeId !== undefined &&
+        lead.preferredMakeId !== criteria.preferredMakeId
+      ) {
+        return false;
+      }
+      if (
+        criteria.preferredModelId !== undefined &&
+        lead.preferredModelId !== criteria.preferredModelId
+      ) {
+        return false;
+      }
+      if (
+        criteria.preferredVariantId !== undefined &&
+        lead.preferredVariantId !== criteria.preferredVariantId
+      ) {
+        return false;
+      }
       return true;
     });
     return toPage(filtered.slice(page.offset, page.offset + page.limit), filtered.length, page);
@@ -164,5 +183,39 @@ export class FakeVehicles implements ILinkableVehicleLookup, IVehicleLinkSync, I
     }
     this.statuses.set(vehicleId, 'sold');
     this.soldTo.set(vehicleId, leadId);
+  }
+}
+
+/** A tiny live catalog: make → model → variant, keyed by id. */
+export class FakeCatalogLineage implements ICatalogLineageLookup {
+  readonly makes = new Set<string>();
+  readonly models = new Map<string, string>();
+  readonly variants = new Map<string, string>();
+
+  seed(makeId: string, modelId?: string, variantId?: string): void {
+    this.makes.add(makeId);
+    if (modelId !== undefined) {
+      this.models.set(modelId, makeId);
+    }
+    if (modelId !== undefined && variantId !== undefined) {
+      this.variants.set(variantId, modelId);
+    }
+  }
+
+  async variantLineage(
+    variantId: string,
+  ): Promise<{ readonly makeId: string; readonly modelId: string } | null> {
+    const modelId = this.variants.get(variantId);
+    const makeId = modelId === undefined ? undefined : this.models.get(modelId);
+    return modelId === undefined || makeId === undefined ? null : { makeId, modelId };
+  }
+
+  async modelLineage(modelId: string): Promise<{ readonly makeId: string } | null> {
+    const makeId = this.models.get(modelId);
+    return makeId === undefined ? null : { makeId };
+  }
+
+  async isLiveMake(makeId: string): Promise<boolean> {
+    return this.makes.has(makeId);
   }
 }

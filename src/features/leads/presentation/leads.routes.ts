@@ -7,6 +7,7 @@ import type { CreateLeadController } from './controllers/create-lead.controller'
 import type { GetLeadController } from './controllers/get-lead.controller';
 import type { ListLeadsController } from './controllers/list-leads.controller';
 import type { ScheduleFollowUpController } from './controllers/schedule-follow-up.controller';
+import type { SetLeadPreferenceController } from './controllers/set-lead-preference.controller';
 
 export interface LeadsRouterDeps {
   readonly bearerMiddleware: RequestHandler;
@@ -17,6 +18,7 @@ export interface LeadsRouterDeps {
   readonly assignLeadController: AssignLeadController;
   readonly changeLeadStatusController: ChangeLeadStatusController;
   readonly scheduleFollowUpController: ScheduleFollowUpController;
+  readonly setLeadPreferenceController: SetLeadPreferenceController;
 }
 
 export function createLeadsRouter(deps: LeadsRouterDeps): Router {
@@ -29,6 +31,7 @@ export function createLeadsRouter(deps: LeadsRouterDeps): Router {
   router.get('/:id', deps.getLeadController.handle());
   router.patch('/:id/vehicle', deps.associateLeadVehicleController.handle());
   router.put('/:id/assignment', deps.assignLeadController.handle());
+  router.put('/:id/preference', deps.setLeadPreferenceController.handle());
   router.post('/:id/status', deps.changeLeadStatusController.handle());
   router.post('/:id/follow-ups', deps.scheduleFollowUpController.handle());
 

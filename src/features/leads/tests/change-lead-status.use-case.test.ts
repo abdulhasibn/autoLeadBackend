@@ -14,6 +14,7 @@ import { InvalidLeadStatusTransitionError } from '../domain/errors/invalid-lead-
 import { Lead } from '../domain/lead.entity';
 import { LeadSource } from '../domain/lead-source.value-object';
 import { LeadStatus } from '../domain/lead-status.value-object';
+import { PreferredCatalog } from '../domain/preferred-catalog.value-object';
 import { FakeClock, FakeLeadRepository, FakeVehicles } from './fakes';
 
 const ADMIN: AuthenticatedContext = {
@@ -50,6 +51,7 @@ function lead(
     status: LeadStatus.create(status),
     budget: null,
     preferredVehicle: null,
+    preferredCatalog: PreferredCatalog.none(),
     purchaseTimeline: null,
     financeRequired: null,
     currentVehicle: null,
