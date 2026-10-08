@@ -11,6 +11,7 @@ export function toLeadDto(lead: Lead, contact: Contact): LeadDto {
     vehicleId: lead.vehicleId,
     linkedVehicle: null,
     assignedTo: lead.assignedTo,
+    assignedToName: null,
     contactId: contact.id,
     contactFullName: contact.fullName,
     contactPhone: contact.phone.value,

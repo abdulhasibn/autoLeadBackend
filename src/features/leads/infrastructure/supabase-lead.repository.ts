@@ -6,6 +6,7 @@ import type { Phone } from '../../../domain/shared/phone.value-object';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
 import type { Contact } from '../domain/contact.entity';
+import type { ContactId } from '../domain/contact-id';
 import type { FollowUp } from '../domain/follow-up.entity';
 import type { Lead } from '../domain/lead.entity';
 import { ACTIVE_LEAD_STATUSES } from '../domain/lead-status.value-object';
@@ -15,6 +16,9 @@ import { translateLeadWriteError } from './translate-lead-write-error';
 
 const LEAD_COLUMNS =
   'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget, preferred_vehicle, preferred_make_id, preferred_model_id, preferred_variant_id, purchase_timeline, finance_required, current_vehicle, trade_in_required, notes, created_by, created_at, updated_at, deleted_at';
+
+const CONTACT_COLUMNS =
+  'id, full_name, phone, email, created_by, created_at, updated_at, deleted_at';
 
 export class SupabaseLeadRepository implements ILeadRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -52,10 +56,28 @@ export class SupabaseLeadRepository implements ILeadRepository {
     return (data as LeadRow[]).map(toLead);
   }
 
+  async findContactById(id: ContactId): Promise<Contact | null> {
+    const { data, error } = await this.db
+      .from('contacts')
+      .select(CONTACT_COLUMNS)
+      .eq('id', id)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (error !== null) {
+      throw new DatabaseUnavailableError(`Failed to load contact: ${error.message}`);
+    }
+    if (data === null) {
+      return null;
+    }
+
+    return toContact(data as ContactRow);
+  }
+
   async findLiveContactByPhone(phone: Phone): Promise<Contact | null> {
     const { data, error } = await this.db
       .from('contacts')
-      .select('id, full_name, phone, email, created_by, created_at, updated_at, deleted_at')
+      .select(CONTACT_COLUMNS)
       .eq('phone', phone.value)
       .is('deleted_at', null)
       .is('merged_into_user_id', null)

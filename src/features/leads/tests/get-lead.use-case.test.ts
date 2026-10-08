@@ -20,6 +20,7 @@ const LEAD: LeadReadModel = {
   vehicleId: null,
   linkedVehicle: null,
   assignedTo: null,
+  assignedToName: null,
   contactId: '66666666-6666-4666-8666-666666666666',
   contactFullName: 'Rahul Sharma',
   contactPhone: '+919811122233',
