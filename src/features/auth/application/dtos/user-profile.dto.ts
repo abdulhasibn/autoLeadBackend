@@ -9,4 +9,6 @@ export interface UserProfileDto {
   readonly email: string | null;
   readonly avatarUrl: string | null;
   readonly roles: ReadonlyArray<string>;
+  /** Home showroom; null for staff not tied to one. */
+  readonly showroomId: string | null;
 }

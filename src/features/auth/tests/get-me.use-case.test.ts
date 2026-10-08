@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { NotFoundError } from '../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
+import { toShowroomId } from '../../../domain/shared/showroom-id';
 import { toUserId } from '../../../domain/shared/user-id';
 import type { UserProfileDto } from '../application/dtos/user-profile.dto';
 import type { ActorGrants, IAuthQueries } from '../application/queries/auth.queries';
@@ -35,12 +36,13 @@ const PROFILE: UserProfileDto = {
   email: 'alice@example.com',
   avatarUrl: null,
   roles: [],
+  showroomId: null,
 };
 
 const CTX: AuthenticatedContext = {
   userId: toUserId('user-1'),
   roles: ['salesperson'],
-  showroomId: null,
+  showroomId: toShowroomId('b0000000-0000-4000-8000-000000000001'),
 };
 
 describe('GetMeUseCase', () => {
@@ -52,7 +54,7 @@ describe('GetMeUseCase', () => {
     useCase = new GetMeUseCase(fakeQueries);
   });
 
-  it('returns the user profile with roles from the authenticated context', async () => {
+  it('returns the user profile with roles and home showroom from the authenticated context', async () => {
     fakeQueries.seed(PROFILE);
 
     const result = await useCase.execute(CTX);
@@ -60,6 +62,7 @@ describe('GetMeUseCase', () => {
     expect(result).toEqual({
       ...PROFILE,
       roles: ['salesperson'],
+      showroomId: 'b0000000-0000-4000-8000-000000000001',
     });
   });
 

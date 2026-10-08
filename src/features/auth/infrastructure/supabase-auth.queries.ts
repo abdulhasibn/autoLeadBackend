@@ -16,8 +16,9 @@ function mapRow(row: UserRow): UserProfileDto {
     phone: row.phone,
     email: row.email,
     avatarUrl: row.avatar_url,
-    // Roles are loaded separately via findActor.
+    // Roles and home showroom are loaded separately via findActor.
     roles: [],
+    showroomId: null,
   };
 }
 

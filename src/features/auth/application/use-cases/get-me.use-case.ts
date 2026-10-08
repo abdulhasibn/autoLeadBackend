@@ -17,7 +17,7 @@ export class GetMeUseCase {
       throw new NotFoundError(`User profile not found for id ${ctx.userId}`);
     }
 
-    // Roles were loaded from user_roles when the actor was resolved.
-    return { ...profile, roles: ctx.roles };
+    // Roles and home showroom were loaded when the actor was resolved.
+    return { ...profile, roles: ctx.roles, showroomId: ctx.showroomId };
   }
 }
