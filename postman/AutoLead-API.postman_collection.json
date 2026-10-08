@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "AutoLead API",
-    "description": "AutoLead backend — used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only). **Catalog, Vehicles, Leads, Notifications** accept Admin or Salesperson; lead assignment, vehicle status changes, and media/document deletes are Admin-only. A salesperson only sees leads assigned to them.\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login → create owner → pick catalog variant → create vehicle → create lead → associate vehicle → assign lead → schedule follow-up → change status → inbox.",
+    "description": "AutoLead backend — used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only). **Catalog, Vehicles, Leads, Notifications, Dashboard, Showrooms** accept Admin or Salesperson; lead assignment, vehicle status changes, and media/document deletes are Admin-only. A salesperson only sees leads assigned to them.\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login → create owner → pick catalog variant → create vehicle → create lead → associate vehicle → assign lead → schedule follow-up → change status → inbox.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -547,10 +547,16 @@
                   "value": "{{ownerPhone}}",
                   "description": "Optional E.164 phone filter",
                   "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "priya",
+                  "description": "Partial match on name, phone or city",
+                  "disabled": true
                 }
               ]
             },
-            "description": "GET /owners — paginated. Optional `city` and `phone` filters."
+            "description": "GET /owners — paginated. Optional `city` and `phone` filters. Optional search: partial match on name, phone or city."
           }
         },
         {
@@ -716,7 +722,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/vehicles?limit=20&offset=0",
-            "description": "GET /vehicles — filters: status, ownerId, showroomId, registration. Each item carries `frontImageUrl` / `frontImageUrlExpiresAt` (signed URL of the lowest-sortOrder `front` photo, ~10 min; both null when there is none) for list thumbnails."
+            "description": "GET /vehicles — filters: status, ownerId, showroomId, registration. Each item carries `frontImageUrl` / `frontImageUrlExpiresAt` (signed URL of the lowest-sortOrder `front` photo, ~10 min; both null when there is none) for list thumbnails. Optional: search, makeId, modelId, variantId, yearMin/yearMax, kmMin/kmMax, fuelType and transmission (comma-separated). Items carry linkedLeadCount."
           }
         },
         {
@@ -1015,7 +1021,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/leads?limit=20&offset=0",
-            "description": "GET /leads — filters: status, vehicleId, assignedTo (admin only), preferredMakeId, preferredModelId, preferredVariantId. A salesperson only sees leads assigned to them. Items include `linkedVehicle` ({ id, makeName, modelName, variantName, year, registrationNumber } or null) and the preferred catalog ids + names."
+            "description": "GET /leads — filters (all optional, AND-combined): status, vehicleId, assignedTo (admin only), preferredMakeId, preferredModelId, preferredVariantId, search (contact name/phone, partial), budgetMin, budgetMax, source (comma-separated), hasVehicle (true|false), purchaseTimeline, financeRequired (true|false), createdFrom (inclusive), createdTo (exclusive). A salesperson only sees leads assigned to them. Items include `assignedToName`, `linkedVehicle` ({ id, makeName, modelName, variantName, year, registrationNumber } or null) and the preferred catalog ids + names."
           }
         },
         {
@@ -1025,6 +1031,29 @@
             "header": [],
             "url": "{{baseUrl}}/leads/{{leadId}}",
             "description": "GET /leads/:id — includes next follow-up, `linkedVehicle` summary, and preferred catalog ids + names."
+          }
+        },
+        {
+          "name": "Update Lead",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/leads/{{leadId}}",
+            "description": "PATCH /leads/:id (Admin, or the assigned Salesperson) — 200 lead. Full replace of fullName, phone, email, source, budget, purchaseTimeline, financeRequired, currentVehicle, tradeInRequired, notes (omitted optional fields are cleared). A new phone moves the lead to that phone's contact. Closed lead → 422 LEAD_CLOSED. Embeds (linkedVehicle, names) are null in the response; GET for them.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Rahul Sharma\",\n  \"phone\": \"+919811122233\",\n  \"email\": null,\n  \"source\": \"walkin\",\n  \"budget\": 800000,\n  \"purchaseTimeline\": \"this month\",\n  \"financeRequired\": false,\n  \"currentVehicle\": null,\n  \"tradeInRequired\": false,\n  \"notes\": \"called the showroom\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           }
         },
         {
@@ -1097,6 +1126,15 @@
           }
         },
         {
+          "name": "Remove Vehicle",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/leads/{{leadId}}/vehicle",
+            "description": "DELETE /leads/:id/vehicle (Admin, or the assigned Salesperson) — 200 `{ vehicleId: null }`. Clears the link; the vehicle goes back to open when no other active lead holds it. Closed lead → 422 LEAD_CLOSED; booking_confirmed → 422 LEAD_REQUIRES_VEHICLE."
+          }
+        },
+        {
           "name": "Schedule Follow-up",
           "request": {
             "method": "POST",
@@ -1140,6 +1178,15 @@
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/status",
             "description": "POST /leads/:id/status — 200 `{ status, vehicleSold }`. new → not_now | booking_confirmed | lost; not_now → new | booking_confirmed | lost; booking_confirmed → converted | lost; vehicle_unavailable → new | not_now | booking_confirmed | lost. booking_confirmed/converted need a vehicle (422 LEAD_REQUIRES_VEHICLE); vehicle_unavailable is system-only. Invalid transition → 422."
+          }
+        },
+        {
+          "name": "List Lead Status History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/leads/{{leadId}}/status-history?limit=20&offset=0",
+            "description": "GET /leads/:id/status-history — 200 page, newest first, of { id, leadId, fromStatus, toStatus, changedBy, changedByName, notes, changedAt }. Same visibility as GET /leads/:id."
           }
         },
         {
@@ -1190,7 +1237,7 @@
             "method": "GET",
             "header": [],
             "url": "{{baseUrl}}/notifications?limit=20&offset=0",
-            "description": "GET /notifications — the caller's inbox (Admin or Salesperson): `lead_assigned` right away, `follow_up_due` at the scheduled time."
+            "description": "GET /notifications — the caller's inbox (Admin or Salesperson): `lead_assigned` right away, `follow_up_due` at the scheduled time. Optional isRead=true|false. Response adds unreadCount (unread due items, whatever the filter); items carry leadId."
           }
         },
         {
@@ -1245,7 +1292,7 @@
                 }
               ]
             },
-            "description": "GET /dashboard — Admin only (salesperson 403). Period-to-date KPIs with `previous` (same elapsed span of the prior period), attention lists (overdue follow-ups, active leads without a follow-up, aged stock > 45 days), today's follow-ups, pipeline and inventory. Lists hold up to 5 rows plus `total`. Invalid `period` → 422. See docs/api.md#dashboard--admin-only."
+            "description": "GET /dashboard — Admin or Salesperson. Period-to-date KPIs with `previous` (same elapsed span of the prior period), attention lists (overdue follow-ups, active leads without a follow-up, aged stock > 45 days), today's follow-ups, pipeline and inventory. Lists hold up to 5 rows plus `total`. Invalid `period` → 422. See docs/api.md#dashboard--admin-or-salesperson. Admin: scope 'all'. Salesperson: scope 'mine' (own leads), with kpis.inStock, attention.agedStock and inventory null."
           },
           "response": [
             {
@@ -1288,6 +1335,20 @@
               "body": "{\n  \"generatedAt\": \"2026-10-05T09:30:00.000Z\",\n  \"period\": {\n    \"key\": \"month\",\n    \"from\": \"2026-10-01\",\n    \"to\": \"2026-10-31\",\n    \"timezone\": \"Asia/Kolkata\"\n  },\n  \"kpis\": {\n    \"carsSold\": {\n      \"value\": 1,\n      \"previous\": 1\n    },\n    \"newLeads\": {\n      \"value\": 2,\n      \"previous\": 2\n    },\n    \"conversionRate\": {\n      \"value\": 0.5,\n      \"previous\": null\n    },\n    \"inStock\": {\n      \"value\": 3\n    }\n  },\n  \"attention\": {\n    \"overdueFollowUps\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"followUpId\": \"a7237a73-60c0-435b-9217-a1f96c375db6\",\n          \"leadId\": \"00000000-0000-4000-8000-0000000000e2\",\n          \"taskType\": \"call\",\n          \"scheduledAt\": \"2026-10-04T05:00:00.000Z\",\n          \"contactName\": \"Vikram\",\n          \"contactPhone\": \"+919800000002\",\n          \"vehicleLabel\": null\n        }\n      ]\n    },\n    \"leadsWithoutFollowUp\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"leadId\": \"00000000-0000-4000-8000-0000000000e3\",\n          \"status\": \"booking_confirmed\",\n          \"source\": \"phone\",\n          \"contactName\": \"Meera\",\n          \"contactPhone\": \"+919800000003\",\n          \"vehicleLabel\": null,\n          \"createdAt\": \"2026-09-10T05:00:00.000Z\"\n        }\n      ]\n    },\n    \"agedStock\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"vehicleId\": \"00000000-0000-4000-8000-0000000000c1\",\n          \"vehicleLabel\": \"2019 Hyundai Santro Era Mt · KA01AB1234\",\n          \"status\": \"open\",\n          \"daysListed\": 96,\n          \"activeLeads\": 0\n        }\n      ]\n    }\n  },\n  \"today\": {\n    \"total\": 1,\n    \"items\": [\n      {\n        \"followUpId\": \"7e397f2c-5f2f-4cce-aaa0-7016995b4208\",\n        \"leadId\": \"00000000-0000-4000-8000-0000000000e1\",\n        \"taskType\": \"test_drive\",\n        \"scheduledAt\": \"2026-10-05T12:00:00.000Z\",\n        \"contactName\": \"Asha\",\n        \"contactPhone\": \"+919800000001\",\n        \"vehicleLabel\": \"2019 Hyundai Santro Era Mt · KA02CD5678\"\n      }\n    ]\n  },\n  \"pipeline\": {\n    \"new\": 1,\n    \"not_now\": 1,\n    \"booking_confirmed\": 1\n  },\n  \"inventory\": {\n    \"open\": 1,\n    \"linked\": 1\n  }\n}"
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Showrooms",
+      "item": [
+        {
+          "name": "List Showrooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/showrooms?limit=20&offset=0",
+            "description": "GET /showrooms (Admin or Salesperson) — 200 page of { id, name, city }, active showrooms by name."
+          }
         }
       ]
     }

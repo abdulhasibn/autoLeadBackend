@@ -110,6 +110,8 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | Errors | `{ "error": { "code": string, "message": string } }` — no field errors |
 | Pagination | Query `limit` (default **20**, max **100**), `offset` (default **0**) |
 | Page shape | `{ items, total, limit, offset }` |
+| Search | Optional `search` on `GET /owners`, `/leads`, `/vehicles`: case-insensitive partial match, applied before paging (so `total` counts matches). 1–100 characters; `% _ * \ , ( ) "` are ignored; blank means no search |
+| Multi-value filters | Comma-separated, e.g. `?fuelType=petrol,diesel` |
 | IDs | UUID strings |
 | Dates | ISO-8601 UTC (`2026-10-10T10:00:00.000Z`) except insurance date (`YYYY-MM-DD`) |
 | Phone | E.164, e.g. `+919876543210` |
@@ -122,10 +124,10 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | Role | Meaning today |
 |------|----------------|
 | `admin` | Full staff API. Sees every lead. Only role that can assign leads, change vehicle status, delete vehicle media/documents, deactivate owners, or manage staff. |
-| `salesperson` | Owners (no deactivate), catalog, vehicle intake (create, edit, photos, documents, status history), leads **assigned to them**, and their own notifications. Leads they create are assigned to them. Other leads answer `404`. |
+| `salesperson` | Owners (no deactivate), catalog, showrooms, vehicle intake (create, edit, photos, documents, status history), leads **assigned to them**, their own dashboard, and their own notifications. Leads they create are assigned to them. Other leads answer `404`. |
 | `owner` / `buyer` | Seeded in the database. **No HTTP API yet.** |
 
-**Showroom.** A staff member's `showroomId` (set on `/users`) is their home showroom. `POST /vehicles` and `POST /leads` file the record there when the body omits `showroomId`. Only an admin may name a different showroom; a staff member with no home showroom must send one (`422 SHOWROOM_REQUIRED`).
+**Showroom.** A staff member's `showroomId` (set on `/users`, returned on `GET /auth/me`) is their home showroom. `GET /showrooms` lists the showrooms for pickers. `POST /vehicles` and `POST /leads` file the record there when the body omits `showroomId`. Only an admin may name a different showroom; a staff member with no home showroom must send one (`422 SHOWROOM_REQUIRED`).
 
 ### HTTP error codes
 
@@ -145,8 +147,8 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | 422 | `VEHICLE_NOT_LINKABLE` | Linking a lead to a `dropped` or `sold` vehicle |
 | 422 | `VEHICLE_ALREADY_SOLD` | Converting a lead whose vehicle was sold through another lead |
 | 422 | `SHOWROOM_REQUIRED` | No `showroomId` in the body and no home showroom on your account |
-| 422 | `LEAD_CLOSED` | Assigning or attaching a vehicle to a `converted` or `lost` lead |
-| 422 | `LEAD_REQUIRES_VEHICLE` | Moving a lead with no vehicle to `booking_confirmed` or `converted` |
+| 422 | `LEAD_CLOSED` | Editing, assigning, or attaching/removing a vehicle on a `converted` or `lost` lead |
+| 422 | `LEAD_REQUIRES_VEHICLE` | Moving a lead with no vehicle to `booking_confirmed` or `converted`, or removing the vehicle of a `booking_confirmed` lead |
 | 422 | `LEAD_STATUS_SYSTEM_MANAGED` | Setting `vehicle_unavailable` by hand |
 | 422 | `ASSIGNEE_NOT_ELIGIBLE` | `assignedTo` is not an active admin or salesperson |
 | 503 | `DB_UNAVAILABLE` / `DB_TRANSIENT` | Database down or retryable |
@@ -155,7 +157,7 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 
 ## Endpoint catalogue
 
-**41 routes** are mounted.
+**47 routes** are mounted (including `/health`).
 
 ### Health — public
 
@@ -192,9 +194,20 @@ Use this as the frontend “API is up” check.
   "phone": "+9198…",
   "email": "admin@example.com",
   "avatarUrl": null,
-  "roles": ["admin"]
+  "roles": ["admin"],
+  "showroomId": "uuid or null"
 }
 ```
+
+`showroomId` is the signed-in user's home showroom (`null` if they have none).
+
+### Showrooms — Admin or Salesperson
+
+| Method | Path | Success |
+|--------|------|---------|
+| `GET` | `/showrooms` | `200` page of `{ id, name, city }`, active showrooms only, by name |
+
+Use it for showroom pickers (admin record create, staff home showroom). Pagination: `limit`, `offset`.
 
 ### Users — Admin only
 
@@ -271,7 +284,7 @@ Phone is the unique live key.
 ```
 
 `preferredContactMethod`: `phone` \| `email` \| `whatsapp` \| `null`.  
-**List query:** `limit`, `offset`, optional `city`, optional `phone` (E.164).
+**List query:** `limit`, `offset`, optional `city` (exact), `phone` (E.164, exact), `search` (partial match on name, phone or city).
 
 **Owner object** also includes `id`, `userId` (null until owner portal), `createdBy`, `createdAt`, `updatedAt`. Duplicate live phone → `409`.
 
@@ -307,8 +320,8 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
 | Method | Path | Success |
 |--------|------|---------|
 | `POST` | `/vehicles` | `201` vehicle (`makeName` / `modelName` / `variantName` / `frontImageUrl` are `null` until you GET) |
-| `GET` | `/vehicles` | `200` page (includes catalog names and `frontImageUrl`) |
-| `GET` | `/vehicles/:id` | `200` vehicle (includes `frontImageUrl`) |
+| `GET` | `/vehicles` | `200` page (includes catalog names, `frontImageUrl` and `linkedLeadCount`) |
+| `GET` | `/vehicles/:id` | `200` vehicle (includes `frontImageUrl` and `linkedLeadCount`) |
 | `PATCH` | `/vehicles/:id` | `200` vehicle (second-hand fields only; cannot change owner/variant/showroom/status) |
 | `POST` | `/vehicles/:id/status` | `200` `{ "status", "unlinkedLeadCount" }` (Admin) |
 | `GET` | `/vehicles/:id/status-history` | `200` page (newest first) |
@@ -350,7 +363,18 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
 
 **Update body** is the same minus `showroomId`, `ownerId`, `variantId`, `acquisitionType`. `accidentHistory` is required on update.
 
-**List query:** `limit`, `offset`, optional `status`, `ownerId`, `showroomId`, `registration`.
+**List query** (all optional, AND-combined): `limit`, `offset`, `status`, `ownerId`, `showroomId`, `registration` (exact), plus:
+
+| Param | Meaning |
+|-------|---------|
+| `search` | Every word must partially match the registration or the make, model or variant name (`creta ka01`) |
+| `makeId` / `modelId` / `variantId` | Catalog ids from `/catalog/...`. Combine freely; a mismatched pair just returns nothing |
+| `yearMin` / `yearMax` | Inclusive model-year range (`1900–2100`) |
+| `kmMin` / `kmMax` | Inclusive `kmDriven` range |
+| `fuelType` | One or more fuel types, comma-separated |
+| `transmission` | One or more transmissions, comma-separated |
+
+A min above its max is `422 VALIDATION_ERROR`. Price filters arrive with acquisition prices (`vehicle_financials`).
 
 **Enums**
 
@@ -398,9 +422,12 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
   "createdAt": "…",
   "updatedAt": "…",
   "frontImageUrl": "https://…",
-  "frontImageUrlExpiresAt": "…"
+  "frontImageUrlExpiresAt": "…",
+  "linkedLeadCount": 2
 }
 ```
+
+`linkedLeadCount` is the number of active leads (`new`, `not_now`, `booking_confirmed`) whose `vehicleId` is this vehicle: `0` when none, including `open` / `dropped` / `sold` vehicles. `POST` / `PATCH /vehicles` return `0`.
 
 `frontImageUrl` is a short-lived signed URL (about 10 minutes, see `frontImageUrlExpiresAt`) for the cover photo: the vehicle's `front` photo with the lowest `sortOrder` (earliest upload breaks ties). Both fields are `null` when the vehicle has no front photo. Use it for list thumbnails instead of calling `GET /vehicles/:id/media` per car; refetch the list once it expires. `PATCH /vehicles/:id` returns them as `null`.
 
@@ -477,11 +504,14 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 | `POST` | `/leads` | `201` lead (`nextFollowUp`, `linkedVehicle` and the `preferred…Name` fields are `null` until you GET) |
 | `GET` | `/leads` | `200` page |
 | `GET` | `/leads/:id` | `200` lead (includes `nextFollowUp` if scheduled) |
+| `PATCH` | `/leads/:id` | `200` lead (edit CRM fields; embeds and names are `null` until you GET) |
 | `PATCH` | `/leads/:id/vehicle` | `200` `{ "vehicleId" }` |
+| `DELETE` | `/leads/:id/vehicle` | `200` `{ "vehicleId": null }` |
 | `PUT` | `/leads/:id/assignment` | `200` `{ "id", "assignedTo" }` (Admin) |
 | `PUT` | `/leads/:id/preference` | `200` `{ "preferredMakeId", "preferredModelId", "preferredVariantId" }` |
 | `POST` | `/leads/:id/follow-ups` | `201` follow-up |
 | `POST` | `/leads/:id/status` | `200` `{ "status", "vehicleSold" }` |
+| `GET` | `/leads/:id/status-history` | `200` page (newest first) |
 
 **Create body**
 
@@ -508,15 +538,18 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 
 `showroomId` is optional: omit it to use your home showroom (see **Roles**).  
 `source`: `marketplace`, `mobile_app`, `website`, `phone`, `walkin`, `whatsapp`, `instagram`, `facebook`, `referral`, `other`.  
-**List query:** `limit`, `offset`, optional `status`, `vehicleId`, `assignedTo` (admin only; a salesperson always gets their own leads), `preferredMakeId`, `preferredModelId`, `preferredVariantId`.  
+**List query** (all optional, AND-combined): `limit`, `offset`, `status`, `vehicleId`, `assignedTo` (admin only; a salesperson always gets their own leads), `preferredMakeId`, `preferredModelId`, `preferredVariantId`, plus `search` (partial match on contact name or phone), `budgetMin` / `budgetMax` (inclusive, whole rupees like `budget`; leads with no budget drop out), `source` (one or more, comma-separated), `hasVehicle` (`true` / `false`), `purchaseTimeline` (exact text), `financeRequired` (`true` / `false`), `createdFrom` (inclusive) / `createdTo` (exclusive) as ISO date or datetime. A min above its max is `422 VALIDATION_ERROR`.  
 **Preferred catalog:** the buyer's interest as catalog ids from `/catalog/makes`, `/catalog/makes/:id/models` and `/catalog/models/:id/variants` (the same ids as car create). Send only the narrowest pick: a variant alone is enough, and the server fills in its model and make. Any parent you also send must match (`422 PREFERRED_CATALOG_MISMATCH`); an unknown or deleted id is `404`. Because parents are always stored, filtering by `preferredMakeId` also finds leads that picked a model or variant of that make. `preferredVehicle` stays as optional free text and is not derived from the ids.  
 **Set preference:** `PUT /leads/:id/preference` with `{ "preferredMakeId", "preferredModelId", "preferredVariantId" }` replaces the whole preference (omitted ids count as `null`; all `null` clears it). Same validation as create; closed leads (`converted`, `lost`) answer `422 LEAD_CLOSED`.  
+**Edit lead:** `PATCH /leads/:id` replaces the CRM fields: `{ "fullName", "phone", "email", "source", "budget", "purchaseTimeline", "financeRequired", "currentVehicle", "tradeInRequired", "notes" }`. `fullName`, `phone` and `source` are required; any optional field you leave out is cleared. Contacts are keyed by phone: keeping the phone updates that contact's name/email (on every lead that shares it); a new phone moves the lead to the contact with that phone, creating one if needed. Status, vehicle, assignment and preference keep their own endpoints. Closed leads answer `422 LEAD_CLOSED`.  
 **Associate vehicle:** `{ "vehicleId": "<uuid>" }` — vehicle must be `open` or `linked`; lead must not be `converted` or `lost`. The new vehicle becomes `linked`; the previous one goes back to `open` if no other active lead remains.  
+**Remove vehicle:** `DELETE /leads/:id/vehicle` clears the link without closing the lead. The vehicle goes back to `open` if no other active lead remains. Closed leads answer `422 LEAD_CLOSED`; a `booking_confirmed` lead must keep its vehicle (`422 LEAD_REQUIRES_VEHICLE`), so change its status first. A lead with no vehicle answers `200` unchanged.  
 **Assign:** `{ "assignedTo": "<staff uuid>" }` or `{ "assignedTo": null }` to unassign. The assignee must be an active admin or salesperson. The assignee gets a `lead_assigned` notification (not when you assign yourself), and the change is written to the audit log. Closed leads cannot be reassigned (`422 LEAD_CLOSED`).  
 **Schedule follow-up:** `{ "scheduledAt": "2026-10-10T10:00:00.000Z", "taskType": "call", "notes": null }`  
 `taskType`: `call`, `whatsapp`, `meeting`, `test_drive`, `send_quotation`, `other`.  
 The follow-up belongs to the lead's assignee (or to you if the lead is unassigned), and that person gets a `follow_up_due` notification at `scheduledAt`.  
 **Change status:** `{ "status": "not_now", "notes": null }` → `200 { "status", "vehicleSold" }`. Status history records who made the change.  
+**Status history:** `GET /leads/:id/status-history?limit=&offset=` → page of `{ "id", "leadId", "fromStatus", "toStatus", "changedBy", "changedByName", "notes", "changedAt" }`, newest first. `fromStatus` is `null` on the first (create) entry; `notes` is `null` when none were given. Same visibility as `GET /leads/:id`.  
 **Convert (close the sale):** `{ "status": "converted", "notes": null }` from `booking_confirmed`. This always sells the lead's vehicle (`vehicleSold: true`, vehicle `soldLeadId` = this lead) and moves every other active lead on that vehicle to `vehicle_unavailable` with its `vehicleId` cleared. The vehicle and the other leads are updated first; if the request fails part-way, repeat it and it completes.
 
 **Lead object**
@@ -535,6 +568,7 @@ The follow-up belongs to the lead's assignee (or to you if the lead is unassigne
     "registrationNumber": "KA01AB1234"
   },
   "assignedTo": "uuid or null",
+  "assignedToName": "Priya Nair",
   "contactId": "uuid",
   "contactFullName": "Rahul Sharma",
   "contactPhone": "+919811122233",
@@ -561,7 +595,7 @@ The follow-up belongs to the lead's assignee (or to you if the lead is unassigne
 }
 ```
 
-`linkedVehicle` summarises the vehicle in `vehicleId` for pipeline cards, so you do not need `GET /vehicles/:id` per lead. It is `null` when no vehicle is linked.
+`linkedVehicle` summarises the vehicle in `vehicleId` for pipeline cards, so you do not need `GET /vehicles/:id` per lead. It is `null` when no vehicle is linked. `assignedToName` is the assignee's full name (`null` when unassigned).
 
 New leads start at `new`. Active leads (`new`, `not_now`, `booking_confirmed`) keep their vehicle `linked`. Allowed transitions (anything else → `422 INVALID_LEAD_STATUS_TRANSITION`):
 
@@ -603,7 +637,7 @@ Inbox for the **signed-in user**. Items with a future `dueAt` are omitted.
 
 | Method | Path | Success |
 |--------|------|---------|
-| `GET` | `/notifications` | `200` page |
+| `GET` | `/notifications?isRead=` | `200` page + `unreadCount` |
 | `PATCH` | `/notifications/:id/read` | `204` (own notifications only) |
 
 ```json
@@ -614,28 +648,37 @@ Inbox for the **signed-in user**. Items with a future `dueAt` are omitted.
   "body": "Follow-up (call) is scheduled",
   "entityType": "follow_up",
   "entityId": "<follow-up uuid>",
+  "leadId": "<lead uuid>",
   "isRead": false,
   "dueAt": "2026-10-10T10:00:00.000Z",
   "createdAt": "…"
 }
 ```
 
-Poll `GET /notifications` on the home screen. Deep-link `lead` items to the lead. For `follow_up` items, the lead appears in `GET /leads` with that follow-up as `nextFollowUp`.
+The page also carries `"unreadCount"`: unread due notifications for you, whatever `isRead`, `limit` or `offset` you sent. Use it for the bell badge. `isRead=false` (or `true`) filters the items, and `total` then counts only those.
 
-### Dashboard — Admin only
+`leadId` is the lead the notification is about, for both `follow_up_due` and `lead_assigned`, so a tap can open `GET /leads/:id` directly.
 
-One call for the home screen: a business snapshot plus today's work list. Salespersons get `403` (admins work every lead today).
+Poll `GET /notifications` on the home screen.
+
+### Dashboard — Admin or Salesperson
+
+One call for the home screen: a business snapshot plus today's work list.
+
+- **Admin** (`"scope": "all"`): every lead and vehicle in the chosen showroom, or all showrooms.
+- **Salesperson** (`"scope": "mine"`): only leads assigned to them. That covers new leads, conversion, follow-ups, the pipeline, and cars sold through their leads. Showroom-wide stock is left out: `kpis.inStock`, `attention.agedStock` and `inventory` are `null`, and `showroomId` is ignored.
 
 | Method | Path | Success |
 |--------|------|---------|
 | `GET` | `/dashboard?period=month&showroomId=` | `200`, `Cache-Control: private, max-age=30` |
 
 - `period` is one of `today`, `week` (Monday start), `month` or `quarter`, and defaults to `month`. Any other value returns `422 VALIDATION_ERROR`.
-- `showroomId` is optional. Leave it out to cover all showrooms.
+- `showroomId` is optional (admin only). Leave it out to cover all showrooms.
 
 ```json
 {
   "generatedAt": "2026-10-05T09:30:00.000Z",
+  "scope": "all",
   "period": { "key": "month", "from": "2026-10-01", "to": "2026-10-31", "timezone": "Asia/Kolkata" },
   "kpis": {
     "carsSold":       { "value": 7,    "previous": 5 },
@@ -672,7 +715,7 @@ Each list holds at most 5 rows, oldest or most urgent first. `total` is the full
 
 | Field | Meaning |
 |-------|---------|
-| `carsSold` | Vehicles moved to `sold` in the period |
+| `carsSold` | Vehicles moved to `sold` in the period (salesperson: sold through their leads) |
 | `newLeads` | Leads created in the period |
 | `conversionRate` | converted ÷ (converted + lost), counting leads closed in the period. `null` when none closed |
 | `inStock` | Listed vehicles (`open` + `linked`) right now |
@@ -692,17 +735,17 @@ Revenue, profit and average selling price arrive with finance (Stint 5).
 | Screen | Endpoints |
 |--------|-----------|
 | Login | `POST /auth/login`, then `GET /auth/me` |
-| App shell | `GET /auth/me` for name + roles; `GET /notifications` badge |
-| Home (admin) | `GET /dashboard?period=` |
+| App shell | `GET /auth/me` for name + roles + home showroom; `GET /notifications` `unreadCount` badge |
+| Home | `GET /dashboard?period=` (admin: all; salesperson: mine) |
 | Owners list / form | `GET/POST/PATCH /owners`, `GET /owners/:id` |
 | Vehicle create | `GET /catalog/makes` → models → variants, then `POST /vehicles` |
 | Vehicle list / detail | `GET /vehicles`, `GET /vehicles/:id`, `PATCH /vehicles/:id`, `POST /vehicles/:id/status`, `GET /vehicles/:id/status-history` |
 | Vehicle photos / docs | signed upload then `POST /vehicles/:id/media` or `/documents` |
-| Lead pipeline | `GET /leads?status=&assignedTo=`, `POST /leads`, `PATCH /leads/:id/vehicle`, `PUT /leads/:id/assignment`, `POST /leads/:id/status`, `POST /leads/:id/follow-ups` |
+| Lead pipeline | `GET /leads?status=&assignedTo=&search=`, `POST /leads`, `PATCH /leads/:id`, `PATCH`/`DELETE /leads/:id/vehicle`, `PUT /leads/:id/assignment`, `POST /leads/:id/status`, `GET /leads/:id/status-history`, `POST /leads/:id/follow-ups` |
 | Inbox | `GET /notifications`, `PATCH /notifications/:id/read` |
 | Staff settings | `/users` (admin only) |
 
-For `salesperson`, show owners, catalog, vehicles, leads, and the inbox, and hide the dashboard, staff settings, lead assignment, vehicle status buttons, media/document delete, and owner deactivate. Show everything for `admin`.
+For `salesperson`, show owners, catalog, vehicles, leads, the inbox and their own dashboard, and hide staff settings, lead assignment, vehicle status buttons, media/document delete, and owner deactivate. Show everything for `admin`.
 
 ---
 

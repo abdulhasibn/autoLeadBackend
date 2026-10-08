@@ -468,6 +468,7 @@ Table notifications {
   body text
   entity_type text
   entity_id uuid
+  lead_id uuid [ref: > leads.id, note: 'set on insert by trigger from entity (lead or follow_up); on delete cascade']
   is_read boolean [not null, default: false]
   due_at timestamptz [note: 'null means visible immediately; follow_up_due uses scheduled time']
   created_at timestamptz [not null, default: `now()`]
@@ -477,3 +478,8 @@ Table notifications {
     (user_id, due_at) [name: 'notifications_user_due_idx']
   }
 }
+
+// View vehicle_list (security_invoker): vehicles joined to variants → models →
+// makes, exposing every vehicles column plus model_id, make_id, make_name,
+// model_name, variant_name. Read by GET /vehicles for search and catalog
+// filters (PostgREST cannot OR across a column and an embed).
