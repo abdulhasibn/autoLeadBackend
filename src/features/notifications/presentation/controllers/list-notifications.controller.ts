@@ -13,7 +13,7 @@ export class ListNotificationsController {
         const ctx = requireAuth(req);
         const query = listNotificationsQuerySchema.parse(req.query);
         const page = await this.listNotifications.execute(
-          { limit: query.limit, offset: query.offset },
+          { isRead: query.isRead, page: { limit: query.limit, offset: query.offset } },
           ctx,
         );
         res.status(200).json(page);
