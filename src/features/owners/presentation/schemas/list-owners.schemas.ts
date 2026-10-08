@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { Phone } from '../../../../domain/shared/phone.value-object';
+import { optionalSearchSchema } from '../../../../presentation/validation/search.schemas';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../../../../shared/pagination/pagination';
 
 export const listOwnersQuerySchema = z.object({
@@ -38,6 +39,7 @@ export const listOwnersQuerySchema = z.object({
       }
       return Phone.create(value).value;
     }),
+  search: optionalSearchSchema,
 });
 
 export type ListOwnersQueryParams = z.infer<typeof listOwnersQuerySchema>;

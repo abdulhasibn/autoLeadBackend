@@ -16,6 +16,7 @@ export class ListOwnersController {
           {
             city: query.city,
             phone: query.phone,
+            search: query.search,
             page: { limit: query.limit, offset: query.offset },
           },
           ctx,

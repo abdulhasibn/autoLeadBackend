@@ -1,5 +1,6 @@
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { Phone } from '../../../../domain/shared/phone.value-object';
+import { SearchTerm } from '../../../../domain/shared/search-term.value-object';
 import type { Page } from '../../../../shared/pagination/pagination';
 import type { ListOwnersQuery } from '../dtos/list-owners-query';
 import type { OwnerDto } from '../dtos/owner.dto';
@@ -16,6 +17,7 @@ export class ListOwnersUseCase {
     this.policy.requireAdminOrSalesperson(ctx);
 
     const phone = query.phone === undefined ? undefined : Phone.create(query.phone).value;
-    return this.queries.listOwners({ city: query.city, phone }, query.page);
+    const search = query.search === undefined ? undefined : SearchTerm.create(query.search);
+    return this.queries.listOwners({ city: query.city, phone, search }, query.page);
   }
 }
