@@ -29,6 +29,7 @@ import type { ILiveVariantLookup } from '../domain/live-variant.port';
 import type { MakeId } from '../domain/make-id';
 import type { ModelId } from '../domain/model-id';
 import type { ILinkedLeads } from '../domain/linked-leads.port';
+import type { ILinkedLeadCounts } from '../domain/linked-lead-counts.port';
 import type { IRegisteredOwnerLookup } from '../domain/registered-owner.port';
 import type { ShowroomId } from '../../../domain/shared/showroom-id';
 import type { VariantId } from '../domain/variant-id';
@@ -308,5 +309,17 @@ export class FakeVehicleMediaQueries implements IVehicleMediaQueries {
       }
     }
     return new Map([...best].map(([vehicleId, item]) => [vehicleId, item.storagePath]));
+  }
+}
+
+export class FakeLinkedLeadCounts implements ILinkedLeadCounts {
+  readonly counts = new Map<VehicleId, number>();
+  calls = 0;
+
+  async countActiveByVehicles(
+    vehicleIds: readonly VehicleId[],
+  ): Promise<ReadonlyMap<VehicleId, number>> {
+    this.calls += 1;
+    return new Map([...this.counts].filter(([id]) => vehicleIds.includes(id)));
   }
 }

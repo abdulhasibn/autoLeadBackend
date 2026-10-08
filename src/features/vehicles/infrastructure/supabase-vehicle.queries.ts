@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
+import { anyColumnContains } from '../../../infrastructure/supabase/ilike-pattern';
 import { emptyPageIfPastEnd } from '../../../infrastructure/supabase/range-not-satisfiable';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import { toPage } from '../../../shared/pagination/pagination';
@@ -13,8 +14,12 @@ import type {
 } from '../domain/vehicle.queries';
 import { toVehicleReadModel, type VehicleListRow } from './vehicle.mapper';
 
+// `vehicle_list` is `vehicles` joined to its variant, model and make, so search
+// and catalog filters are plain column filters.
 const VEHICLE_LIST_COLUMNS =
-  'id, showroom_id, owner_id, variant_id, year, registration_number, fuel_type, transmission, km_driven, num_previous_owners, colour, insurance_valid_until, rc_status, service_history, accident_history, loan_status, location, description, status, sold_lead_id, acquisition_type, submitted_by, created_at, updated_at, deleted_at, variants ( name, models ( name, makes ( name ) ) )';
+  'id, showroom_id, owner_id, variant_id, make_name, model_name, variant_name, year, registration_number, fuel_type, transmission, km_driven, num_previous_owners, colour, insurance_valid_until, rc_status, service_history, accident_history, loan_status, location, description, status, sold_lead_id, acquisition_type, submitted_by, created_at, updated_at, deleted_at';
+
+const SEARCH_COLUMNS = ['registration_number', 'make_name', 'model_name', 'variant_name'];
 
 export class SupabaseVehicleQueries implements IVehicleQueries {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -24,7 +29,7 @@ export class SupabaseVehicleQueries implements IVehicleQueries {
     page: Pagination,
   ): Promise<Page<VehicleReadModel>> {
     let query = this.db
-      .from('vehicles')
+      .from('vehicle_list')
       .select(VEHICLE_LIST_COLUMNS, { count: 'exact' })
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
@@ -40,6 +45,38 @@ export class SupabaseVehicleQueries implements IVehicleQueries {
     }
     if (criteria.registration !== undefined) {
       query = query.eq('registration_number', criteria.registration);
+    }
+    if (criteria.search !== undefined) {
+      for (const word of criteria.search.words) {
+        query = query.or(anyColumnContains(SEARCH_COLUMNS, word));
+      }
+    }
+    if (criteria.makeId !== undefined) {
+      query = query.eq('make_id', criteria.makeId);
+    }
+    if (criteria.modelId !== undefined) {
+      query = query.eq('model_id', criteria.modelId);
+    }
+    if (criteria.variantId !== undefined) {
+      query = query.eq('variant_id', criteria.variantId);
+    }
+    if (criteria.yearMin !== undefined) {
+      query = query.gte('year', criteria.yearMin);
+    }
+    if (criteria.yearMax !== undefined) {
+      query = query.lte('year', criteria.yearMax);
+    }
+    if (criteria.kmMin !== undefined) {
+      query = query.gte('km_driven', criteria.kmMin);
+    }
+    if (criteria.kmMax !== undefined) {
+      query = query.lte('km_driven', criteria.kmMax);
+    }
+    if (criteria.fuelTypes !== undefined) {
+      query = query.in('fuel_type', [...criteria.fuelTypes]);
+    }
+    if (criteria.transmissions !== undefined) {
+      query = query.in('transmission', [...criteria.transmissions]);
     }
 
     const { data, error, count } = await query.range(page.offset, page.offset + page.limit - 1);
@@ -61,7 +98,7 @@ export class SupabaseVehicleQueries implements IVehicleQueries {
 
   async getVehicle(id: VehicleId): Promise<VehicleReadModel | null> {
     const { data, error } = await this.db
-      .from('vehicles')
+      .from('vehicle_list')
       .select(VEHICLE_LIST_COLUMNS)
       .eq('id', id)
       .is('deleted_at', null)

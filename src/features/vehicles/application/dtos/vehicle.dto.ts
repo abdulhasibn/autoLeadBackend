@@ -5,6 +5,8 @@ export interface VehicleDto extends VehicleReadModel {
   /** Signed URL of the cover (`front`) photo; null when the vehicle has none. */
   readonly frontImageUrl: string | null;
   readonly frontImageUrlExpiresAt: string | null;
+  /** Active leads (new / not_now / booking_confirmed) linked to this vehicle. */
+  readonly linkedLeadCount: number;
 }
 
 export function toVehicleDto(vehicle: Vehicle): VehicleDto {
@@ -39,5 +41,6 @@ export function toVehicleDto(vehicle: Vehicle): VehicleDto {
     updatedAt: vehicle.updatedAt.toISOString(),
     frontImageUrl: null,
     frontImageUrlExpiresAt: null,
+    linkedLeadCount: 0,
   };
 }
