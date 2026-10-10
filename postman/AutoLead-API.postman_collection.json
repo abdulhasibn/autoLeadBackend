@@ -1004,7 +1004,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"showroomId\": \"{{showroomId}}\",\n  \"fullName\": \"Rahul Sharma\",\n  \"phone\": \"+919811122233\",\n  \"email\": null,\n  \"source\": \"phone\",\n  \"vehicleId\": null,\n  \"budget\": 800000,\n  \"preferredVehicle\": null,\n  \"preferredMakeId\": null,\n  \"preferredModelId\": \"{{modelId}}\",\n  \"preferredVariantId\": null,\n  \"purchaseTimeline\": null,\n  \"financeRequired\": false,\n  \"currentVehicle\": null,\n  \"tradeInRequired\": false,\n  \"notes\": \"called the showroom\"\n}",
+              "raw": "{\n  \"showroomId\": \"{{showroomId}}\",\n  \"fullName\": \"Rahul Sharma\",\n  \"phone\": \"+919811122233\",\n  \"email\": null,\n  \"source\": \"phone\",\n  \"vehicleId\": null,\n  \"budget\": 800000,\n  \"preferredVehicle\": null,\n  \"preferredMakeId\": null,\n  \"preferredModelId\": \"{{modelId}}\",\n  \"preferredVariantId\": null,\n  \"preferredColours\": [\"white\", \"silver\"],\n  \"preferredFuelTypes\": [\"petrol\", \"cng\"],\n  \"preferredTransmissions\": [],\n  \"preferredBodyTypes\": [\"hatchback\"],\n  \"preferredYearMin\": 2018,\n  \"preferredYearMax\": null,\n  \"preferredKmMax\": 60000,\n  \"preferredMaxOwners\": 1,\n  \"purchaseTimeline\": null,\n  \"financeRequired\": false,\n  \"currentVehicle\": null,\n  \"tradeInRequired\": false,\n  \"notes\": \"called the showroom\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1012,7 +1012,7 @@
               }
             },
             "url": "{{baseUrl}}/leads",
-            "description": "POST /leads — walk-in contact by phone. Admin or Salesperson; a salesperson's lead is assigned to them. `showroomId` is optional. Optional catalog preference `preferredMakeId` / `preferredModelId` / `preferredVariantId` (send only the narrowest; parents are filled in; mismatched parents → 422 PREFERRED_CATALOG_MISMATCH; unknown id → 404)."
+            "description": "POST /leads — walk-in contact by phone. Admin or Salesperson; a salesperson's lead is assigned to them. `showroomId` is optional. Optional catalog preference `preferredMakeId` / `preferredModelId` / `preferredVariantId` (send only the narrowest; parents are filled in; mismatched parents → 422 PREFERRED_CATALOG_MISMATCH; unknown id → 404). Optional preference profile (empty = any): `preferredColours[]` (free text), `preferredFuelTypes[]` (petrol|diesel|cng|electric|hybrid), `preferredTransmissions[]` (manual|automatic|amt|cvt|dct), `preferredBodyTypes[]` (hatchback|sedan|suv|muv|mpv|crossover|coupe|convertible|sports|pick-up), `preferredYearMin` / `preferredYearMax`, `preferredKmMax`, `preferredMaxOwners`; `budget` is the price ceiling. Invalid values → 422 VALIDATION_ERROR."
           }
         },
         {
@@ -1023,6 +1023,16 @@
             "url": "{{baseUrl}}/leads?limit=20&offset=0",
             "description": "GET /leads — filters (all optional, AND-combined): status, vehicleId, assignedTo (admin only), preferredMakeId, preferredModelId, preferredVariantId, search (contact name/phone, partial), budgetMin, budgetMax, source (comma-separated), hasVehicle (true|false), purchaseTimeline, financeRequired (true|false), createdFrom (inclusive), createdTo (exclusive). A salesperson only sees leads assigned to them. Items include `assignedToName`, `linkedVehicle` ({ id, makeName, modelName, variantName, year, registrationNumber } or null) and the preferred catalog ids + names."
           }
+        },
+        {
+          "name": "Vehicle Lead Matches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/leads/vehicle-matches/{{vehicleId}}?minScore=60&limit=10",
+            "description": "**Story:** On a car's detail screen, staff see how well each linked lead's preference fits the car, plus open leads worth calling about it.\n\nGET /leads/vehicle-matches/:vehicleId — Admin or Salesperson (a salesperson only gets leads assigned to them).\n\n- `minScore` (optional int 0–100, default 60): lowest score for a suggestion.\n- `limit` (optional int 1–50, default 10): most suggestions.\n\n200 `{ vehicle, linked, suggested, truncated }`:\n- `vehicle`: the car's matchable attributes (make/model/variant ids + names, year, kmDriven, colour, fuelType, transmission, bodyTypes, numPreviousOwners, listedPrice or null).\n- `linked`: every lead linked to the car, best match first; each is the lead object plus `match: { score, evaluatedCriteria, breakdown[] } | null` (null = no preference).\n- `suggested`: open (`new` / `not_now` / `vehicle_unavailable`), unlinked leads in the car's showroom scoring ≥ minScore on ≥ 2 criteria.\n- `truncated`: only the newest 1000 open leads were scored.\n- breakdown item: `criterion` (catalog|budget|year|km|fuelType|transmission|bodyType|previousOwners|colour), `weight`, `earned`, `outcome` (match|partial|miss|unknown).\n\nErrors: 404 unknown car; 422 VALIDATION_ERROR on bad query; 403 non-staff."
+          },
+          "response": []
         },
         {
           "name": "Get Lead",
@@ -1091,7 +1101,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"preferredMakeId\": null,\n  \"preferredModelId\": null,\n  \"preferredVariantId\": \"{{variantId}}\"\n}",
+              "raw": "{\n  \"preferredMakeId\": null,\n  \"preferredModelId\": null,\n  \"preferredVariantId\": \"{{variantId}}\",\n  \"preferredColours\": [\"white\", \"silver\"],\n  \"preferredFuelTypes\": [\"petrol\", \"cng\"],\n  \"preferredTransmissions\": [],\n  \"preferredBodyTypes\": [\"hatchback\"],\n  \"preferredYearMin\": 2018,\n  \"preferredYearMax\": null,\n  \"preferredKmMax\": 60000,\n  \"preferredMaxOwners\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1099,7 +1109,7 @@
               }
             },
             "url": "{{baseUrl}}/leads/{{leadId}}/preference",
-            "description": "PUT /leads/:id/preference (Admin, or the assigned Salesperson) — 200 `{ preferredMakeId, preferredModelId, preferredVariantId }`. Replaces the whole catalog preference; omitted ids count as null and all-null clears it. Send only the narrowest id and the server fills in its parents. Mismatched parents → 422 PREFERRED_CATALOG_MISMATCH; unknown/deleted id → 404; closed lead → 422 LEAD_CLOSED."
+            "description": "PUT /leads/:id/preference (Admin, or the assigned Salesperson) — 200 with the whole preference (`preferredMakeId` … `preferredMaxOwners`). Full replace: every field you omit is cleared, so send the whole form; an empty body clears it. Catalog: send only the narrowest id and the server fills in its parents (mismatch → 422 PREFERRED_CATALOG_MISMATCH; unknown/deleted id → 404). Profile fields: `preferredColours[]`, `preferredFuelTypes[]` (petrol|diesel|cng|electric|hybrid), `preferredTransmissions[]` (manual|automatic|amt|cvt|dct), `preferredBodyTypes[]` (hatchback|sedan|suv|muv|mpv|crossover|coupe|convertible|sports|pick-up), `preferredYearMin`/`preferredYearMax` (1950–2100, min ≤ max), `preferredKmMax` (≥ 0), `preferredMaxOwners` (≥ 0); invalid → 422 VALIDATION_ERROR. Budget (the price ceiling) is edited with PATCH /leads/:id. Closed lead → 422 LEAD_CLOSED."
           }
         },
         {
