@@ -10,8 +10,15 @@ import type { Contact } from '../domain/contact.entity';
 import type { ContactId } from '../domain/contact-id';
 import type { FollowUp } from '../domain/follow-up.entity';
 import type { Lead } from '../domain/lead.entity';
-import { ACTIVE_LEAD_STATUSES } from '../domain/lead-status.value-object';
-import type { ILeadQueries, LeadListCriteria, LeadReadModel } from '../domain/lead.queries';
+import { ACTIVE_LEAD_STATUSES, MATCHABLE_LEAD_STATUSES } from '../domain/lead-status.value-object';
+import type {
+  ILeadQueries,
+  LeadListCriteria,
+  LeadMatchCandidateCriteria,
+  LeadMatchCandidates,
+  LeadReadModel,
+} from '../domain/lead.queries';
+import type { IMatchableVehicleLookup, MatchableVehicle } from '../domain/matchable-vehicle.port';
 import type { IAssignableStaffLookup } from '../domain/assignable-staff.port';
 import type { ICatalogLineageLookup } from '../domain/catalog-lineage.port';
 import type { ILeadRepository, LeadWrite } from '../domain/lead.repository';
@@ -154,6 +161,35 @@ export class FakeLeadQueries implements ILeadQueries {
     }
     return counts;
   }
+
+  async listMatchCandidates(criteria: LeadMatchCandidateCriteria): Promise<LeadMatchCandidates> {
+    const inScope = (lead: LeadReadModel): boolean =>
+      criteria.assignedTo === undefined || lead.assignedTo === criteria.assignedTo;
+    const unlinked = this.leads.filter(
+      (lead) =>
+        inScope(lead) &&
+        lead.vehicleId === null &&
+        lead.showroomId === criteria.showroomId &&
+        (MATCHABLE_LEAD_STATUSES as readonly string[]).includes(lead.status),
+    );
+    return {
+      linked: this.leads.filter((lead) => inScope(lead) && lead.vehicleId === criteria.vehicleId),
+      unlinked: unlinked.slice(0, criteria.limit),
+      truncated: unlinked.length > criteria.limit,
+    };
+  }
+}
+
+export class FakeMatchableVehicles implements IMatchableVehicleLookup {
+  readonly vehicles = new Map<string, MatchableVehicle>();
+
+  seed(vehicle: MatchableVehicle): void {
+    this.vehicles.set(vehicle.id, vehicle);
+  }
+
+  async findForMatching(vehicleId: VehicleId): Promise<MatchableVehicle | null> {
+    return this.vehicles.get(vehicleId) ?? null;
+  }
 }
 
 export class FakeAssignableStaffLookup implements IAssignableStaffLookup {
@@ -266,6 +302,14 @@ export function leadReadModel(overrides: Partial<LeadReadModel> = {}): LeadReadM
     preferredModelName: null,
     preferredVariantId: null,
     preferredVariantName: null,
+    preferredColours: [],
+    preferredFuelTypes: [],
+    preferredTransmissions: [],
+    preferredBodyTypes: [],
+    preferredYearMin: null,
+    preferredYearMax: null,
+    preferredKmMax: null,
+    preferredMaxOwners: null,
     purchaseTimeline: null,
     financeRequired: null,
     currentVehicle: null,
@@ -278,3 +322,15 @@ export function leadReadModel(overrides: Partial<LeadReadModel> = {}): LeadReadM
     ...overrides,
   };
 }
+
+/** Every non-catalog preference field left empty; spread into commands. */
+export const EMPTY_PREFERENCE_EXTRAS = {
+  preferredColours: [],
+  preferredFuelTypes: [],
+  preferredTransmissions: [],
+  preferredBodyTypes: [],
+  preferredYearMin: null,
+  preferredYearMax: null,
+  preferredKmMax: null,
+  preferredMaxOwners: null,
+};

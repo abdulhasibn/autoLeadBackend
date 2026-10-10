@@ -16,6 +16,13 @@ export const ACTIVE_LEAD_STATUSES: readonly LeadStatusValue[] = [
   'booking_confirmed',
 ];
 
+/** Open leads still shopping for a vehicle: candidates for match suggestions. */
+export const MATCHABLE_LEAD_STATUSES: readonly LeadStatusValue[] = [
+  'new',
+  'not_now',
+  'vehicle_unavailable',
+];
+
 const TERMINAL: readonly LeadStatusValue[] = ['converted', 'lost'];
 
 const REQUIRES_VEHICLE: readonly LeadStatusValue[] = ['booking_confirmed', 'converted'];

@@ -1,10 +1,8 @@
 import { z } from 'zod';
 
-import { optionalCatalogIdSchema } from './lead-fields.schemas';
+import { leadPreferenceShape, refineLeadPreference } from './lead-fields.schemas';
 
-/** Full replacement: omitted ids count as null, and all-null clears the preference. */
-export const setLeadPreferenceBodySchema = z.object({
-  preferredMakeId: optionalCatalogIdSchema('preferredMakeId'),
-  preferredModelId: optionalCatalogIdSchema('preferredModelId'),
-  preferredVariantId: optionalCatalogIdSchema('preferredVariantId'),
-});
+/** Full replacement: omitted fields are cleared, so an empty body clears the preference. */
+export const setLeadPreferenceBodySchema = z
+  .object(leadPreferenceShape)
+  .superRefine(refineLeadPreference);

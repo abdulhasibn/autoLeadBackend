@@ -9,6 +9,7 @@ import { InvalidLeadStatusTransitionError } from './domain/errors/invalid-lead-s
 import type { ICatalogLineageLookup } from './domain/catalog-lineage.port';
 import type { ILeadQueries } from './domain/lead.queries';
 import type { ILinkableVehicleLookup } from './domain/linkable-vehicle.port';
+import type { IMatchableVehicleLookup } from './domain/matchable-vehicle.port';
 import type { IVehicleLinkSync } from './domain/vehicle-link-sync.port';
 import type { IVehicleSale } from './domain/vehicle-sale.port';
 import { LeadManagementPolicy } from './application/policies/lead-management.policy';
@@ -21,6 +22,7 @@ import { CreateLeadUseCase } from './application/use-cases/create-lead.use-case'
 import { GetLeadUseCase } from './application/use-cases/get-lead.use-case';
 import { ListLeadStatusHistoryUseCase } from './application/use-cases/list-lead-status-history.use-case';
 import { ListLeadsUseCase } from './application/use-cases/list-leads.use-case';
+import { ListVehicleLeadMatchesUseCase } from './application/use-cases/list-vehicle-lead-matches.use-case';
 import { RemoveLeadVehicleUseCase } from './application/use-cases/remove-lead-vehicle.use-case';
 import { ScheduleFollowUpUseCase } from './application/use-cases/schedule-follow-up.use-case';
 import { SetLeadPreferenceUseCase } from './application/use-cases/set-lead-preference.use-case';
@@ -36,6 +38,7 @@ import { CreateLeadController } from './presentation/controllers/create-lead.con
 import { GetLeadController } from './presentation/controllers/get-lead.controller';
 import { ListLeadStatusHistoryController } from './presentation/controllers/list-lead-status-history.controller';
 import { ListLeadsController } from './presentation/controllers/list-leads.controller';
+import { ListVehicleLeadMatchesController } from './presentation/controllers/list-vehicle-lead-matches.controller';
 import { RemoveLeadVehicleController } from './presentation/controllers/remove-lead-vehicle.controller';
 import { ScheduleFollowUpController } from './presentation/controllers/schedule-follow-up.controller';
 import { SetLeadPreferenceController } from './presentation/controllers/set-lead-preference.controller';
@@ -56,6 +59,7 @@ export interface LeadsCompositionDeps {
   readonly vehicleLinkSync: IVehicleLinkSync;
   readonly vehicleSale: IVehicleSale;
   readonly catalogLineage: ICatalogLineageLookup;
+  readonly matchableVehicles: IMatchableVehicleLookup;
 }
 
 /**
@@ -117,6 +121,11 @@ export function composeLeads(
     vehicleLinks,
     deps.clock,
   );
+  const listVehicleLeadMatchesUseCase = new ListVehicleLeadMatchesUseCase(
+    policy,
+    queries,
+    deps.matchableVehicles,
+  );
   const listLeadStatusHistoryUseCase = new ListLeadStatusHistoryUseCase(
     policy,
     queries,
@@ -137,6 +146,9 @@ export function composeLeads(
     removeLeadVehicleController: new RemoveLeadVehicleController(removeLeadVehicleUseCase),
     listLeadStatusHistoryController: new ListLeadStatusHistoryController(
       listLeadStatusHistoryUseCase,
+    ),
+    listVehicleLeadMatchesController: new ListVehicleLeadMatchesController(
+      listVehicleLeadMatchesUseCase,
     ),
   });
 

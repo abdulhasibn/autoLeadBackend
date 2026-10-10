@@ -13,6 +13,7 @@ import { CreateLeadUseCase } from '../application/use-cases/create-lead.use-case
 import { Contact } from '../domain/contact.entity';
 import { toContactId } from '../domain/contact-id';
 import {
+  EMPTY_PREFERENCE_EXTRAS,
   FakeCatalogLineage,
   FakeClock,
   FakeIdGenerator,
@@ -43,6 +44,7 @@ const COMMAND = {
   preferredMakeId: null,
   preferredModelId: null,
   preferredVariantId: null,
+  ...EMPTY_PREFERENCE_EXTRAS,
   purchaseTimeline: null,
   financeRequired: null,
   currentVehicle: null,

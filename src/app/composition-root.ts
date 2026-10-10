@@ -78,6 +78,7 @@ export function composeApp(config: AppConfig): AppDependencies {
     vehicleLinkSync: vehicles.vehicleLeadLink,
     vehicleSale: vehicles.vehicleLeadLink,
     catalogLineage: vehicles.catalogLineage,
+    matchableVehicles: vehicles.matchableVehicles,
   });
   const notifications = composeNotifications(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,

@@ -1,6 +1,5 @@
-export interface SetLeadPreferenceCommand {
+import type { LeadPreferenceFields } from './lead-preference-fields';
+
+export interface SetLeadPreferenceCommand extends LeadPreferenceFields {
   readonly leadId: string;
-  readonly preferredMakeId: string | null;
-  readonly preferredModelId: string | null;
-  readonly preferredVariantId: string | null;
 }

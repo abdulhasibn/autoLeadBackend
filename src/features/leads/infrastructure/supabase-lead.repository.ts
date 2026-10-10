@@ -15,7 +15,7 @@ import { toContact, toLead, type ContactRow, type LeadRow } from './lead.mapper'
 import { translateLeadWriteError } from './translate-lead-write-error';
 
 const LEAD_COLUMNS =
-  'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget, preferred_vehicle, preferred_make_id, preferred_model_id, preferred_variant_id, purchase_timeline, finance_required, current_vehicle, trade_in_required, notes, created_by, created_at, updated_at, deleted_at';
+  'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget, preferred_vehicle, preferred_make_id, preferred_model_id, preferred_variant_id, preferred_colours, preferred_fuel_types, preferred_transmissions, preferred_body_types, preferred_year_min, preferred_year_max, preferred_km_max, preferred_max_owners, purchase_timeline, finance_required, current_vehicle, trade_in_required, notes, created_by, created_at, updated_at, deleted_at';
 
 const CONTACT_COLUMNS =
   'id, full_name, phone, email, created_by, created_at, updated_at, deleted_at';
@@ -124,6 +124,14 @@ export class SupabaseLeadRepository implements ILeadRepository {
       p_preferred_make_id: lead.preferredCatalog.makeId,
       p_preferred_model_id: lead.preferredCatalog.modelId,
       p_preferred_variant_id: lead.preferredCatalog.variantId,
+      p_preferred_colours: [...lead.preference.colours],
+      p_preferred_fuel_types: [...lead.preference.fuelTypes],
+      p_preferred_transmissions: [...lead.preference.transmissions],
+      p_preferred_body_types: [...lead.preference.bodyTypes],
+      p_preferred_year_min: lead.preference.yearMin,
+      p_preferred_year_max: lead.preference.yearMax,
+      p_preferred_km_max: lead.preference.kmMax,
+      p_preferred_max_owners: lead.preference.maxOwners,
     });
 
     if (error !== null) {

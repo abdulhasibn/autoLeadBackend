@@ -5,7 +5,7 @@ import { toUserId } from '../../../domain/shared/user-id';
 import { LeadManagementPolicy } from '../application/policies/lead-management.policy';
 import { ListLeadsUseCase } from '../application/use-cases/list-leads.use-case';
 import type { LeadReadModel } from '../domain/lead.queries';
-import { FakeLeadQueries } from './fakes';
+import { EMPTY_PREFERENCE_EXTRAS, FakeLeadQueries } from './fakes';
 
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
@@ -40,6 +40,7 @@ const LEAD: LeadReadModel = {
   preferredModelName: null,
   preferredVariantId: null,
   preferredVariantName: null,
+  ...EMPTY_PREFERENCE_EXTRAS,
   purchaseTimeline: null,
   financeRequired: null,
   currentVehicle: null,

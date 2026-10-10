@@ -8,8 +8,14 @@ import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import { toPage } from '../../../shared/pagination/pagination';
 import type { LeadId } from '../../../domain/shared/lead-id';
 import { type VehicleId, toVehicleId } from '../../../domain/shared/vehicle-id';
-import { ACTIVE_LEAD_STATUSES } from '../domain/lead-status.value-object';
-import type { ILeadQueries, LeadListCriteria, LeadReadModel } from '../domain/lead.queries';
+import { ACTIVE_LEAD_STATUSES, MATCHABLE_LEAD_STATUSES } from '../domain/lead-status.value-object';
+import type {
+  ILeadQueries,
+  LeadListCriteria,
+  LeadMatchCandidateCriteria,
+  LeadMatchCandidates,
+  LeadReadModel,
+} from '../domain/lead.queries';
 import { toLeadReadModel, type LeadListRow } from './lead.mapper';
 
 // FK hints are required: vehicles.sold_lead_id also links vehicles and leads,
@@ -17,6 +23,7 @@ import { toLeadReadModel, type LeadListRow } from './lead.mapper';
 const LEAD_LIST_COLUMNS = [
   'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget',
   'preferred_vehicle, preferred_make_id, preferred_model_id, preferred_variant_id',
+  'preferred_colours, preferred_fuel_types, preferred_transmissions, preferred_body_types, preferred_year_min, preferred_year_max, preferred_km_max, preferred_max_owners',
   'purchase_timeline, finance_required, current_vehicle, trade_in_required, notes',
   'created_by, created_at, updated_at, deleted_at',
   'contacts ( full_name, phone, email, deleted_at )',
@@ -27,6 +34,20 @@ const LEAD_LIST_COLUMNS = [
   'preferred_model:models!preferred_model_id ( name )',
   'preferred_variant:variants!preferred_variant_id ( name )',
 ].join(', ');
+
+// A lead with any of these set has a preference worth scoring.
+const HAS_PREFERENCE = [
+  'preferred_make_id.not.is.null',
+  'budget.not.is.null',
+  'preferred_year_min.not.is.null',
+  'preferred_year_max.not.is.null',
+  'preferred_km_max.not.is.null',
+  'preferred_max_owners.not.is.null',
+  'preferred_colours.neq.{}',
+  'preferred_fuel_types.neq.{}',
+  'preferred_transmissions.neq.{}',
+  'preferred_body_types.neq.{}',
+].join(',');
 
 export class SupabaseLeadQueries implements ILeadQueries {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -156,4 +177,50 @@ export class SupabaseLeadQueries implements ILeadQueries {
     }
     return counts;
   }
+
+  async listMatchCandidates(criteria: LeadMatchCandidateCriteria): Promise<LeadMatchCandidates> {
+    let linkedQuery = this.db
+      .from('leads')
+      .select(LEAD_LIST_COLUMNS)
+      .eq('vehicle_id', criteria.vehicleId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+    let unlinkedQuery = this.db
+      .from('leads')
+      .select(LEAD_LIST_COLUMNS)
+      .is('vehicle_id', null)
+      .eq('showroom_id', criteria.showroomId)
+      .in('status', [...MATCHABLE_LEAD_STATUSES])
+      .or(HAS_PREFERENCE)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(criteria.limit + 1);
+    if (criteria.assignedTo !== undefined) {
+      linkedQuery = linkedQuery.eq('assigned_to', criteria.assignedTo);
+      unlinkedQuery = unlinkedQuery.eq('assigned_to', criteria.assignedTo);
+    }
+
+    const [linked, unlinked] = await Promise.all([linkedQuery, unlinkedQuery]);
+    if (linked.error !== null) {
+      throw new DatabaseUnavailableError(`Failed to load linked leads: ${linked.error.message}`);
+    }
+    if (unlinked.error !== null) {
+      throw new DatabaseUnavailableError(
+        `Failed to load lead match candidates: ${unlinked.error.message}`,
+      );
+    }
+
+    const unlinkedRows = (unlinked.data ?? []) as unknown as LeadListRow[];
+    return {
+      linked: toReadModels((linked.data ?? []) as unknown as LeadListRow[]),
+      unlinked: toReadModels(unlinkedRows.slice(0, criteria.limit)),
+      truncated: unlinkedRows.length > criteria.limit,
+    };
+  }
+}
+
+function toReadModels(rows: readonly LeadListRow[]): LeadReadModel[] {
+  return rows
+    .map((row) => toLeadReadModel(row))
+    .filter((item): item is LeadReadModel => item !== null);
 }
