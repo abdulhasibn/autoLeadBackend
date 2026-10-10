@@ -22,3 +22,26 @@ export interface VehicleLeadMatchesDto {
   /** Only the newest candidates were scored for suggestions. */
   readonly truncated: boolean;
 }
+
+export interface ListLeadVehicleMatchesQuery {
+  readonly leadId: string;
+  /** Lowest score a suggestion may have. */
+  readonly minScore: number;
+  /** Most suggestions to return. */
+  readonly limit: number;
+}
+
+/** A vehicle with how well it fits the lead; `match` is null when the lead has no preference. */
+export interface VehicleMatchDto {
+  readonly vehicle: MatchableVehicle;
+  readonly match: LeadMatch | null;
+}
+
+export interface LeadVehicleMatchesDto {
+  /** The vehicle linked to the lead; null when none (or it was deleted). */
+  readonly linked: VehicleMatchDto | null;
+  /** Linkable vehicles in the lead's showroom that fit it, best match first. */
+  readonly suggested: readonly VehicleMatchDto[];
+  /** Only the newest vehicles were scored for suggestions. */
+  readonly truncated: boolean;
+}

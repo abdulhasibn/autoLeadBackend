@@ -5,7 +5,8 @@ import type { AuthenticateActorUseCase } from '../../application/use-cases/authe
 
 /**
  * Parses the Authorization header, resolves the actor (JWT identity + live
- * roles from user_roles), and attaches AuthenticatedContext to req.auth.
+ * roles from user_roles), and attaches AuthenticatedContext to req.auth and
+ * the raw token to req.accessToken.
  *
  * Throw AuthenticationRequiredError (→ 401) when:
  * - The header is absent or malformed.
@@ -33,6 +34,7 @@ export function createBearerMiddleware(
       }
 
       req.auth = ctx;
+      req.accessToken = token;
       return next();
     } catch (err) {
       return next(err);

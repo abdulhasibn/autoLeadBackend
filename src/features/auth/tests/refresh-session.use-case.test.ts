@@ -22,6 +22,10 @@ class FakeAuthProvider implements IAuthProvider {
     this.lastRefreshToken = refreshToken;
     return FAKE_SESSION;
   }
+
+  async signOut(): Promise<never> {
+    throw new Error('Not expected in this test');
+  }
 }
 
 describe('RefreshSessionUseCase', () => {

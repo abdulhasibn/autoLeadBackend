@@ -7,6 +7,7 @@ import type {
   VehicleLeadMatchesDto,
 } from '../dtos/lead-vehicle-matches.dto';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
+import { toMatchPreference } from '../services/lead-match-preference';
 import { scoreLeadAgainstVehicle } from '../../domain/lead-vehicle-match';
 import type { ILeadQueries, LeadReadModel } from '../../domain/lead.queries';
 import type {
@@ -66,23 +67,7 @@ export class ListVehicleLeadMatchesUseCase {
 }
 
 function withMatch(lead: LeadReadModel, vehicle: MatchableVehicle): LeadMatchDto {
-  const match = scoreLeadAgainstVehicle(
-    {
-      makeId: lead.preferredMakeId,
-      modelId: lead.preferredModelId,
-      variantId: lead.preferredVariantId,
-      budget: lead.budget,
-      colours: lead.preferredColours,
-      fuelTypes: lead.preferredFuelTypes,
-      transmissions: lead.preferredTransmissions,
-      bodyTypes: lead.preferredBodyTypes,
-      yearMin: lead.preferredYearMin,
-      yearMax: lead.preferredYearMax,
-      kmMax: lead.preferredKmMax,
-      maxOwners: lead.preferredMaxOwners,
-    },
-    vehicle,
-  );
+  const match = scoreLeadAgainstVehicle(toMatchPreference(lead), vehicle);
   return { ...lead, match };
 }
 

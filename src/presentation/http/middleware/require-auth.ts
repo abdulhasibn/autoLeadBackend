@@ -12,3 +12,15 @@ export function requireAuth(req: { auth?: AuthenticatedContext }): Authenticated
   }
   return req.auth;
 }
+
+/**
+ * Returns the bearer token the request was authenticated with, for actions
+ * that act on the caller's own session (sign out, change password).
+ * Throws AuthenticationRequiredError if the bearer middleware was skipped.
+ */
+export function requireAccessToken(req: { accessToken?: string }): string {
+  if (req.accessToken === undefined) {
+    throw new AuthenticationRequiredError();
+  }
+  return req.accessToken;
+}

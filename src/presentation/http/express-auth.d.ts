@@ -9,6 +9,8 @@ declare global {
   namespace Express {
     interface Request {
       auth?: AuthenticatedContext;
+      /** The raw bearer token behind `auth`; set by the bearer middleware. */
+      accessToken?: string;
     }
   }
 }

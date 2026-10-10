@@ -19,7 +19,12 @@ import type {
   LeadMatchCandidates,
   LeadReadModel,
 } from '../domain/lead.queries';
-import type { IMatchableVehicleLookup, MatchableVehicle } from '../domain/matchable-vehicle.port';
+import type {
+  IMatchableVehicleLookup,
+  MatchableVehicle,
+  VehicleMatchCandidateCriteria,
+  VehicleMatchCandidates,
+} from '../domain/matchable-vehicle.port';
 import type { IAssignableStaffLookup } from '../domain/assignable-staff.port';
 import type { ICatalogLineageLookup } from '../domain/catalog-lineage.port';
 import type { ILeadRepository, LeadWrite } from '../domain/lead.repository';
@@ -207,6 +212,22 @@ export class FakeMatchableVehicles implements IMatchableVehicleLookup {
 
   async findForMatching(vehicleId: VehicleId): Promise<MatchableVehicle | null> {
     return this.vehicles.get(vehicleId) ?? null;
+  }
+
+  /** Seed order stands in for newest first. */
+  async listMatchCandidates(
+    criteria: VehicleMatchCandidateCriteria,
+  ): Promise<VehicleMatchCandidates> {
+    const candidates = [...this.vehicles.values()].filter(
+      (vehicle) =>
+        vehicle.showroomId === criteria.showroomId &&
+        (vehicle.status === 'open' || vehicle.status === 'linked') &&
+        vehicle.id !== criteria.excludeVehicleId,
+    );
+    return {
+      vehicles: candidates.slice(0, criteria.limit),
+      truncated: candidates.length > criteria.limit,
+    };
   }
 }
 

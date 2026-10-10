@@ -19,7 +19,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "auth:configure-email": "node --env-file=.env scripts/configure-auth-email.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",
