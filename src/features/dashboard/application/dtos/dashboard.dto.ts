@@ -43,8 +43,12 @@ export interface CardListDto<T> {
   readonly items: readonly T[];
 }
 
+/** `all`: every lead in scope (admin). `mine`: the caller's assigned leads (salesperson). */
+export type DashboardScopeKey = 'all' | 'mine';
+
 export interface DashboardDto {
   readonly generatedAt: string;
+  readonly scope: DashboardScopeKey;
   readonly period: {
     readonly key: DashboardPeriodKey;
     readonly from: string;
@@ -55,12 +59,14 @@ export interface DashboardDto {
     readonly carsSold: TrendKpi<number>;
     readonly newLeads: TrendKpi<number>;
     readonly conversionRate: TrendKpi<number | null>;
-    readonly inStock: { readonly value: number };
+    /** Showroom-wide stock; null on a `mine` dashboard. */
+    readonly inStock: { readonly value: number } | null;
   };
   readonly attention: {
     readonly overdueFollowUps: CardListDto<FollowUpCardDto>;
     readonly leadsWithoutFollowUp: CardListDto<LeadCardDto>;
-    readonly agedStock: CardListDto<VehicleCardDto>;
+    /** Showroom-wide stock; null on a `mine` dashboard. */
+    readonly agedStock: CardListDto<VehicleCardDto> | null;
   };
   readonly today: CardListDto<FollowUpCardDto>;
   readonly pipeline: {
@@ -68,5 +74,6 @@ export interface DashboardDto {
     readonly not_now: number;
     readonly booking_confirmed: number;
   };
-  readonly inventory: { readonly open: number; readonly linked: number };
+  /** Showroom-wide stock; null on a `mine` dashboard. */
+  readonly inventory: { readonly open: number; readonly linked: number } | null;
 }

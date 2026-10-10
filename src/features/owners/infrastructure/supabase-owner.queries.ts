@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
 import type { Database } from '../../../infrastructure/supabase/database.types';
+import { anyColumnContains } from '../../../infrastructure/supabase/ilike-pattern';
 import { emptyPageIfPastEnd } from '../../../infrastructure/supabase/range-not-satisfiable';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import { toPage } from '../../../shared/pagination/pagination';
@@ -27,6 +28,9 @@ export class SupabaseOwnerQueries implements IOwnerQueries {
     }
     if (criteria.phone !== undefined) {
       query = query.eq('phone', criteria.phone);
+    }
+    if (criteria.search !== undefined) {
+      query = query.or(anyColumnContains(['full_name', 'phone', 'city'], criteria.search));
     }
 
     const { data, error, count } = await query.range(page.offset, page.offset + page.limit - 1);

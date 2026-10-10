@@ -2,12 +2,19 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
 import { toUserId } from '../../../domain/shared/user-id';
+import { toVehicleId } from '../../../domain/shared/vehicle-id';
 import { VehicleManagementPolicy } from '../application/policies/vehicle-management.policy';
 import { ListVehiclesUseCase } from '../application/use-cases/list-vehicles.use-case';
 import type { VehicleMediaReadModel } from '../domain/vehicle-media.queries';
 import type { VehicleReadModel } from '../domain/vehicle.queries';
 import { VehicleFrontImages } from '../application/services/vehicle-front-images';
-import { FakeClock, FakeObjectStorage, FakeVehicleMediaQueries, FakeVehicleQueries } from './fakes';
+import {
+  FakeClock,
+  FakeLinkedLeadCounts,
+  FakeObjectStorage,
+  FakeVehicleMediaQueries,
+  FakeVehicleQueries,
+} from './fakes';
 
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
@@ -52,17 +59,31 @@ describe('ListVehiclesUseCase', () => {
   let queries: FakeVehicleQueries;
   let media: FakeVehicleMediaQueries;
   let storage: FakeObjectStorage;
+  let leadCounts: FakeLinkedLeadCounts;
 
   beforeEach(() => {
     queries = new FakeVehicleQueries();
     queries.seed(VEHICLE);
     media = new FakeVehicleMediaQueries();
     storage = new FakeObjectStorage();
+    leadCounts = new FakeLinkedLeadCounts();
     useCase = new ListVehiclesUseCase(
       new VehicleManagementPolicy(),
       queries,
       new VehicleFrontImages(media, storage, new FakeClock(NOW)),
+      leadCounts,
     );
+  });
+
+  it('attaches linkedLeadCount for the whole page in one lookup', async () => {
+    queries.seed({ ...VEHICLE, id: OTHER_VEHICLE_ID, registrationNumber: 'KA01AB9999' });
+    leadCounts.counts.set(toVehicleId(VEHICLE.id), 3);
+
+    const page = await useCase.execute({ page: { limit: 20, offset: 0 } }, ADMIN);
+
+    const counts = Object.fromEntries(page.items.map((item) => [item.id, item.linkedLeadCount]));
+    expect(counts).toEqual({ [VEHICLE.id]: 3, [OTHER_VEHICLE_ID]: 0 });
+    expect(leadCounts.calls).toBe(1);
   });
 
   it('returns a page of vehicles', async () => {

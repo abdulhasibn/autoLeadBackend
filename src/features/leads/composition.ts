@@ -7,6 +7,7 @@ import type { Clock } from '../../shared/clock/clock';
 import { UuidIdGenerator } from '../../shared/ids/id-generator';
 import { InvalidLeadStatusTransitionError } from './domain/errors/invalid-lead-status-transition.error';
 import type { ICatalogLineageLookup } from './domain/catalog-lineage.port';
+import type { ILeadQueries } from './domain/lead.queries';
 import type { ILinkableVehicleLookup } from './domain/linkable-vehicle.port';
 import type { IVehicleLinkSync } from './domain/vehicle-link-sync.port';
 import type { IVehicleSale } from './domain/vehicle-sale.port';
@@ -18,10 +19,14 @@ import { AssociateLeadVehicleUseCase } from './application/use-cases/associate-l
 import { ChangeLeadStatusUseCase } from './application/use-cases/change-lead-status.use-case';
 import { CreateLeadUseCase } from './application/use-cases/create-lead.use-case';
 import { GetLeadUseCase } from './application/use-cases/get-lead.use-case';
+import { ListLeadStatusHistoryUseCase } from './application/use-cases/list-lead-status-history.use-case';
 import { ListLeadsUseCase } from './application/use-cases/list-leads.use-case';
+import { RemoveLeadVehicleUseCase } from './application/use-cases/remove-lead-vehicle.use-case';
 import { ScheduleFollowUpUseCase } from './application/use-cases/schedule-follow-up.use-case';
 import { SetLeadPreferenceUseCase } from './application/use-cases/set-lead-preference.use-case';
+import { UpdateLeadUseCase } from './application/use-cases/update-lead.use-case';
 import { SupabaseAssignableStaffLookup } from './infrastructure/supabase-assignable-staff.lookup';
+import { SupabaseLeadStatusHistoryQueries } from './infrastructure/supabase-lead-status-history.queries';
 import { SupabaseLeadQueries } from './infrastructure/supabase-lead.queries';
 import { SupabaseLeadRepository } from './infrastructure/supabase-lead.repository';
 import { AssignLeadController } from './presentation/controllers/assign-lead.controller';
@@ -29,15 +34,19 @@ import { AssociateLeadVehicleController } from './presentation/controllers/assoc
 import { ChangeLeadStatusController } from './presentation/controllers/change-lead-status.controller';
 import { CreateLeadController } from './presentation/controllers/create-lead.controller';
 import { GetLeadController } from './presentation/controllers/get-lead.controller';
+import { ListLeadStatusHistoryController } from './presentation/controllers/list-lead-status-history.controller';
 import { ListLeadsController } from './presentation/controllers/list-leads.controller';
+import { RemoveLeadVehicleController } from './presentation/controllers/remove-lead-vehicle.controller';
 import { ScheduleFollowUpController } from './presentation/controllers/schedule-follow-up.controller';
 import { SetLeadPreferenceController } from './presentation/controllers/set-lead-preference.controller';
+import { UpdateLeadController } from './presentation/controllers/update-lead.controller';
 import { createLeadsRouter } from './presentation/leads.routes';
 
 export interface LeadsComposition {
   readonly router: ReturnType<typeof createLeadsRouter>;
   readonly errorMapper: ErrorMapper;
   readonly linkedLeads: LeadLinkService;
+  readonly linkedLeadCounts: Pick<ILeadQueries, 'countActiveByVehicles'>;
 }
 
 export interface LeadsCompositionDeps {
@@ -101,6 +110,18 @@ export function composeLeads(
   const scheduleFollowUpUseCase = new ScheduleFollowUpUseCase(policy, repo, deps.clock, ids);
   const listLeadsUseCase = new ListLeadsUseCase(policy, queries);
   const getLeadUseCase = new GetLeadUseCase(policy, queries);
+  const updateLeadUseCase = new UpdateLeadUseCase(policy, repo, deps.clock, ids);
+  const removeLeadVehicleUseCase = new RemoveLeadVehicleUseCase(
+    policy,
+    repo,
+    vehicleLinks,
+    deps.clock,
+  );
+  const listLeadStatusHistoryUseCase = new ListLeadStatusHistoryUseCase(
+    policy,
+    queries,
+    new SupabaseLeadStatusHistoryQueries(infraClient),
+  );
 
   const router = createLeadsRouter({
     bearerMiddleware: deps.bearerMiddleware,
@@ -112,6 +133,11 @@ export function composeLeads(
     changeLeadStatusController: new ChangeLeadStatusController(changeLeadStatusUseCase),
     scheduleFollowUpController: new ScheduleFollowUpController(scheduleFollowUpUseCase),
     setLeadPreferenceController: new SetLeadPreferenceController(setLeadPreferenceUseCase),
+    updateLeadController: new UpdateLeadController(updateLeadUseCase),
+    removeLeadVehicleController: new RemoveLeadVehicleController(removeLeadVehicleUseCase),
+    listLeadStatusHistoryController: new ListLeadStatusHistoryController(
+      listLeadStatusHistoryUseCase,
+    ),
   });
 
   const errorMapper: ErrorMapper = (err) => {
@@ -121,5 +147,10 @@ export function composeLeads(
     return null;
   };
 
-  return { router, errorMapper, linkedLeads: new LeadLinkService(repo, deps.clock) };
+  return {
+    router,
+    errorMapper,
+    linkedLeads: new LeadLinkService(repo, deps.clock),
+    linkedLeadCounts: queries,
+  };
 }

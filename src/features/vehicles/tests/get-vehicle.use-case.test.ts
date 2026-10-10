@@ -3,11 +3,18 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { NotFoundError } from '../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
 import { toUserId } from '../../../domain/shared/user-id';
+import { toVehicleId } from '../../../domain/shared/vehicle-id';
 import { VehicleManagementPolicy } from '../application/policies/vehicle-management.policy';
 import { GetVehicleUseCase } from '../application/use-cases/get-vehicle.use-case';
 import type { VehicleReadModel } from '../domain/vehicle.queries';
 import { VehicleFrontImages } from '../application/services/vehicle-front-images';
-import { FakeClock, FakeObjectStorage, FakeVehicleMediaQueries, FakeVehicleQueries } from './fakes';
+import {
+  FakeClock,
+  FakeLinkedLeadCounts,
+  FakeObjectStorage,
+  FakeVehicleMediaQueries,
+  FakeVehicleQueries,
+} from './fakes';
 
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
@@ -52,16 +59,19 @@ describe('GetVehicleUseCase', () => {
   let queries: FakeVehicleQueries;
   let media: FakeVehicleMediaQueries;
   let storage: FakeObjectStorage;
+  let leadCounts: FakeLinkedLeadCounts;
 
   beforeEach(() => {
     queries = new FakeVehicleQueries();
     queries.seed(VEHICLE);
     media = new FakeVehicleMediaQueries();
     storage = new FakeObjectStorage();
+    leadCounts = new FakeLinkedLeadCounts();
     useCase = new GetVehicleUseCase(
       new VehicleManagementPolicy(),
       queries,
       new VehicleFrontImages(media, storage, new FakeClock(NOW)),
+      leadCounts,
     );
   });
 
@@ -86,6 +96,13 @@ describe('GetVehicleUseCase', () => {
 
     expect(result.frontImageUrl).toBe(`https://storage.example/read/media/${VEHICLE.id}/front.jpg`);
     expect(storage.batchSignCalls).toBe(1);
+  });
+
+  it('includes the active linked-lead count, defaulting to 0', async () => {
+    expect((await useCase.execute(VEHICLE.id, ADMIN)).linkedLeadCount).toBe(0);
+
+    leadCounts.counts.set(toVehicleId(VEHICLE.id), 2);
+    expect((await useCase.execute(VEHICLE.id, ADMIN)).linkedLeadCount).toBe(2);
   });
 
   it('throws when missing', async () => {

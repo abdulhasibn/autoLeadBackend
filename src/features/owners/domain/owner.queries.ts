@@ -1,3 +1,4 @@
+import type { SearchTerm } from '../../../domain/shared/search-term.value-object';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import type { OwnerId } from '../../../domain/shared/owner-id';
 
@@ -24,6 +25,8 @@ export interface OwnerReadModel {
 export interface OwnerListCriteria {
   readonly city?: string;
   readonly phone?: string;
+  /** Partial, case-insensitive match on name, phone or city. */
+  readonly search?: SearchTerm;
 }
 
 /**

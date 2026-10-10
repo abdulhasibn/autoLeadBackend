@@ -2,6 +2,12 @@ import type { OwnerId } from '../../../domain/shared/owner-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import type { ShowroomId } from '../../../domain/shared/showroom-id';
+import type { SearchTerm } from '../../../domain/shared/search-term.value-object';
+import type { FuelTypeValue } from './fuel-type.value-object';
+import type { MakeId } from './make-id';
+import type { ModelId } from './model-id';
+import type { TransmissionValue } from './transmission.value-object';
+import type { VariantId } from './variant-id';
 import type { VehicleStatusValue } from './vehicle-status.value-object';
 
 export interface VehicleReadModel {
@@ -39,6 +45,17 @@ export interface VehicleListCriteria {
   readonly ownerId?: OwnerId;
   readonly showroomId?: ShowroomId;
   readonly registration?: string;
+  /** Every word must match the plate or the make / model / variant name. */
+  readonly search?: SearchTerm;
+  readonly makeId?: MakeId;
+  readonly modelId?: ModelId;
+  readonly variantId?: VariantId;
+  readonly yearMin?: number;
+  readonly yearMax?: number;
+  readonly kmMin?: number;
+  readonly kmMax?: number;
+  readonly fuelTypes?: readonly FuelTypeValue[];
+  readonly transmissions?: readonly TransmissionValue[];
 }
 
 export interface IVehicleQueries {

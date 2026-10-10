@@ -3,6 +3,7 @@ import type { Phone } from '../../../domain/shared/phone.value-object';
 import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Contact } from './contact.entity';
+import type { ContactId } from './contact-id';
 import type { FollowUp } from './follow-up.entity';
 import type { Lead } from './lead.entity';
 
@@ -14,6 +15,7 @@ export interface ILeadRepository {
   findById(id: LeadId): Promise<Lead | null>;
   /** Live leads whose status keeps the vehicle `linked`. */
   findActiveByVehicle(vehicleId: VehicleId): Promise<Lead[]>;
+  findContactById(id: ContactId): Promise<Contact | null>;
   findLiveContactByPhone(phone: Phone): Promise<Contact | null>;
   save(lead: Lead, write: LeadWrite): Promise<void>;
   scheduleFollowUp(followUp: FollowUp): Promise<void>;

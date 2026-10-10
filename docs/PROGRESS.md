@@ -12,23 +12,24 @@
 | Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0012 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name) | All 15 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name + dealer handoff round 2) | All 16 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
-| Auth feature (`src/features/auth`) | Done — email + password login/refresh, bearer, /auth/me; roles from `user_roles` |
+| Auth feature (`src/features/auth`) | Done — email + password login/refresh, bearer, /auth/me (roles + home `showroomId`); roles from `user_roles` |
+| Showrooms (`src/features/showrooms`) | Read-only `GET /showrooms` directory for staff pickers |
 | Users / roles (`src/features/users`) | Done — staff CRUD + email/password provision (Admin) |
-| Owners (`src/features/owners`) | Done — staff owner CRUD (Admin / Salesperson; deactivate Admin-only) |
-| Vehicles (`src/features/vehicles`) | Staff create/list/get/update, catalog reads, signed media/document uploads (list/get carry a signed `frontImageUrl`; documents keep `fileName`; status history names the actor); statuses `open` / `linked` / `dropped` / `sold` (Admin drops/re-lists; `linked`/`sold` follow leads) and deletes |
+| Owners (`src/features/owners`) | Done — staff owner CRUD (Admin / Salesperson; deactivate Admin-only); list `search` |
+| Vehicles (`src/features/vehicles`) | Staff create/list/get/update, catalog reads, signed media/document uploads (list/get carry a signed `frontImageUrl`; documents keep `fileName`; status history names the actor; list/get carry `linkedLeadCount`; list `search` + catalog / year / km / fuel / transmission filters via the `vehicle_list` view); statuses `open` / `linked` / `dropped` / `sold` (Admin drops/re-lists; `linked`/`sold` follow leads) and deletes |
 | Inventory (`src/features/inventory`) | Not started |
 | Marketplace (`src/features/marketplace`) | Not started |
-| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle (`linkedVehicle` summary on reads), structured catalog preference (make → model → variant, set on create or `PUT /leads/:id/preference`, list filters), status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification; Admin assignment; salesperson sees assigned leads only |
+| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle (`linkedVehicle` summary on reads), structured catalog preference (make → model → variant, set on create or `PUT /leads/:id/preference`, list filters), status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification; Admin assignment; salesperson sees assigned leads only; `PATCH /leads/:id` edit, `DELETE /leads/:id/vehicle` unlink, `GET /leads/:id/status-history`, `assignedToName`, list `search` + budget / source / link / timeline / finance / created-at filters |
 | Sales (`src/features/sales`) | Not started |
-| Dashboard (`src/features/dashboard`) | Admin `GET /dashboard` — KPIs, attention lists, today's follow-ups (ADR-0012); money metrics after finance |
+| Dashboard (`src/features/dashboard`) | `GET /dashboard` — KPIs, attention lists, today's follow-ups (ADR-0012); admin `scope: all`, salesperson `scope: mine` (own leads, no stock); money metrics after finance |
 | Finance (`src/features/finance`) | Not started |
-| Notifications (`src/features/notifications`) | Staff inbox (`due_at` filter) + mark read; `follow_up_due`, `lead_assigned` |
+| Notifications (`src/features/notifications`) | Staff inbox (`due_at` filter, `isRead` filter, `unreadCount`) + mark read; `follow_up_due`, `lead_assigned`; items carry `leadId` |
 | Audit trail (cross-cutting) | Partial — status history tables; lead assignment in `audit_logs` |
-| Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications) | Done — local `postman/`, GitHub repo, cloud My Workspace |
+| Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications, Dashboard, Showrooms) | Done — local `postman/`, GitHub repo, cloud My Workspace |
 | Frontend API guide (`docs/api.md`) | Done — current endpoints + how to start |
 | HTTP integration tests (local Docker Supabase) | Not started |
 | Vercel production host | Done — `autolead-backend` (`bom1`), `https://autolead-backend-lyart.vercel.app` |
@@ -48,12 +49,27 @@
 
 ## Next up
 
-1. Merge `feat/dealer-handoff-gaps` (its migration is already on hosted), then smoke-test the new fields against production.
+1. Merge `feat/dealer-handoff-round-2` (its migration is already on hosted), deploy, then run `scripts/smoke-api.sh` with admin credentials and ask the dealer team to move handoff items 2–13 to Resolved.
 2. Run the live `scripts/smoke-api.sh` flow against production (needs `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
 3. Acquisition prices on `vehicle_financials` (Stint 2.3).
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-10-08 — Dealer app handoff, round 2
+
+Closes items 2–13 of the dealer app's `docs/BACKEND_HANDOFF.md` (2026-10-07 / 08 entries). Item 1, vehicle financials, stays on Stint 2.3; price filters wait for it.
+
+- Leads: `PATCH /leads/:id` full-replace CRM edit (`Lead.updateDetails`; a new phone moves the lead to that phone's contact instead of rewriting a shared one). `DELETE /leads/:id/vehicle` (`Lead.removeVehicle`: `LEAD_CLOSED` on closed leads, `LEAD_REQUIRES_VEHICLE` on `booking_confirmed`; refreshes the vehicle's link state). `GET /leads/:id/status-history` (`ILeadStatusHistoryQueries`, actor name). `assignedToName` via `users!assigned_to`. List `search` (contact name/phone through `contacts!inner`), `budgetMin/Max`, `source` (multi), `hasVehicle`, `purchaseTimeline`, `financeRequired`, `createdFrom/To`.
+- Vehicles: `linkedLeadCount` on list/get from the new read port `ILinkedLeadCounts` (one batch query per page, implemented by `ILeadQueries.countActiveByVehicles`, wired in the composition root). List/get read the `vehicle_list` view; `search` matches every word against plate + make/model/variant names; `makeId/modelId/variantId`, `yearMin/Max`, `kmMin/Max`, `fuelType`/`transmission` (multi).
+- Owners: list `search` on name/phone/city.
+- Shared: `SearchTerm` VO (`src/domain/shared`), `ilike-pattern` helper, `presentation/validation/search.schemas.ts` (search, CSV, boolean, instant, range, VO-backed number).
+- Notifications: `leadId` on items, `isRead` filter, `unreadCount` on every list response.
+- Auth: `GET /auth/me` returns `showroomId`. New read-only `showrooms` feature: `GET /showrooms`.
+- Dashboard: salespersons get `200` with `scope: "mine"` (`dashboard_summary` already took `p_assignee_id`); `inStock`, `agedStock`, `inventory` are `null` for them.
+- Migration `20261008120000_dealer_handoff_round_2.sql`: `notifications.lead_id` + BEFORE INSERT trigger (derives it from `lead` / `follow_up` entities, so `save_lead` / `schedule_follow_up` are untouched) + backfill; `vehicle_list` view (`security_invoker`). Applied to hosted 2026-10-08: both existing `follow_up_due` rows backfilled; the trigger was checked in a rolled-back transaction for both entity types. Tables/Views in `database.types.ts` now match the generator (RPC args keep their hand-tuned nullability). Security advisors unchanged; performance adds one INFO (`notifications_lead_id_fkey` unindexed, like the other FKs on cold delete paths).
+- Verification: 361 unit tests; new routes mounted and 401 without a token; a read-only script ran the real Supabase query classes against hosted data (38 checks: vehicle multi-word search across plate + catalog names, catalog/year/km/fuel filters, lead contact search + filters, `assignedTo` embed, batch lead counts, lead history, notification `leadId` / `isRead` / unread count, owner search, showrooms). Authenticated end-to-end calls still need the admin smoke run.
+- Follow-up: `pg_trgm` indexes if list search gets slow.
 
 ### 2026-10-06 — Dealer app handoff gaps
 

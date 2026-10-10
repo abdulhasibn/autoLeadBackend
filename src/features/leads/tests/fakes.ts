@@ -7,8 +7,10 @@ import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import { toPage } from '../../../shared/pagination/pagination';
 import type { LeadId } from '../../../domain/shared/lead-id';
 import type { Contact } from '../domain/contact.entity';
+import type { ContactId } from '../domain/contact-id';
 import type { FollowUp } from '../domain/follow-up.entity';
 import type { Lead } from '../domain/lead.entity';
+import { ACTIVE_LEAD_STATUSES } from '../domain/lead-status.value-object';
 import type { ILeadQueries, LeadListCriteria, LeadReadModel } from '../domain/lead.queries';
 import type { IAssignableStaffLookup } from '../domain/assignable-staff.port';
 import type { ICatalogLineageLookup } from '../domain/catalog-lineage.port';
@@ -64,6 +66,10 @@ export class FakeLeadRepository implements ILeadRepository {
     return [...this.leads.values()].filter(
       (lead) => lead.vehicleId === vehicleId && lead.status.isActive() && lead.deletedAt === null,
     );
+  }
+
+  async findContactById(id: ContactId): Promise<Contact | null> {
+    return [...this.contacts.values()].find((contact) => contact.id === id) ?? null;
   }
 
   async findLiveContactByPhone(phone: Phone): Promise<Contact | null> {
@@ -130,6 +136,23 @@ export class FakeLeadQueries implements ILeadQueries {
 
   async getLead(id: LeadId): Promise<LeadReadModel | null> {
     return this.leads.find((lead) => lead.id === id) ?? null;
+  }
+
+  async countActiveByVehicles(
+    vehicleIds: readonly VehicleId[],
+  ): Promise<ReadonlyMap<VehicleId, number>> {
+    const counts = new Map<VehicleId, number>();
+    for (const lead of this.leads) {
+      const vehicleId = lead.vehicleId as VehicleId | null;
+      if (
+        vehicleId !== null &&
+        vehicleIds.includes(vehicleId) &&
+        (ACTIVE_LEAD_STATUSES as readonly string[]).includes(lead.status)
+      ) {
+        counts.set(vehicleId, (counts.get(vehicleId) ?? 0) + 1);
+      }
+    }
+    return counts;
   }
 }
 
@@ -218,4 +241,40 @@ export class FakeCatalogLineage implements ICatalogLineageLookup {
   async isLiveMake(makeId: string): Promise<boolean> {
     return this.makes.has(makeId);
   }
+}
+
+/** A minimal live lead read model; override what the test cares about. */
+export function leadReadModel(overrides: Partial<LeadReadModel> = {}): LeadReadModel {
+  return {
+    id: '77777777-7777-4777-8777-777777777777',
+    showroomId: 'b0000000-0000-4000-8000-000000000001',
+    vehicleId: null,
+    linkedVehicle: null,
+    assignedTo: null,
+    assignedToName: null,
+    contactId: '66666666-6666-4666-8666-666666666666',
+    contactFullName: 'Rahul Sharma',
+    contactPhone: '+919811122233',
+    contactEmail: null,
+    source: 'phone',
+    status: 'new',
+    budget: null,
+    preferredVehicle: null,
+    preferredMakeId: null,
+    preferredMakeName: null,
+    preferredModelId: null,
+    preferredModelName: null,
+    preferredVariantId: null,
+    preferredVariantName: null,
+    purchaseTimeline: null,
+    financeRequired: null,
+    currentVehicle: null,
+    tradeInRequired: null,
+    notes: null,
+    nextFollowUp: null,
+    createdBy: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    createdAt: '2026-10-03T00:00:00.000Z',
+    updatedAt: '2026-10-03T00:00:00.000Z',
+    ...overrides,
+  };
 }

@@ -39,11 +39,14 @@ export class GetDashboardUseCase {
   ) {}
 
   async execute(query: GetDashboardQuery, ctx: AuthenticatedContext): Promise<DashboardDto> {
-    this.policy.requireAdmin(ctx);
+    this.policy.requireStaff(ctx);
 
     const now = this.clock.now();
     const window = resolveDashboardWindow(query.period, now, this.settings.timeZone);
-    const summary = await this.queries.getSummary(this.policy.scope(query.showroomId), {
+    const scope = this.policy.scope(ctx, query.showroomId);
+    // Inventory is showroom-wide, so an assignee-scoped dashboard leaves it out.
+    const showStock = scope.assigneeId === null;
+    const summary = await this.queries.getSummary(scope, {
       from: window.from,
       now,
       previousFrom: window.previousFrom,
@@ -55,6 +58,7 @@ export class GetDashboardUseCase {
 
     return {
       generatedAt: now.toISOString(),
+      scope: showStock ? 'all' : 'mine',
       period: {
         key: window.key,
         from: window.startDate,
@@ -68,7 +72,7 @@ export class GetDashboardUseCase {
           value: conversionRate(summary.converted.current, summary.lost.current),
           previous: conversionRate(summary.converted.previous, summary.lost.previous),
         },
-        inStock: { value: summary.inventory.open + summary.inventory.linked },
+        inStock: showStock ? { value: summary.inventory.open + summary.inventory.linked } : null,
       },
       attention: {
         overdueFollowUps: {
@@ -79,17 +83,19 @@ export class GetDashboardUseCase {
           total: summary.leadsWithoutFollowUp.total,
           items: summary.leadsWithoutFollowUp.items.map(toLeadCard),
         },
-        agedStock: {
-          total: summary.agedStock.total,
-          items: summary.agedStock.items.map((item) => toVehicleCard(item, now)),
-        },
+        agedStock: showStock
+          ? {
+              total: summary.agedStock.total,
+              items: summary.agedStock.items.map((item) => toVehicleCard(item, now)),
+            }
+          : null,
       },
       today: {
         total: summary.todayFollowUps.total,
         items: summary.todayFollowUps.items.map(toFollowUpCard),
       },
       pipeline: summary.pipeline,
-      inventory: summary.inventory,
+      inventory: showStock ? summary.inventory : null,
     };
   }
 }

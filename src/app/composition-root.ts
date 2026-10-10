@@ -10,6 +10,7 @@ import { composeDashboard } from '../features/dashboard/composition';
 import { composeLeads } from '../features/leads/composition';
 import { composeNotifications } from '../features/notifications/composition';
 import { composeOwners } from '../features/owners/composition';
+import { composeShowrooms } from '../features/showrooms/composition';
 import { composeUsers } from '../features/users/composition';
 import { composeVehicles } from '../features/vehicles/composition';
 import { createLogger } from '../infrastructure/logging/logger';
@@ -65,6 +66,10 @@ export function composeApp(config: AppConfig): AppDependencies {
       countActive: (vehicleId) => leads.linkedLeads.countActive(vehicleId),
       unlinkAll: (vehicleId, actorId) => leads.linkedLeads.unlinkAll(vehicleId, actorId),
     },
+    linkedLeadCounts: {
+      countActiveByVehicles: (vehicleIds) =>
+        leads.linkedLeadCounts.countActiveByVehicles(vehicleIds),
+    },
   });
   const leads = composeLeads(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,
@@ -82,6 +87,10 @@ export function composeApp(config: AppConfig): AppDependencies {
     bearerMiddleware: auth.bearerMiddleware,
     clock,
     timeZone: config.businessTimeZone,
+  });
+
+  const showrooms = composeShowrooms(supabaseClient, {
+    bearerMiddleware: auth.bearerMiddleware,
   });
 
   const app = express();
@@ -102,6 +111,7 @@ export function composeApp(config: AppConfig): AppDependencies {
       leadsRouter: leads.router,
       notificationsRouter: notifications.router,
       dashboardRouter: dashboard.router,
+      showroomsRouter: showrooms.router,
     }),
   );
 
@@ -115,6 +125,7 @@ export function composeApp(config: AppConfig): AppDependencies {
       leads.errorMapper,
       notifications.errorMapper,
       dashboard.errorMapper,
+      showrooms.errorMapper,
     ]),
   );
 

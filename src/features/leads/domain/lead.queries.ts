@@ -2,6 +2,8 @@ import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import type { LeadId } from '../../../domain/shared/lead-id';
+import type { SearchTerm } from '../../../domain/shared/search-term.value-object';
+import type { LeadSourceValue } from './lead-source.value-object';
 import type { LeadStatusValue } from './lead-status.value-object';
 
 export interface LeadFollowUpReadModel {
@@ -27,6 +29,8 @@ export interface LeadReadModel {
   readonly vehicleId: string | null;
   readonly linkedVehicle: LinkedVehicleReadModel | null;
   readonly assignedTo: string | null;
+  /** Assignee's full name; null when unassigned. */
+  readonly assignedToName: string | null;
   readonly contactId: string;
   readonly contactFullName: string;
   readonly contactPhone: string;
@@ -59,9 +63,21 @@ export interface LeadListCriteria {
   readonly preferredMakeId?: string;
   readonly preferredModelId?: string;
   readonly preferredVariantId?: string;
+  /** Partial, case-insensitive match on contact name or phone. */
+  readonly search?: SearchTerm;
+  readonly budgetMin?: number;
+  readonly budgetMax?: number;
+  readonly sources?: readonly LeadSourceValue[];
+  readonly hasVehicle?: boolean;
+  readonly purchaseTimeline?: string;
+  readonly financeRequired?: boolean;
+  readonly createdFrom?: Date;
+  readonly createdTo?: Date;
 }
 
 export interface ILeadQueries {
   listLeads(criteria: LeadListCriteria, page: Pagination): Promise<Page<LeadReadModel>>;
   getLead(id: LeadId): Promise<LeadReadModel | null>;
+  /** Active-lead count per vehicle in one lookup; vehicles with none are absent. */
+  countActiveByVehicles(vehicleIds: readonly VehicleId[]): Promise<ReadonlyMap<VehicleId, number>>;
 }

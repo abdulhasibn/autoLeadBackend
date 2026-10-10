@@ -36,14 +36,25 @@ export interface LeadReconstituteProps extends LeadCreateProps {
   readonly deletedAt: Date | null;
 }
 
+export interface LeadDetails {
+  readonly contactId: ContactId;
+  readonly source: LeadSource;
+  readonly budget: number | null;
+  readonly purchaseTimeline: string | null;
+  readonly financeRequired: boolean | null;
+  readonly currentVehicle: string | null;
+  readonly tradeInRequired: boolean | null;
+  readonly notes: string | null;
+}
+
 export class Lead {
   private constructor(
     readonly id: LeadId,
     readonly showroomId: ShowroomId,
-    readonly contactId: ContactId,
+    private contactIdValue: ContactId,
     private vehicleIdValue: VehicleId | null,
     private assignedToValue: UserId | null,
-    readonly source: LeadSource,
+    private sourceValue: LeadSource,
     private statusValue: LeadStatus,
     private budgetValue: number | null,
     private preferredVehicleValue: string | null,
@@ -111,6 +122,14 @@ export class Lead {
       false,
       false,
     );
+  }
+
+  get contactId(): ContactId {
+    return this.contactIdValue;
+  }
+
+  get source(): LeadSource {
+    return this.sourceValue;
   }
 
   get vehicleId(): VehicleId | null {
@@ -195,6 +214,36 @@ export class Lead {
       return;
     }
     this.preferredCatalogValue = preference;
+    this.updatedAtValue = at;
+  }
+
+  /** Staff clear the link by hand; a booking keeps its vehicle until its status moves on. */
+  removeVehicle(at: Date): void {
+    this.assertOpen('Cannot remove the vehicle of a closed lead');
+    if (this.vehicleIdValue === null) {
+      return;
+    }
+    if (this.statusValue.requiresVehicle()) {
+      throw new BusinessRuleViolationError(
+        'LEAD_REQUIRES_VEHICLE',
+        `A ${this.statusValue.value} lead must keep its vehicle; change its status first`,
+      );
+    }
+    this.vehicleIdValue = null;
+    this.updatedAtValue = at;
+  }
+
+  /** Full replace of the CRM fields staff correct after intake. */
+  updateDetails(details: LeadDetails, at: Date): void {
+    this.assertOpen('Cannot edit a closed lead');
+    this.contactIdValue = details.contactId;
+    this.sourceValue = details.source;
+    this.budgetValue = details.budget;
+    this.purchaseTimelineValue = normalizeOptionalText(details.purchaseTimeline);
+    this.financeRequiredValue = details.financeRequired;
+    this.currentVehicleValue = normalizeOptionalText(details.currentVehicle);
+    this.tradeInRequiredValue = details.tradeInRequired;
+    this.notesValue = normalizeOptionalText(details.notes);
     this.updatedAtValue = at;
   }
 

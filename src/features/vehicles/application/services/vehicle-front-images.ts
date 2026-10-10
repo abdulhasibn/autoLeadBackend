@@ -5,6 +5,8 @@ import { SIGNED_READ_TTL_SECONDS, type ObjectStoragePort } from '../../domain/ob
 import type { IVehicleMediaQueries } from '../../domain/vehicle-media.queries';
 import type { VehicleReadModel } from '../../domain/vehicle.queries';
 
+export type VehicleWithFrontImage = Omit<VehicleDto, 'linkedLeadCount'>;
+
 /**
  * Attaches each vehicle's signed cover-photo URL. One media query and one
  * storage call per batch, however many vehicles are in it.
@@ -16,7 +18,7 @@ export class VehicleFrontImages {
     private readonly clock: Clock,
   ) {}
 
-  async attach(vehicles: readonly VehicleReadModel[]): Promise<VehicleDto[]> {
+  async attach(vehicles: readonly VehicleReadModel[]): Promise<VehicleWithFrontImage[]> {
     const paths = await this.media.findFrontImagePaths(
       vehicles.map((vehicle) => toVehicleId(vehicle.id)),
     );

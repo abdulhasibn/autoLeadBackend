@@ -68,6 +68,7 @@ export interface LeadListRow extends LeadRow {
     readonly email: string | null;
     readonly deleted_at: string | null;
   } | null;
+  readonly assignee: { readonly full_name: string } | null;
   readonly follow_ups: FollowUpEmbed[] | null;
   readonly linked_vehicle: LinkedVehicleEmbed | null;
   readonly preferred_make: NameEmbed | null;
@@ -152,6 +153,7 @@ export function toLeadReadModel(row: LeadListRow): LeadReadModel | null {
     vehicleId: row.vehicle_id,
     linkedVehicle: toLinkedVehicle(row.linked_vehicle),
     assignedTo: row.assigned_to,
+    assignedToName: row.assigned_to === null ? null : (row.assignee?.full_name ?? null),
     contactId: row.contact_id,
     contactFullName: row.contacts.full_name,
     contactPhone: row.contacts.phone,

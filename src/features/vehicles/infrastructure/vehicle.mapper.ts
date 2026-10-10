@@ -46,16 +46,11 @@ export interface VehicleRow {
   readonly deleted_at: string | null;
 }
 
-export interface VehicleCatalogEmbed {
-  readonly name: string;
-  readonly models: {
-    readonly name: string;
-    readonly makes: { readonly name: string } | null;
-  } | null;
-}
-
+/** A `vehicle_list` row: the vehicle flattened with its catalog names. */
 export interface VehicleListRow extends VehicleRow {
-  readonly variants: VehicleCatalogEmbed | null;
+  readonly make_name: string | null;
+  readonly model_name: string | null;
+  readonly variant_name: string | null;
 }
 
 export function toVehicle(row: VehicleRow): Vehicle {
@@ -111,9 +106,9 @@ export function toVehicleReadModel(row: VehicleListRow): VehicleReadModel | null
     showroomId: row.showroom_id,
     ownerId: row.owner_id,
     variantId: row.variant_id,
-    makeName: row.variants?.models?.makes?.name ?? null,
-    modelName: row.variants?.models?.name ?? null,
-    variantName: row.variants?.name ?? null,
+    makeName: row.make_name,
+    modelName: row.model_name,
+    variantName: row.variant_name,
     year: row.year,
     registrationNumber: row.registration_number,
     fuelType: row.fuel_type,

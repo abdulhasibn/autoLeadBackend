@@ -30,6 +30,7 @@ import { InvalidVehicleObjectPathError } from './domain/errors/invalid-vehicle-o
 import { InvalidVehicleStatusTransitionError } from './domain/errors/invalid-vehicle-status-transition.error';
 import type { ICatalogLineage } from './domain/catalog-lineage.port';
 import type { ILinkedLeads } from './domain/linked-leads.port';
+import type { ILinkedLeadCounts } from './domain/linked-lead-counts.port';
 import type { IRegisteredOwnerLookup } from './domain/registered-owner.port';
 import { SupabaseActiveShowroomLookup } from './infrastructure/supabase-active-showroom.lookup';
 import { SupabaseCatalogLineageLookup } from './infrastructure/supabase-catalog-lineage.lookup';
@@ -77,6 +78,7 @@ export interface VehiclesCompositionDeps {
   readonly clock: Clock;
   readonly registeredOwnerLookup: IRegisteredOwnerLookup;
   readonly linkedLeads: ILinkedLeads;
+  readonly linkedLeadCounts: ILinkedLeadCounts;
 }
 
 /**
@@ -118,8 +120,18 @@ export function composeVehicles(
     deps.clock,
   );
   const frontImages = new VehicleFrontImages(mediaQueries, storage, deps.clock);
-  const listVehiclesUseCase = new ListVehiclesUseCase(policy, queries, frontImages);
-  const getVehicleUseCase = new GetVehicleUseCase(policy, queries, frontImages);
+  const listVehiclesUseCase = new ListVehiclesUseCase(
+    policy,
+    queries,
+    frontImages,
+    deps.linkedLeadCounts,
+  );
+  const getVehicleUseCase = new GetVehicleUseCase(
+    policy,
+    queries,
+    frontImages,
+    deps.linkedLeadCounts,
+  );
   const listVehicleStatusHistoryUseCase = new ListVehicleStatusHistoryUseCase(
     policy,
     queries,

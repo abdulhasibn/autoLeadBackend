@@ -127,6 +127,7 @@ describe('GetDashboardUseCase', () => {
 
     expect(dashboard).toMatchObject({
       generatedAt: NOW.toISOString(),
+      scope: 'all',
       period: { key: 'month', from: '2026-10-01', to: '2026-10-31', timezone: 'Asia/Kolkata' },
       kpis: {
         carsSold: { value: 7, previous: 5 },
@@ -148,7 +149,7 @@ describe('GetDashboardUseCase', () => {
       vehicleLabel: '2019 Maruti Swift VXi · KA01AB1234',
     });
     expect(dashboard.attention.leadsWithoutFollowUp.items[0]?.vehicleLabel).toBeNull();
-    expect(dashboard.attention.agedStock.items[0]).toMatchObject({
+    expect(dashboard.attention.agedStock?.items[0]).toMatchObject({
       vehicleId: 'v1',
       daysListed: 65,
       activeLeads: 0,
@@ -187,7 +188,26 @@ describe('GetDashboardUseCase', () => {
     expect(queries.lastScope).toEqual({ showroomId: SHOWROOM, assigneeId: null });
   });
 
-  it.each([['salesperson'], ['owner'], ['buyer']])('rejects a %s', async (role) => {
+  it('scopes a salesperson to their own leads and leaves out showroom stock', async () => {
+    const salesperson = { userId: toUserId('bbbb'), roles: ['salesperson'], showroomId: null };
+
+    const dashboard = await useCaseWith(queries).execute(
+      { period: 'month', showroomId: SHOWROOM },
+      salesperson,
+    );
+
+    expect(queries.lastScope).toEqual({ showroomId: null, assigneeId: 'bbbb' });
+    expect(dashboard).toMatchObject({
+      scope: 'mine',
+      kpis: { carsSold: { value: 7, previous: 5 }, inStock: null },
+      pipeline: { new: 12, not_now: 9, booking_confirmed: 4 },
+      inventory: null,
+    });
+    expect(dashboard.attention.agedStock).toBeNull();
+    expect(dashboard.attention.overdueFollowUps.total).toBeGreaterThan(0);
+  });
+
+  it.each([['owner'], ['buyer']])('rejects a %s', async (role) => {
     await expect(
       useCaseWith(queries).execute(
         { period: 'month' },

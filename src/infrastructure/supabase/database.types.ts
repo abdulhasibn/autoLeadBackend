@@ -243,6 +243,13 @@ export type Database = {
             foreignKeyName: 'expenses_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
+            referencedRelation: 'vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'expenses_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
             referencedRelation: 'vehicles';
             referencedColumns: ['id'];
           },
@@ -368,6 +375,13 @@ export type Database = {
             columns: ['showroom_id'];
             isOneToOne: false;
             referencedRelation: 'showrooms';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'income_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicle_list';
             referencedColumns: ['id'];
           },
           {
@@ -558,6 +572,13 @@ export type Database = {
             foreignKeyName: 'leads_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
+            referencedRelation: 'vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'leads_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
             referencedRelation: 'vehicles';
             referencedColumns: ['id'];
           },
@@ -619,6 +640,7 @@ export type Database = {
           entity_type: string | null;
           id: string;
           is_read: boolean;
+          lead_id: string | null;
           title: string;
           type: string;
           user_id: string;
@@ -631,6 +653,7 @@ export type Database = {
           entity_type?: string | null;
           id?: string;
           is_read?: boolean;
+          lead_id?: string | null;
           title: string;
           type: string;
           user_id: string;
@@ -643,11 +666,19 @@ export type Database = {
           entity_type?: string | null;
           id?: string;
           is_read?: boolean;
+          lead_id?: string | null;
           title?: string;
           type?: string;
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: 'notifications_lead_id_fkey';
+            columns: ['lead_id'];
+            isOneToOne: false;
+            referencedRelation: 'leads';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'notifications_user_id_fkey';
             columns: ['user_id'];
@@ -757,6 +788,13 @@ export type Database = {
             foreignKeyName: 'recently_viewed_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
+            referencedRelation: 'vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'recently_viewed_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
             referencedRelation: 'vehicles';
             referencedColumns: ['id'];
           },
@@ -805,6 +843,13 @@ export type Database = {
             columns: ['buyer_id'];
             isOneToOne: false;
             referencedRelation: 'buyers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'saved_vehicles_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicle_list';
             referencedColumns: ['id'];
           },
           {
@@ -1059,6 +1104,13 @@ export type Database = {
             foreignKeyName: 'vehicle_documents_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
+            referencedRelation: 'vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_documents_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
             referencedRelation: 'vehicles';
             referencedColumns: ['id'];
           },
@@ -1125,6 +1177,13 @@ export type Database = {
             foreignKeyName: 'vehicle_financials_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: true;
+            referencedRelation: 'vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_financials_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: true;
             referencedRelation: 'vehicles';
             referencedColumns: ['id'];
           },
@@ -1170,6 +1229,13 @@ export type Database = {
             foreignKeyName: 'vehicle_media_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
+            referencedRelation: 'vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_media_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
             referencedRelation: 'vehicles';
             referencedColumns: ['id'];
           },
@@ -1209,6 +1275,13 @@ export type Database = {
             columns: ['changed_by'];
             isOneToOne: false;
             referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_status_history_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicle_list';
             referencedColumns: ['id'];
           },
           {
@@ -1311,17 +1384,17 @@ export type Database = {
             referencedColumns: ['id'];
           },
           {
-            foreignKeyName: 'vehicles_sold_lead_id_fkey';
-            columns: ['sold_lead_id'];
-            isOneToOne: false;
-            referencedRelation: 'leads';
-            referencedColumns: ['id'];
-          },
-          {
             foreignKeyName: 'vehicles_showroom_id_fkey';
             columns: ['showroom_id'];
             isOneToOne: false;
             referencedRelation: 'showrooms';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicles_sold_lead_id_fkey';
+            columns: ['sold_lead_id'];
+            isOneToOne: false;
+            referencedRelation: 'leads';
             referencedColumns: ['id'];
           },
           {
@@ -1342,7 +1415,91 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      vehicle_list: {
+        Row: {
+          accident_history: boolean | null;
+          acquisition_type: string | null;
+          colour: string | null;
+          created_at: string | null;
+          deleted_at: string | null;
+          description: string | null;
+          fuel_type: string | null;
+          id: string | null;
+          insurance_valid_until: string | null;
+          km_driven: number | null;
+          loan_status: string | null;
+          location: string | null;
+          make_id: string | null;
+          make_name: string | null;
+          model_id: string | null;
+          model_name: string | null;
+          num_previous_owners: number | null;
+          owner_id: string | null;
+          rc_status: string | null;
+          registration_number: string | null;
+          service_history: string | null;
+          showroom_id: string | null;
+          sold_lead_id: string | null;
+          status: string | null;
+          submitted_by: string | null;
+          transmission: string | null;
+          updated_at: string | null;
+          variant_id: string | null;
+          variant_name: string | null;
+          year: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'models_make_id_fkey';
+            columns: ['make_id'];
+            isOneToOne: false;
+            referencedRelation: 'makes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'variants_model_id_fkey';
+            columns: ['model_id'];
+            isOneToOne: false;
+            referencedRelation: 'models';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicles_owner_id_fkey';
+            columns: ['owner_id'];
+            isOneToOne: false;
+            referencedRelation: 'owners';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicles_showroom_id_fkey';
+            columns: ['showroom_id'];
+            isOneToOne: false;
+            referencedRelation: 'showrooms';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicles_sold_lead_id_fkey';
+            columns: ['sold_lead_id'];
+            isOneToOne: false;
+            referencedRelation: 'leads';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicles_submitted_by_fkey';
+            columns: ['submitted_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicles_variant_id_fkey';
+            columns: ['variant_id'];
+            isOneToOne: false;
+            referencedRelation: 'variants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Functions: {
       dashboard_summary: {

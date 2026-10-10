@@ -124,4 +124,61 @@ describe('Lead entity', () => {
       BusinessRuleViolationError,
     );
   });
+
+  describe('removeVehicle', () => {
+    it('clears the vehicle of an open lead', () => {
+      const lead = makeLead(VEHICLE_ID);
+      lead.removeVehicle(NOW);
+      expect(lead.vehicleId).toBeNull();
+    });
+
+    it('keeps a booked lead on its vehicle', () => {
+      const lead = makeLead(VEHICLE_ID);
+      lead.changeStatus(LeadStatus.create('booking_confirmed'), NOW);
+      expect(() => lead.removeVehicle(NOW)).toThrow(
+        expect.objectContaining({ code: 'LEAD_REQUIRES_VEHICLE' }),
+      );
+    });
+
+    it('rejects a closed lead', () => {
+      const lead = makeLead(VEHICLE_ID);
+      lead.changeStatus(LeadStatus.create('lost'), NOW);
+      expect(() => lead.removeVehicle(NOW)).toThrow(
+        expect.objectContaining({ code: 'LEAD_CLOSED' }),
+      );
+    });
+  });
+
+  describe('updateDetails', () => {
+    const details = {
+      contactId: toContactId('55555555-5555-4555-8555-555555555555'),
+      source: LeadSource.create('referral'),
+      budget: 800000,
+      purchaseTimeline: ' this month ',
+      financeRequired: true,
+      currentVehicle: null,
+      tradeInRequired: false,
+      notes: '   ',
+    };
+
+    it('replaces the editable fields', () => {
+      const lead = makeLead();
+      const later = new Date('2026-10-04T00:00:00.000Z');
+      lead.updateDetails(details, later);
+      expect(lead.contactId).toBe('55555555-5555-4555-8555-555555555555');
+      expect(lead.source.value).toBe('referral');
+      expect(lead.budget).toBe(800000);
+      expect(lead.purchaseTimeline).toBe('this month');
+      expect(lead.notes).toBeNull();
+      expect(lead.updatedAt).toEqual(later);
+    });
+
+    it('rejects a closed lead', () => {
+      const lead = makeLead();
+      lead.changeStatus(LeadStatus.create('lost'), NOW);
+      expect(() => lead.updateDetails(details, NOW)).toThrow(
+        expect.objectContaining({ code: 'LEAD_CLOSED' }),
+      );
+    });
+  });
 });

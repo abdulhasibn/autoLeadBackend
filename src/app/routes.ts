@@ -6,6 +6,7 @@ import type { createCatalogRouter } from '../features/vehicles/presentation/cata
 import type { createLeadsRouter } from '../features/leads/presentation/leads.routes';
 import type { createNotificationsRouter } from '../features/notifications/presentation/notifications.routes';
 import type { createOwnersRouter } from '../features/owners/presentation/owners.routes';
+import type { createShowroomsRouter } from '../features/showrooms/presentation/showrooms.routes';
 import type { createUsersRouter } from '../features/users/presentation/users.routes';
 import type { createVehiclesRouter } from '../features/vehicles/presentation/vehicles.routes';
 
@@ -18,6 +19,7 @@ interface RouterDeps {
   readonly leadsRouter: ReturnType<typeof createLeadsRouter>;
   readonly notificationsRouter: ReturnType<typeof createNotificationsRouter>;
   readonly dashboardRouter: ReturnType<typeof createDashboardRouter>;
+  readonly showroomsRouter: ReturnType<typeof createShowroomsRouter>;
 }
 
 /**
@@ -38,6 +40,7 @@ export function createRouter(deps: RouterDeps): Router {
   router.use('/leads', deps.leadsRouter);
   router.use('/notifications', deps.notificationsRouter);
   router.use('/dashboard', deps.dashboardRouter);
+  router.use('/showrooms', deps.showroomsRouter);
 
   return router;
 }
