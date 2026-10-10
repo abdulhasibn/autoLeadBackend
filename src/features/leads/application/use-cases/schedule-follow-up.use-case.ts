@@ -1,18 +1,14 @@
 import { NotFoundError } from '../../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
-import { toNotificationId } from '../../../../domain/shared/notification-id';
 import type { Clock } from '../../../../shared/clock/clock';
 import type { IdGenerator } from '../../../../shared/ids/id-generator';
 import type { FollowUpDto } from '../dtos/follow-up.dto';
 import { toFollowUpDto } from '../dtos/follow-up.dto';
 import type { ScheduleFollowUpCommand } from '../dtos/schedule-follow-up-command';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
-import { FollowUp } from '../../domain/follow-up.entity';
-import { toFollowUpId } from '../../domain/follow-up-id';
-import { FollowUpTaskType } from '../../domain/follow-up-task-type.value-object';
+import { buildScheduledFollowUp } from '../services/build-scheduled-follow-up';
 import { toLeadId } from '../../../../domain/shared/lead-id';
 import type { ILeadRepository } from '../../domain/lead.repository';
-import { ScheduledAt } from '../../domain/scheduled-at.value-object';
 
 export class ScheduleFollowUpUseCase {
   constructor(
@@ -31,19 +27,7 @@ export class ScheduleFollowUpUseCase {
     }
     this.policy.requireCanWork(ctx, lead);
 
-    const scheduledAt = ScheduledAt.create(command.scheduledAt).value;
-    const followUp = FollowUp.schedule({
-      id: toFollowUpId(this.ids.generate()),
-      leadId: lead.id,
-      assignedTo: lead.assignedTo ?? ctx.userId,
-      taskType: FollowUpTaskType.create(command.taskType),
-      scheduledAt,
-      notes: command.notes,
-      createdBy: ctx.userId,
-      createdAt: this.clock.now(),
-      notificationId: toNotificationId(this.ids.generate()),
-      dueAt: scheduledAt,
-    });
+    const followUp = buildScheduledFollowUp(lead, command, ctx, this.clock.now(), this.ids);
 
     await this.repo.scheduleFollowUp(followUp);
     return toFollowUpDto(followUp);

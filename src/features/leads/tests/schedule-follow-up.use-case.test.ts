@@ -69,7 +69,7 @@ describe('ScheduleFollowUpUseCase', () => {
     expect(result.dueAt).toBe(result.scheduledAt);
     expect(result.notificationId).toBeTruthy();
     expect(repo.followUps).toHaveLength(1);
-    expect(repo.followUps[0]?.dueAt.toISOString()).toBe(result.scheduledAt);
+    expect(repo.followUps[0]?.dueAt?.toISOString()).toBe(result.scheduledAt);
   });
 
   it('assigns the follow-up to the lead owner so their reminder fires', async () => {

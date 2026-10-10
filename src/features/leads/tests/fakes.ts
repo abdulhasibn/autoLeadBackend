@@ -8,7 +8,8 @@ import { toPage } from '../../../shared/pagination/pagination';
 import type { LeadId } from '../../../domain/shared/lead-id';
 import type { Contact } from '../domain/contact.entity';
 import type { ContactId } from '../domain/contact-id';
-import type { FollowUp } from '../domain/follow-up.entity';
+import type { FollowUp, ScheduledFollowUp } from '../domain/follow-up.entity';
+import type { FollowUpId } from '../domain/follow-up-id';
 import type { Lead } from '../domain/lead.entity';
 import { ACTIVE_LEAD_STATUSES, MATCHABLE_LEAD_STATUSES } from '../domain/lead-status.value-object';
 import type {
@@ -54,6 +55,8 @@ export class FakeLeadRepository implements ILeadRepository {
   readonly leads = new Map<string, Lead>();
   readonly contacts = new Map<string, Contact>();
   readonly followUps: FollowUp[] = [];
+  /** Follow-ups closed through completeFollowUp / cancelFollowUp, in order. */
+  readonly closedFollowUps: FollowUp[] = [];
   readonly writes: LeadWrite[] = [];
   failNextSave = false;
 
@@ -95,8 +98,23 @@ export class FakeLeadRepository implements ILeadRepository {
     }
   }
 
-  async scheduleFollowUp(followUp: FollowUp): Promise<void> {
+  async scheduleFollowUp(followUp: ScheduledFollowUp): Promise<void> {
     this.followUps.push(followUp);
+  }
+
+  async findFollowUpById(id: FollowUpId): Promise<FollowUp | null> {
+    return this.followUps.find((followUp) => followUp.id === id) ?? null;
+  }
+
+  async completeFollowUp(followUp: FollowUp, next: ScheduledFollowUp | null): Promise<void> {
+    this.closedFollowUps.push(followUp);
+    if (next !== null) {
+      this.followUps.push(next);
+    }
+  }
+
+  async cancelFollowUp(followUp: FollowUp): Promise<void> {
+    this.closedFollowUps.push(followUp);
   }
 }
 

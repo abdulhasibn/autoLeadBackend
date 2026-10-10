@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Email } from '../../../../domain/shared/email.value-object';
 import { Phone } from '../../../../domain/shared/phone.value-object';
 import { Budget } from '../../domain/budget.value-object';
+import { FollowUpOutcome } from '../../domain/follow-up-outcome.value-object';
 import { FollowUpTaskType } from '../../domain/follow-up-task-type.value-object';
 import { LeadPreference } from '../../domain/lead-preference.value-object';
 import { LeadSource } from '../../domain/lead-source.value-object';
@@ -89,6 +90,11 @@ export const followUpTaskTypeSchema = z
   .string({ error: 'taskType is required' })
   .superRefine(refineVo((val) => FollowUpTaskType.create(val)))
   .transform((val) => FollowUpTaskType.create(val).value);
+
+export const followUpOutcomeSchema = z
+  .string({ error: 'outcome is required' })
+  .superRefine(refineVo((val) => FollowUpOutcome.create(val)))
+  .transform((val) => FollowUpOutcome.create(val).value);
 
 export const scheduledAtSchema = z
   .string({ error: 'scheduledAt is required' })

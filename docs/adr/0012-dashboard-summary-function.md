@@ -24,6 +24,7 @@ Money metrics wait for finance (Stint 5).
 - Period windows are resolved in TypeScript, in `resolveDashboardWindow`, using the business timezone `BUSINESS_TIMEZONE`. The window is passed in as instants, so the SQL never deals with timezones.
 - The function takes a nullable `p_assignee_id`. A salesperson view can then reuse it when salespeople start working leads again.
 - **Follow-ups are judged per active lead, using the lead's latest open follow-up.** No endpoint completes follow-ups yet. If every past follow-up counted, "overdue" would only ever grow.
+  - **Amended 2026-10-11** (`20261011120000_follow_up_completion.sql`): follow-ups can now be completed and cancelled, so each active lead is judged by its **earliest** open follow-up, the same one the lead read model shows as `nextFollowUp`. An overdue follow-up stays overdue until someone closes it.
 
 ## Considered Options
 

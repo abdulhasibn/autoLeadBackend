@@ -258,7 +258,10 @@ export type Database = {
       follow_ups: {
         Row: {
           assigned_to: string;
+          cancelled_by: string | null;
           completed_at: string | null;
+          completed_by: string | null;
+          completion_notes: string | null;
           created_at: string;
           created_by: string;
           deleted_at: string | null;
@@ -272,7 +275,10 @@ export type Database = {
         };
         Insert: {
           assigned_to: string;
+          cancelled_by?: string | null;
           completed_at?: string | null;
+          completed_by?: string | null;
+          completion_notes?: string | null;
           created_at?: string;
           created_by: string;
           deleted_at?: string | null;
@@ -286,7 +292,10 @@ export type Database = {
         };
         Update: {
           assigned_to?: string;
+          cancelled_by?: string | null;
           completed_at?: string | null;
+          completed_by?: string | null;
+          completion_notes?: string | null;
           created_at?: string;
           created_by?: string;
           deleted_at?: string | null;
@@ -302,6 +311,20 @@ export type Database = {
           {
             foreignKeyName: 'follow_ups_assigned_to_fkey';
             columns: ['assigned_to'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'follow_ups_cancelled_by_fkey';
+            columns: ['cancelled_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'follow_ups_completed_by_fkey';
+            columns: ['completed_by'];
             isOneToOne: false;
             referencedRelation: 'users';
             referencedColumns: ['id'];
@@ -1526,6 +1549,33 @@ export type Database = {
       };
     };
     Functions: {
+      cancel_follow_up: {
+        Args: {
+          p_cancelled_at: string;
+          p_cancelled_by: string;
+          p_id: string;
+        };
+        Returns: undefined;
+      };
+      complete_follow_up: {
+        Args: {
+          p_completed_at: string;
+          p_completed_by: string;
+          p_id: string;
+          p_next_assigned_to?: string | null;
+          p_next_created_by?: string | null;
+          p_next_due_at?: string | null;
+          p_next_id?: string | null;
+          p_next_lead_id?: string | null;
+          p_next_notes?: string | null;
+          p_next_notification_id?: string | null;
+          p_next_scheduled_at?: string | null;
+          p_next_task_type?: string | null;
+          p_notes: string | null;
+          p_outcome: string;
+        };
+        Returns: undefined;
+      };
       dashboard_summary: {
         Args: {
           p_aged_before: string;

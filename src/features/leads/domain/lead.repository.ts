@@ -4,7 +4,8 @@ import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Contact } from './contact.entity';
 import type { ContactId } from './contact-id';
-import type { FollowUp } from './follow-up.entity';
+import type { FollowUp, ScheduledFollowUp } from './follow-up.entity';
+import type { FollowUpId } from './follow-up-id';
 import type { Lead } from './lead.entity';
 
 /**
@@ -18,7 +19,17 @@ export interface ILeadRepository {
   findContactById(id: ContactId): Promise<Contact | null>;
   findLiveContactByPhone(phone: Phone): Promise<Contact | null>;
   save(lead: Lead, write: LeadWrite): Promise<void>;
-  scheduleFollowUp(followUp: FollowUp): Promise<void>;
+  scheduleFollowUp(followUp: ScheduledFollowUp): Promise<void>;
+  /** A follow-up by id, open or closed; its due reminder may be absent. */
+  findFollowUpById(id: FollowUpId): Promise<FollowUp | null>;
+  /**
+   * Closes the follow-up, marks its reminder read and schedules `next` (with
+   * its reminder) in one transaction. Throws ConflictError if it was no
+   * longer open.
+   */
+  completeFollowUp(followUp: FollowUp, next: ScheduledFollowUp | null): Promise<void>;
+  /** Soft-deletes the follow-up and marks its reminder read. */
+  cancelFollowUp(followUp: FollowUp): Promise<void>;
 }
 
 export interface LeadWrite {
