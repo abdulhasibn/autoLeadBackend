@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 import { CalendarDate } from '../../../../domain/shared/calendar-date.value-object';
 import { AcquisitionType } from '../../domain/acquisition-type.value-object';
-import { FuelType } from '../../domain/fuel-type.value-object';
+import { FuelType } from '../../../../domain/shared/fuel-type.value-object';
 import { KilometersDriven } from '../../domain/kilometers-driven.value-object';
 import { PreviousOwners } from '../../domain/previous-owners.value-object';
 import { RegistrationNumber } from '../../domain/registration-number.value-object';
-import { Transmission } from '../../domain/transmission.value-object';
+import { Transmission } from '../../../../domain/shared/transmission.value-object';
 import { parseLoanStatus, parseRcStatus, parseServiceHistory } from '../../domain/vehicle-details';
 import { DocumentContentType } from '../../domain/document-content-type.value-object';
 import { DocumentFileName } from '../../domain/document-file-name.value-object';

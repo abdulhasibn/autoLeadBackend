@@ -3,10 +3,10 @@ import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import type { ShowroomId } from '../../../domain/shared/showroom-id';
 import type { SearchTerm } from '../../../domain/shared/search-term.value-object';
-import type { FuelTypeValue } from './fuel-type.value-object';
+import type { FuelTypeValue } from '../../../domain/shared/fuel-type.value-object';
 import type { MakeId } from './make-id';
 import type { ModelId } from './model-id';
-import type { TransmissionValue } from './transmission.value-object';
+import type { TransmissionValue } from '../../../domain/shared/transmission.value-object';
 import type { VariantId } from './variant-id';
 import type { VehicleStatusValue } from './vehicle-status.value-object';
 
