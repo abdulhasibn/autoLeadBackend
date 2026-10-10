@@ -1,10 +1,13 @@
 import { Router, type RequestHandler } from 'express';
 
 import type { AssignLeadController } from './controllers/assign-lead.controller';
+import type { CancelFollowUpController } from './controllers/cancel-follow-up.controller';
+import type { CompleteFollowUpController } from './controllers/complete-follow-up.controller';
 import type { AssociateLeadVehicleController } from './controllers/associate-lead-vehicle.controller';
 import type { ChangeLeadStatusController } from './controllers/change-lead-status.controller';
 import type { CreateLeadController } from './controllers/create-lead.controller';
 import type { GetLeadController } from './controllers/get-lead.controller';
+import type { ListLeadFollowUpsController } from './controllers/list-lead-follow-ups.controller';
 import type { ListLeadStatusHistoryController } from './controllers/list-lead-status-history.controller';
 import type { ListLeadsController } from './controllers/list-leads.controller';
 import type { ListVehicleLeadMatchesController } from './controllers/list-vehicle-lead-matches.controller';
@@ -22,6 +25,9 @@ export interface LeadsRouterDeps {
   readonly assignLeadController: AssignLeadController;
   readonly changeLeadStatusController: ChangeLeadStatusController;
   readonly scheduleFollowUpController: ScheduleFollowUpController;
+  readonly listLeadFollowUpsController: ListLeadFollowUpsController;
+  readonly completeFollowUpController: CompleteFollowUpController;
+  readonly cancelFollowUpController: CancelFollowUpController;
   readonly setLeadPreferenceController: SetLeadPreferenceController;
   readonly updateLeadController: UpdateLeadController;
   readonly removeLeadVehicleController: RemoveLeadVehicleController;
@@ -46,7 +52,10 @@ export function createLeadsRouter(deps: LeadsRouterDeps): Router {
   router.put('/:id/preference', deps.setLeadPreferenceController.handle());
   router.post('/:id/status', deps.changeLeadStatusController.handle());
   router.get('/:id/status-history', deps.listLeadStatusHistoryController.handle());
+  router.get('/:id/follow-ups', deps.listLeadFollowUpsController.handle());
   router.post('/:id/follow-ups', deps.scheduleFollowUpController.handle());
+  router.post('/:id/follow-ups/:followUpId/complete', deps.completeFollowUpController.handle());
+  router.post('/:id/follow-ups/:followUpId/cancel', deps.cancelFollowUpController.handle());
 
   return router;
 }

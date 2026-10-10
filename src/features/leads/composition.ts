@@ -16,10 +16,13 @@ import { LeadManagementPolicy } from './application/policies/lead-management.pol
 import { LeadLinkService } from './application/services/lead-link.service';
 import { VehicleLinkRefresher } from './application/services/vehicle-link-refresher';
 import { AssignLeadUseCase } from './application/use-cases/assign-lead.use-case';
+import { CancelFollowUpUseCase } from './application/use-cases/cancel-follow-up.use-case';
+import { CompleteFollowUpUseCase } from './application/use-cases/complete-follow-up.use-case';
 import { AssociateLeadVehicleUseCase } from './application/use-cases/associate-lead-vehicle.use-case';
 import { ChangeLeadStatusUseCase } from './application/use-cases/change-lead-status.use-case';
 import { CreateLeadUseCase } from './application/use-cases/create-lead.use-case';
 import { GetLeadUseCase } from './application/use-cases/get-lead.use-case';
+import { ListLeadFollowUpsUseCase } from './application/use-cases/list-lead-follow-ups.use-case';
 import { ListLeadStatusHistoryUseCase } from './application/use-cases/list-lead-status-history.use-case';
 import { ListLeadsUseCase } from './application/use-cases/list-leads.use-case';
 import { ListVehicleLeadMatchesUseCase } from './application/use-cases/list-vehicle-lead-matches.use-case';
@@ -28,14 +31,18 @@ import { ScheduleFollowUpUseCase } from './application/use-cases/schedule-follow
 import { SetLeadPreferenceUseCase } from './application/use-cases/set-lead-preference.use-case';
 import { UpdateLeadUseCase } from './application/use-cases/update-lead.use-case';
 import { SupabaseAssignableStaffLookup } from './infrastructure/supabase-assignable-staff.lookup';
+import { SupabaseFollowUpQueries } from './infrastructure/supabase-follow-up.queries';
 import { SupabaseLeadStatusHistoryQueries } from './infrastructure/supabase-lead-status-history.queries';
 import { SupabaseLeadQueries } from './infrastructure/supabase-lead.queries';
 import { SupabaseLeadRepository } from './infrastructure/supabase-lead.repository';
 import { AssignLeadController } from './presentation/controllers/assign-lead.controller';
+import { CancelFollowUpController } from './presentation/controllers/cancel-follow-up.controller';
+import { CompleteFollowUpController } from './presentation/controllers/complete-follow-up.controller';
 import { AssociateLeadVehicleController } from './presentation/controllers/associate-lead-vehicle.controller';
 import { ChangeLeadStatusController } from './presentation/controllers/change-lead-status.controller';
 import { CreateLeadController } from './presentation/controllers/create-lead.controller';
 import { GetLeadController } from './presentation/controllers/get-lead.controller';
+import { ListLeadFollowUpsController } from './presentation/controllers/list-lead-follow-ups.controller';
 import { ListLeadStatusHistoryController } from './presentation/controllers/list-lead-status-history.controller';
 import { ListLeadsController } from './presentation/controllers/list-leads.controller';
 import { ListVehicleLeadMatchesController } from './presentation/controllers/list-vehicle-lead-matches.controller';
@@ -112,6 +119,13 @@ export function composeLeads(
     deps.clock,
   );
   const scheduleFollowUpUseCase = new ScheduleFollowUpUseCase(policy, repo, deps.clock, ids);
+  const completeFollowUpUseCase = new CompleteFollowUpUseCase(policy, repo, deps.clock, ids);
+  const cancelFollowUpUseCase = new CancelFollowUpUseCase(policy, repo, deps.clock);
+  const listLeadFollowUpsUseCase = new ListLeadFollowUpsUseCase(
+    policy,
+    queries,
+    new SupabaseFollowUpQueries(infraClient),
+  );
   const listLeadsUseCase = new ListLeadsUseCase(policy, queries);
   const getLeadUseCase = new GetLeadUseCase(policy, queries);
   const updateLeadUseCase = new UpdateLeadUseCase(policy, repo, deps.clock, ids);
@@ -141,6 +155,9 @@ export function composeLeads(
     assignLeadController: new AssignLeadController(assignLeadUseCase),
     changeLeadStatusController: new ChangeLeadStatusController(changeLeadStatusUseCase),
     scheduleFollowUpController: new ScheduleFollowUpController(scheduleFollowUpUseCase),
+    listLeadFollowUpsController: new ListLeadFollowUpsController(listLeadFollowUpsUseCase),
+    completeFollowUpController: new CompleteFollowUpController(completeFollowUpUseCase),
+    cancelFollowUpController: new CancelFollowUpController(cancelFollowUpUseCase),
     setLeadPreferenceController: new SetLeadPreferenceController(setLeadPreferenceUseCase),
     updateLeadController: new UpdateLeadController(updateLeadUseCase),
     removeLeadVehicleController: new RemoveLeadVehicleController(removeLeadVehicleUseCase),

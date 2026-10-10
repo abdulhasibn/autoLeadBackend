@@ -7,15 +7,21 @@ import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
 import type { Contact } from '../domain/contact.entity';
 import type { ContactId } from '../domain/contact-id';
-import type { FollowUp } from '../domain/follow-up.entity';
+import type { FollowUp, ScheduledFollowUp } from '../domain/follow-up.entity';
+import type { FollowUpId } from '../domain/follow-up-id';
 import type { Lead } from '../domain/lead.entity';
 import { ACTIVE_LEAD_STATUSES } from '../domain/lead-status.value-object';
 import type { ILeadRepository, LeadWrite } from '../domain/lead.repository';
+import { toFollowUp, type FollowUpReminderRow, type FollowUpRow } from './follow-up.mapper';
 import { toContact, toLead, type ContactRow, type LeadRow } from './lead.mapper';
+import { translateFollowUpWriteError } from './translate-follow-up-write-error';
 import { translateLeadWriteError } from './translate-lead-write-error';
 
 const LEAD_COLUMNS =
   'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget, preferred_vehicle, preferred_make_id, preferred_model_id, preferred_variant_id, preferred_colours, preferred_fuel_types, preferred_transmissions, preferred_body_types, preferred_year_min, preferred_year_max, preferred_km_max, preferred_max_owners, purchase_timeline, finance_required, current_vehicle, trade_in_required, notes, created_by, created_at, updated_at, deleted_at';
+
+const FOLLOW_UP_COLUMNS =
+  'id, lead_id, assigned_to, task_type, scheduled_at, notes, created_by, created_at, completed_at, completed_by, outcome, completion_notes, deleted_at, cancelled_by';
 
 const CONTACT_COLUMNS =
   'id, full_name, phone, email, created_by, created_at, updated_at, deleted_at';
@@ -139,7 +145,7 @@ export class SupabaseLeadRepository implements ILeadRepository {
     }
   }
 
-  async scheduleFollowUp(followUp: FollowUp): Promise<void> {
+  async scheduleFollowUp(followUp: ScheduledFollowUp): Promise<void> {
     const { error } = await this.db.rpc('schedule_follow_up', {
       p_id: followUp.id,
       p_lead_id: followUp.leadId,
@@ -154,6 +160,86 @@ export class SupabaseLeadRepository implements ILeadRepository {
 
     if (error !== null) {
       translateLeadWriteError(error, 'Failed to schedule follow-up');
+    }
+  }
+
+  async findFollowUpById(id: FollowUpId): Promise<FollowUp | null> {
+    const { data, error } = await this.db
+      .from('follow_ups')
+      .select(FOLLOW_UP_COLUMNS)
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error !== null) {
+      throw new DatabaseUnavailableError(`Failed to load follow-up: ${error.message}`);
+    }
+    if (data === null) {
+      return null;
+    }
+
+    const reminder = await this.db
+      .from('notifications')
+      .select('id, due_at')
+      .eq('entity_type', 'follow_up')
+      .eq('entity_id', id)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (reminder.error !== null) {
+      throw new DatabaseUnavailableError(
+        `Failed to load follow-up reminder: ${reminder.error.message}`,
+      );
+    }
+    return toFollowUp(data as FollowUpRow, reminder.data as FollowUpReminderRow | null);
+  }
+
+  async completeFollowUp(followUp: FollowUp, next: ScheduledFollowUp | null): Promise<void> {
+    const completion = followUp.completion;
+    if (completion === null) {
+      throw new Error('completeFollowUp needs a completed follow-up');
+    }
+
+    const { error } = await this.db.rpc('complete_follow_up', {
+      p_id: followUp.id,
+      p_completed_by: completion.by,
+      p_completed_at: completion.at.toISOString(),
+      p_outcome: completion.outcome.value,
+      p_notes: completion.notes,
+      ...(next === null
+        ? {}
+        : {
+            p_next_id: next.id,
+            p_next_lead_id: next.leadId,
+            p_next_assigned_to: next.assignedTo,
+            p_next_task_type: next.taskType.value,
+            p_next_scheduled_at: next.scheduledAt.toISOString(),
+            p_next_notes: next.notes,
+            p_next_created_by: next.createdBy,
+            p_next_notification_id: next.notificationId,
+            p_next_due_at: next.dueAt.toISOString(),
+          }),
+    });
+
+    if (error !== null) {
+      translateFollowUpWriteError(error, 'Failed to complete follow-up');
+    }
+  }
+
+  async cancelFollowUp(followUp: FollowUp): Promise<void> {
+    const cancellation = followUp.cancellation;
+    if (cancellation === null) {
+      throw new Error('cancelFollowUp needs a cancelled follow-up');
+    }
+
+    const { error } = await this.db.rpc('cancel_follow_up', {
+      p_id: followUp.id,
+      p_cancelled_by: cancellation.by,
+      p_cancelled_at: cancellation.at.toISOString(),
+    });
+
+    if (error !== null) {
+      translateFollowUpWriteError(error, 'Failed to cancel follow-up');
     }
   }
 }
