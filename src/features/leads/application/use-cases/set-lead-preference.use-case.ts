@@ -6,11 +6,11 @@ import type { LeadPreferenceDto } from '../dtos/lead-preference.dto';
 import { toLeadPreferenceDto } from '../dtos/lead-preference.dto';
 import type { SetLeadPreferenceCommand } from '../dtos/set-lead-preference-command';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
-import { resolvePreferredCatalog } from '../services/resolve-preferred-catalog';
+import { buildLeadPreference } from '../services/build-lead-preference';
 import type { ICatalogLineageLookup } from '../../domain/catalog-lineage.port';
 import type { ILeadRepository } from '../../domain/lead.repository';
 
-/** Replaces a lead's catalog preference; all-null ids clear it. */
+/** Replaces a lead's whole preference; omitted parts are cleared. */
 export class SetLeadPreferenceUseCase {
   constructor(
     private readonly policy: LeadManagementPolicy,
@@ -31,14 +31,10 @@ export class SetLeadPreferenceUseCase {
     }
     this.policy.requireCanWork(ctx, lead);
 
-    const preference = await resolvePreferredCatalog(this.catalog, {
-      makeId: command.preferredMakeId,
-      modelId: command.preferredModelId,
-      variantId: command.preferredVariantId,
-    });
-    lead.setPreferredCatalog(preference, this.clock.now());
+    const preference = await buildLeadPreference(this.catalog, command);
+    lead.setPreference(preference, this.clock.now());
     await this.repo.save(lead, { actorId: ctx.userId });
 
-    return toLeadPreferenceDto(lead.preferredCatalog);
+    return toLeadPreferenceDto(lead.preference);
   }
 }

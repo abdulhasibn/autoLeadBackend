@@ -26,3 +26,10 @@ A vehicle in status `open` or `linked`, i.e. in stock and able to take leads. `l
 
 **Active lead**:
 A lead in `new`, `not_now` or `booking_confirmed`. Active leads keep their vehicle `linked`; `converted` and `lost` are closed, and `vehicle_unavailable` means another lead bought the vehicle (the lead can be revived with a different vehicle).
+
+**Lead preference**:
+What a buyer asked for, in the terms a vehicle is recorded in: catalog make → model → variant, colours, fuel types, transmissions, body types, a model-year window, a km ceiling and a previous-owners limit. The Lead's budget is the price ceiling. Every part is optional; blank means "any".
+_Avoid_: Using `preferredVehicle` (legacy free text) as the preference
+
+**Match score**:
+How well one vehicle fits one Lead's preference: 0–100, weighted, with partial credit for near misses, computed only over the criteria the Lead filled in (budget is skipped while the vehicle has no listed price). It is computed on read and never stored.

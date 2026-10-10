@@ -4,8 +4,10 @@ import { Email } from '../../../../domain/shared/email.value-object';
 import { Phone } from '../../../../domain/shared/phone.value-object';
 import { Budget } from '../../domain/budget.value-object';
 import { FollowUpTaskType } from '../../domain/follow-up-task-type.value-object';
+import { LeadPreference } from '../../domain/lead-preference.value-object';
 import { LeadSource } from '../../domain/lead-source.value-object';
 import { LeadStatus } from '../../domain/lead-status.value-object';
+import { PreferredCatalog } from '../../domain/preferred-catalog.value-object';
 import { ScheduledAt } from '../../domain/scheduled-at.value-object';
 
 function refineVo(create: (value: string) => unknown) {
@@ -145,3 +147,64 @@ export const optionalVehicleIdSchema = z
   .nullable()
   .optional()
   .transform((val) => val ?? null);
+
+const optionalStringListSchema = z
+  .array(z.string())
+  .max(20, 'At most 20 values are allowed')
+  .nullable()
+  .optional()
+  .transform((val) => val ?? []);
+
+const optionalWholeNumberSchema = z
+  .number()
+  .nullable()
+  .optional()
+  .transform((val) => (val === undefined ? null : val));
+
+/** Every preference field; omitted lists are empty and omitted numbers null. */
+export const leadPreferenceShape = {
+  preferredMakeId: optionalCatalogIdSchema('preferredMakeId'),
+  preferredModelId: optionalCatalogIdSchema('preferredModelId'),
+  preferredVariantId: optionalCatalogIdSchema('preferredVariantId'),
+  preferredColours: optionalStringListSchema,
+  preferredFuelTypes: optionalStringListSchema,
+  preferredTransmissions: optionalStringListSchema,
+  preferredBodyTypes: optionalStringListSchema,
+  preferredYearMin: optionalWholeNumberSchema,
+  preferredYearMax: optionalWholeNumberSchema,
+  preferredKmMax: optionalWholeNumberSchema,
+  preferredMaxOwners: optionalWholeNumberSchema,
+};
+
+interface ParsedPreferenceFields {
+  readonly preferredColours: string[];
+  readonly preferredFuelTypes: string[];
+  readonly preferredTransmissions: string[];
+  readonly preferredBodyTypes: string[];
+  readonly preferredYearMin: number | null;
+  readonly preferredYearMax: number | null;
+  readonly preferredKmMax: number | null;
+  readonly preferredMaxOwners: number | null;
+}
+
+/** Object-level check: the LeadPreference VO owns the rules (catalog ids are checked later). */
+export function refineLeadPreference(val: ParsedPreferenceFields, ctx: z.RefinementCtx): void {
+  try {
+    LeadPreference.create({
+      catalog: PreferredCatalog.none(),
+      colours: val.preferredColours,
+      fuelTypes: val.preferredFuelTypes,
+      transmissions: val.preferredTransmissions,
+      bodyTypes: val.preferredBodyTypes,
+      yearMin: val.preferredYearMin,
+      yearMax: val.preferredYearMax,
+      kmMax: val.preferredKmMax,
+      maxOwners: val.preferredMaxOwners,
+    });
+  } catch (err) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: err instanceof Error ? err.message : 'Invalid preference',
+    });
+  }
+}

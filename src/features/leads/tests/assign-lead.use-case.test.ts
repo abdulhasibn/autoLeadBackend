@@ -12,7 +12,7 @@ import { Lead } from '../domain/lead.entity';
 import { toLeadId } from '../../../domain/shared/lead-id';
 import { LeadSource } from '../domain/lead-source.value-object';
 import { LeadStatus } from '../domain/lead-status.value-object';
-import { PreferredCatalog } from '../domain/preferred-catalog.value-object';
+import { LeadPreference } from '../domain/lead-preference.value-object';
 import { FakeAssignableStaffLookup, FakeClock, FakeLeadRepository } from './fakes';
 
 const ADMIN: AuthenticatedContext = {
@@ -35,7 +35,7 @@ function seed(status: string): Lead {
     status: LeadStatus.create(status),
     budget: null,
     preferredVehicle: null,
-    preferredCatalog: PreferredCatalog.none(),
+    preference: LeadPreference.none(),
     purchaseTimeline: null,
     financeRequired: null,
     currentVehicle: null,

@@ -508,7 +508,8 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 | `PATCH` | `/leads/:id/vehicle` | `200` `{ "vehicleId" }` |
 | `DELETE` | `/leads/:id/vehicle` | `200` `{ "vehicleId": null }` |
 | `PUT` | `/leads/:id/assignment` | `200` `{ "id", "assignedTo" }` (Admin) |
-| `PUT` | `/leads/:id/preference` | `200` `{ "preferredMakeId", "preferredModelId", "preferredVariantId" }` |
+| `PUT` | `/leads/:id/preference` | `200` the whole preference (`preferredMakeId` … `preferredMaxOwners`) |
+| `GET` | `/leads/vehicle-matches/:vehicleId` | `200` `{ vehicle, linked, suggested, truncated }`: match % per lead |
 | `POST` | `/leads/:id/follow-ups` | `201` follow-up |
 | `POST` | `/leads/:id/status` | `200` `{ "status", "vehicleSold" }` |
 | `GET` | `/leads/:id/status-history` | `200` page (newest first) |
@@ -528,6 +529,14 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
   "preferredMakeId": null,
   "preferredModelId": "<model uuid>",
   "preferredVariantId": null,
+  "preferredColours": ["white", "silver"],
+  "preferredFuelTypes": ["petrol", "cng"],
+  "preferredTransmissions": [],
+  "preferredBodyTypes": ["hatchback"],
+  "preferredYearMin": 2018,
+  "preferredYearMax": null,
+  "preferredKmMax": 60000,
+  "preferredMaxOwners": 1,
   "purchaseTimeline": null,
   "financeRequired": false,
   "currentVehicle": null,
@@ -540,7 +549,63 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 `source`: `marketplace`, `mobile_app`, `website`, `phone`, `walkin`, `whatsapp`, `instagram`, `facebook`, `referral`, `other`.  
 **List query** (all optional, AND-combined): `limit`, `offset`, `status`, `vehicleId`, `assignedTo` (admin only; a salesperson always gets their own leads), `preferredMakeId`, `preferredModelId`, `preferredVariantId`, plus `search` (partial match on contact name or phone), `budgetMin` / `budgetMax` (inclusive, whole rupees like `budget`; leads with no budget drop out), `source` (one or more, comma-separated), `hasVehicle` (`true` / `false`), `purchaseTimeline` (exact text), `financeRequired` (`true` / `false`), `createdFrom` (inclusive) / `createdTo` (exclusive) as ISO date or datetime. A min above its max is `422 VALIDATION_ERROR`.  
 **Preferred catalog:** the buyer's interest as catalog ids from `/catalog/makes`, `/catalog/makes/:id/models` and `/catalog/models/:id/variants` (the same ids as car create). Send only the narrowest pick: a variant alone is enough, and the server fills in its model and make. Any parent you also send must match (`422 PREFERRED_CATALOG_MISMATCH`); an unknown or deleted id is `404`. Because parents are always stored, filtering by `preferredMakeId` also finds leads that picked a model or variant of that make. `preferredVehicle` stays as optional free text and is not derived from the ids.  
-**Set preference:** `PUT /leads/:id/preference` with `{ "preferredMakeId", "preferredModelId", "preferredVariantId" }` replaces the whole preference (omitted ids count as `null`; all `null` clears it). Same validation as create; closed leads (`converted`, `lost`) answer `422 LEAD_CLOSED`.  
+**Preference profile** (all optional, on create and `PUT /leads/:id/preference`; the same terms a car is recorded in):
+
+| Field | Type | Meaning / rules |
+|-------|------|-----------------|
+| `budget` | number | The buyer's **price ceiling** in rupees (not a separate field; it is the lead's `budget`) |
+| `preferredMakeId` / `ModelId` / `VariantId` | uuid | Catalog interest (above) |
+| `preferredColours` | string[] | Free text, stored lower-cased and trimmed, max 20. `"white"` matches a car whose colour is `"Pearl White"` (whole words) |
+| `preferredFuelTypes` | string[] | `petrol`, `diesel`, `cng`, `electric`, `hybrid` |
+| `preferredTransmissions` | string[] | `manual`, `automatic`, `amt`, `cvt`, `dct` |
+| `preferredBodyTypes` | string[] | `hatchback`, `sedan`, `suv`, `muv`, `mpv`, `crossover`, `coupe`, `convertible`, `sports`, `pick-up` (from the variant's catalog body type) |
+| `preferredYearMin` / `preferredYearMax` | int | Model-year window, 1950–2100; either side may be `null`; min ≤ max |
+| `preferredKmMax` | int | Highest odometer reading, ≥ 0 |
+| `preferredMaxOwners` | int | Most previous owners, ≥ 0 |
+
+Omitted lists come back as `[]` and omitted numbers as `null`; empty means "any". Invalid values answer `422 VALIDATION_ERROR`.  
+**Set preference:** `PUT /leads/:id/preference` with the catalog ids and the profile fields above replaces the **whole** preference: anything you omit is cleared, so send the full form every time. An empty body clears it. Same validation as create; closed leads (`converted`, `lost`) answer `422 LEAD_CLOSED`. The budget is edited with `PATCH /leads/:id`.  
+**Vehicle lead matches:** `GET /leads/vehicle-matches/:vehicleId?minScore=60&limit=10` scores leads against one car. Use it on the car detail screen.
+- `linked`: every lead linked to the car (any status), best match first; leads with no preference have `match: null` and come last.
+- `suggested`: open leads (`new`, `not_now`, `vehicle_unavailable`) with no vehicle, in the car's showroom, scoring at least `minScore` (0–100, default 60) on at least two criteria. Best first, at most `limit` (1–50, default 10). Link one with `PATCH /leads/:id/vehicle`.
+- A salesperson only gets leads assigned to them. Unknown or deleted car → `404`.
+- `truncated: true` means only the newest 1000 open leads were scored for suggestions.
+
+Each lead is the usual lead object plus `match`:
+
+```json
+{
+  "vehicle": { "id": "uuid", "showroomId": "uuid", "status": "open", "makeId": "uuid", "makeName": "Hyundai", "modelId": "uuid", "modelName": "i20", "variantId": "uuid", "variantName": "Asta", "year": 2019, "registrationNumber": "KA01AB1234", "kmDriven": 42000, "colour": "Pearl White", "fuelType": "petrol", "transmission": "manual", "bodyTypes": ["hatchback"], "numPreviousOwners": 1, "listedPrice": 620000 },
+  "linked": [{ "id": "uuid", "contactFullName": "Rahul Sharma", "…": "…", "match": {
+    "score": 87,
+    "evaluatedCriteria": 4,
+    "breakdown": [
+      { "criterion": "catalog", "weight": 30, "earned": 30, "outcome": "match" },
+      { "criterion": "budget", "weight": 25, "earned": 19.44, "outcome": "partial" },
+      { "criterion": "fuelType", "weight": 7, "earned": 7, "outcome": "match" },
+      { "criterion": "colour", "weight": 3, "earned": 0, "outcome": "miss" }
+    ]
+  } }],
+  "suggested": [],
+  "truncated": false
+}
+```
+
+**How the score works:** each criterion the lead filled in has a weight. The score is points earned ÷ weight of the criteria evaluated × 100, rounded. Criteria left blank are skipped. Budget is skipped (`outcome: "unknown"`) while the car has no listed price; body type is skipped when the catalog has none.
+
+| Criterion | Weight | Full credit | Partial credit |
+|-----------|--------|-------------|----------------|
+| `catalog` | 30 | Same variant (or model / make, if that is the narrowest pick) | Wanted variant: same model 20, same make 8. Wanted model: same make 10 |
+| `budget` | 25 | `listedPrice` ≤ `budget` | Linear down to 0 at 15 % over budget |
+| `year` | 10 | Inside the window | −⅓ per year outside; 0 at 3 years |
+| `km` | 10 | `kmDriven` ≤ `preferredKmMax` | Linear down to 0 at 25 % over |
+| `fuelType` | 7 | In the list | — |
+| `transmission` | 7 | In the list | — |
+| `bodyType` | 4 | Any shared body type | — |
+| `previousOwners` | 4 | ≤ `preferredMaxOwners` | Half at one owner over |
+| `colour` | 3 | A preferred colour is a word of the car's colour | — |
+
+`outcome` is `match` (full), `partial`, `miss` (0), or `unknown` (skipped).  
 **Edit lead:** `PATCH /leads/:id` replaces the CRM fields: `{ "fullName", "phone", "email", "source", "budget", "purchaseTimeline", "financeRequired", "currentVehicle", "tradeInRequired", "notes" }`. `fullName`, `phone` and `source` are required; any optional field you leave out is cleared. Contacts are keyed by phone: keeping the phone updates that contact's name/email (on every lead that shares it); a new phone moves the lead to the contact with that phone, creating one if needed. Status, vehicle, assignment and preference keep their own endpoints. Closed leads answer `422 LEAD_CLOSED`.  
 **Associate vehicle:** `{ "vehicleId": "<uuid>" }` — vehicle must be `open` or `linked`; lead must not be `converted` or `lost`. The new vehicle becomes `linked`; the previous one goes back to `open` if no other active lead remains.  
 **Remove vehicle:** `DELETE /leads/:id/vehicle` clears the link without closing the lead. The vehicle goes back to `open` if no other active lead remains. Closed leads answer `422 LEAD_CLOSED`; a `booking_confirmed` lead must keep its vehicle (`422 LEAD_REQUIRES_VEHICLE`), so change its status first. A lead with no vehicle answers `200` unchanged.  
@@ -583,6 +648,14 @@ The follow-up belongs to the lead's assignee (or to you if the lead is unassigne
   "preferredModelName": "Creta",
   "preferredVariantId": null,
   "preferredVariantName": null,
+  "preferredColours": ["white"],
+  "preferredFuelTypes": ["petrol"],
+  "preferredTransmissions": [],
+  "preferredBodyTypes": [],
+  "preferredYearMin": 2018,
+  "preferredYearMax": null,
+  "preferredKmMax": 60000,
+  "preferredMaxOwners": null,
   "purchaseTimeline": null,
   "financeRequired": false,
   "currentVehicle": null,

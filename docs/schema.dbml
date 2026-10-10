@@ -335,6 +335,14 @@ Table leads {
   preferred_make_id uuid [ref: > makes.id]
   preferred_model_id uuid [ref: > models.id]
   preferred_variant_id uuid [ref: > variants.id]
+  preferred_colours "text[]" [not null, default: '{}', note: 'lower-cased free text, max 20']
+  preferred_fuel_types "text[]" [not null, default: '{}', note: 'subset of vehicles.fuel_type values']
+  preferred_transmissions "text[]" [not null, default: '{}', note: 'subset of vehicles.transmission values']
+  preferred_body_types "text[]" [not null, default: '{}', note: 'subset of catalog body types']
+  preferred_year_min smallint [note: '1950-2100; <= preferred_year_max']
+  preferred_year_max smallint
+  preferred_km_max integer [note: '>= 0']
+  preferred_max_owners smallint [note: '>= 0']
   purchase_timeline text
   finance_required boolean
   current_vehicle text

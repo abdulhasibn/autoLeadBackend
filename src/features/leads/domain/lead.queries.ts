@@ -45,6 +45,14 @@ export interface LeadReadModel {
   readonly preferredModelName: string | null;
   readonly preferredVariantId: string | null;
   readonly preferredVariantName: string | null;
+  readonly preferredColours: readonly string[];
+  readonly preferredFuelTypes: readonly string[];
+  readonly preferredTransmissions: readonly string[];
+  readonly preferredBodyTypes: readonly string[];
+  readonly preferredYearMin: number | null;
+  readonly preferredYearMax: number | null;
+  readonly preferredKmMax: number | null;
+  readonly preferredMaxOwners: number | null;
   readonly purchaseTimeline: string | null;
   readonly financeRequired: boolean | null;
   readonly currentVehicle: string | null;
@@ -75,9 +83,30 @@ export interface LeadListCriteria {
   readonly createdTo?: Date;
 }
 
+export interface LeadMatchCandidateCriteria {
+  readonly vehicleId: VehicleId;
+  /** Suggestions come from this showroom only. */
+  readonly showroomId: string;
+  /** Salesperson scope: only leads assigned to this user. */
+  readonly assignedTo?: UserId;
+  /** Cap on suggestion candidates read. */
+  readonly limit: number;
+}
+
+export interface LeadMatchCandidates {
+  /** Every live lead linked to the vehicle, whatever its status. */
+  readonly linked: readonly LeadReadModel[];
+  /** Open leads with no vehicle and at least one preference, newest first. */
+  readonly unlinked: readonly LeadReadModel[];
+  /** More unlinked candidates existed than `limit`. */
+  readonly truncated: boolean;
+}
+
 export interface ILeadQueries {
   listLeads(criteria: LeadListCriteria, page: Pagination): Promise<Page<LeadReadModel>>;
   getLead(id: LeadId): Promise<LeadReadModel | null>;
   /** Active-lead count per vehicle in one lookup; vehicles with none are absent. */
   countActiveByVehicles(vehicleIds: readonly VehicleId[]): Promise<ReadonlyMap<VehicleId, number>>;
+  /** Leads to score against one vehicle. */
+  listMatchCandidates(criteria: LeadMatchCandidateCriteria): Promise<LeadMatchCandidates>;
 }

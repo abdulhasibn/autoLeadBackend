@@ -15,6 +15,7 @@ import type {
 } from '../domain/lead.queries';
 import { LeadSource } from '../domain/lead-source.value-object';
 import { LeadStatus } from '../domain/lead-status.value-object';
+import { LeadPreference } from '../domain/lead-preference.value-object';
 import { PreferredCatalog } from '../domain/preferred-catalog.value-object';
 
 export interface ContactRow {
@@ -41,6 +42,14 @@ export interface LeadRow {
   readonly preferred_make_id: string | null;
   readonly preferred_model_id: string | null;
   readonly preferred_variant_id: string | null;
+  readonly preferred_colours: string[];
+  readonly preferred_fuel_types: string[];
+  readonly preferred_transmissions: string[];
+  readonly preferred_body_types: string[];
+  readonly preferred_year_min: number | null;
+  readonly preferred_year_max: number | null;
+  readonly preferred_km_max: number | null;
+  readonly preferred_max_owners: number | null;
   readonly purchase_timeline: string | null;
   readonly finance_required: boolean | null;
   readonly current_vehicle: string | null;
@@ -120,13 +129,7 @@ export function toLead(row: LeadRow): Lead {
     status: mapVo(row.status, row.id, 'status', (value) => LeadStatus.create(value)),
     budget: row.budget,
     preferredVehicle: row.preferred_vehicle,
-    preferredCatalog: mapVo(row, row.id, 'preferred catalog', (value) =>
-      PreferredCatalog.create({
-        makeId: value.preferred_make_id,
-        modelId: value.preferred_model_id,
-        variantId: value.preferred_variant_id,
-      }),
-    ),
+    preference: mapVo(row, row.id, 'preference', toLeadPreference),
     purchaseTimeline: row.purchase_timeline,
     financeRequired: row.finance_required,
     currentVehicle: row.current_vehicle,
@@ -168,6 +171,14 @@ export function toLeadReadModel(row: LeadListRow): LeadReadModel | null {
     preferredModelName: row.preferred_model?.name ?? null,
     preferredVariantId: row.preferred_variant_id,
     preferredVariantName: row.preferred_variant?.name ?? null,
+    preferredColours: row.preferred_colours,
+    preferredFuelTypes: row.preferred_fuel_types,
+    preferredTransmissions: row.preferred_transmissions,
+    preferredBodyTypes: row.preferred_body_types,
+    preferredYearMin: row.preferred_year_min,
+    preferredYearMax: row.preferred_year_max,
+    preferredKmMax: row.preferred_km_max,
+    preferredMaxOwners: row.preferred_max_owners,
     purchaseTimeline: row.purchase_timeline,
     financeRequired: row.finance_required,
     currentVehicle: row.current_vehicle,
@@ -178,6 +189,24 @@ export function toLeadReadModel(row: LeadListRow): LeadReadModel | null {
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
   };
+}
+
+function toLeadPreference(row: LeadRow): LeadPreference {
+  return LeadPreference.create({
+    catalog: PreferredCatalog.create({
+      makeId: row.preferred_make_id,
+      modelId: row.preferred_model_id,
+      variantId: row.preferred_variant_id,
+    }),
+    colours: row.preferred_colours,
+    fuelTypes: row.preferred_fuel_types,
+    transmissions: row.preferred_transmissions,
+    bodyTypes: row.preferred_body_types,
+    yearMin: row.preferred_year_min,
+    yearMax: row.preferred_year_max,
+    kmMax: row.preferred_km_max,
+    maxOwners: row.preferred_max_owners,
+  });
 }
 
 function toLinkedVehicle(embed: LinkedVehicleEmbed | null): LinkedVehicleReadModel | null {

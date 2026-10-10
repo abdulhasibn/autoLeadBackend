@@ -6,9 +6,9 @@ import {
   optionalSearchSchema,
   refineRange,
 } from '../../../../presentation/validation/search.schemas';
-import { FuelType } from '../../domain/fuel-type.value-object';
+import { FuelType } from '../../../../domain/shared/fuel-type.value-object';
 import { KilometersDriven } from '../../domain/kilometers-driven.value-object';
-import { Transmission } from '../../domain/transmission.value-object';
+import { Transmission } from '../../../../domain/shared/transmission.value-object';
 import { VehicleYear } from '../../domain/vehicle-year.value-object';
 
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../../../../shared/pagination/pagination';

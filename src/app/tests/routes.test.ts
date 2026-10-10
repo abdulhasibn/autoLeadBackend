@@ -38,6 +38,7 @@ const PROTECTED_ROUTES: ReadonlyArray<readonly [string, string]> = [
   ['delete', `/vehicles/${ID}/documents/${ID}`],
   ['post', '/leads'],
   ['get', '/leads'],
+  ['get', `/leads/vehicle-matches/${ID}`],
   ['get', `/leads/${ID}`],
   ['patch', `/leads/${ID}/vehicle`],
   ['put', `/leads/${ID}/assignment`],

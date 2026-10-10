@@ -28,11 +28,13 @@ import { ListVehiclesUseCase } from './application/use-cases/list-vehicles.use-c
 import { UpdateVehicleUseCase } from './application/use-cases/update-vehicle.use-case';
 import { InvalidVehicleObjectPathError } from './domain/errors/invalid-vehicle-object-path.error';
 import { InvalidVehicleStatusTransitionError } from './domain/errors/invalid-vehicle-status-transition.error';
+import type { IVehicleMatchProfiles } from './domain/vehicle-match-profile.queries';
 import type { ICatalogLineage } from './domain/catalog-lineage.port';
 import type { ILinkedLeads } from './domain/linked-leads.port';
 import type { ILinkedLeadCounts } from './domain/linked-lead-counts.port';
 import type { IRegisteredOwnerLookup } from './domain/registered-owner.port';
 import { SupabaseActiveShowroomLookup } from './infrastructure/supabase-active-showroom.lookup';
+import { SupabaseVehicleMatchProfiles } from './infrastructure/supabase-vehicle-match-profiles';
 import { SupabaseCatalogLineageLookup } from './infrastructure/supabase-catalog-lineage.lookup';
 import { SupabaseCatalogQueries } from './infrastructure/supabase-catalog.queries';
 import { SupabaseLiveVariantLookup } from './infrastructure/supabase-live-variant.lookup';
@@ -71,6 +73,8 @@ export interface VehiclesComposition {
   readonly vehicleLeadLink: VehicleLeadLinkService;
   /** Read-only catalog lineage for features that reference catalog ids (leads). */
   readonly catalogLineage: ICatalogLineage;
+  /** Vehicle attributes for scoring buyer preferences (leads). */
+  readonly matchableVehicles: IVehicleMatchProfiles;
 }
 
 export interface VehiclesCompositionDeps {
@@ -246,5 +250,6 @@ export function composeVehicles(
     errorMapper,
     vehicleLeadLink: new VehicleLeadLinkService(repo, deps.clock),
     catalogLineage: new SupabaseCatalogLineageLookup(infraClient),
+    matchableVehicles: new SupabaseVehicleMatchProfiles(infraClient),
   };
 }

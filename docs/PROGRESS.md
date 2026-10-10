@@ -12,7 +12,7 @@
 | Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0012 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name + dealer handoff round 2) | All 16 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name + dealer handoff round 2 + lead match preferences) | All 17 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
@@ -23,7 +23,7 @@
 | Vehicles (`src/features/vehicles`) | Staff create/list/get/update, catalog reads, signed media/document uploads (list/get carry a signed `frontImageUrl`; documents keep `fileName`; status history names the actor; list/get carry `linkedLeadCount`; list `search` + catalog / year / km / fuel / transmission filters via the `vehicle_list` view); statuses `open` / `linked` / `dropped` / `sold` (Admin drops/re-lists; `linked`/`sold` follow leads) and deletes |
 | Inventory (`src/features/inventory`) | Not started |
 | Marketplace (`src/features/marketplace`) | Not started |
-| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle (`linkedVehicle` summary on reads), structured catalog preference (make → model → variant, set on create or `PUT /leads/:id/preference`, list filters), status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification; Admin assignment; salesperson sees assigned leads only; `PATCH /leads/:id` edit, `DELETE /leads/:id/vehicle` unlink, `GET /leads/:id/status-history`, `assignedToName`, list `search` + budget / source / link / timeline / finance / created-at filters |
+| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle (`linkedVehicle` summary on reads), structured preference (catalog make → model → variant plus colours / fuel / transmission / body type / year window / km ceiling / max owners; budget = price ceiling; set on create or `PUT /leads/:id/preference`), `GET /leads/vehicle-matches/:vehicleId` (weighted match % for linked leads + suggested open leads, ADR-0013), status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification; Admin assignment; salesperson sees assigned leads only; `PATCH /leads/:id` edit, `DELETE /leads/:id/vehicle` unlink, `GET /leads/:id/status-history`, `assignedToName`, list `search` + budget / source / link / timeline / finance / created-at filters |
 | Sales (`src/features/sales`) | Not started |
 | Dashboard (`src/features/dashboard`) | `GET /dashboard` — KPIs, attention lists, today's follow-ups (ADR-0012); admin `scope: all`, salesperson `scope: mine` (own leads, no stock); money metrics after finance |
 | Finance (`src/features/finance`) | Not started |
@@ -44,7 +44,7 @@
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
 | Tables | 25 |
-| Migrations applied | 16 hosted rows (15 repo migrations + `lead_assignment_fix_user_id`) |
+| Migrations applied | 18 hosted rows (17 repo migrations + `lead_assignment_fix_user_id`) |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
@@ -55,6 +55,17 @@
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-10-10 — Lead preference profile + vehicle match score
+
+- Leads: the preference grows from catalog-only to a full profile in the terms a vehicle is recorded in — `preferredColours`, `preferredFuelTypes`, `preferredTransmissions`, `preferredBodyTypes`, `preferredYearMin/Max`, `preferredKmMax`, `preferredMaxOwners` (all optional; `budget` is the price ceiling). `LeadPreference` VO wraps `PreferredCatalog`; `Lead.setPreference` replaces it wholesale. Accepted on `POST /leads` and `PUT /leads/:id/preference` (full replace — omitted fields clear), returned on lead reads.
+- `GET /leads/vehicle-matches/:vehicleId?minScore=&limit=`: scores every lead linked to the car and suggests open unlinked leads (`new` / `not_now` / `vehicle_unavailable`, same showroom, ≥ 2 criteria, ≥ `minScore`). Pure domain scorer `scoreLeadAgainstVehicle` (weights: catalog 30, budget 25, year 10, km 10, fuel 7, transmission 7, body 4, owners 4, colour 3; partial credit for near misses; blank criteria and an unpriced car's budget are skipped). Salesperson scope applies. ADR-0013.
+- Vehicles implement the leads-owned `IMatchableVehicleLookup` (`SupabaseVehicleMatchProfiles`: vehicle + catalog names/body type + `vehicle_financials.listed_price`, read-only), wired in the composition root.
+- Shared kernel: `FuelType` / `Transmission` moved from vehicles to `src/domain/shared`; new `BodyType` VO (catalog values incl. multi-valued cells like `crossover, suv`).
+- Migration `20261010120000_lead_match_preferences.sql`: eight `leads` columns with CHECKs; `save_lead` recreated with eight trailing defaulted params. `scripts/seed-demo-leads.sql` fills demo preferences.
+- Applied to hosted 2026-10-10; demo-lead preference update run (30 `+91984500` leads). Security advisors unchanged.
+- Verification: 392 unit tests (scorer, VO, schemas, match use case incl. salesperson scope, route 401). A read-only script ran the real use case with `SupabaseLeadQueries` + `SupabaseVehicleMatchProfiles` against hosted data: priced Creta stock suggests the Creta lead at 86 and near-miss leads at 60–73; an unpriced car skips budget; the repository rebuilds `LeadPreference` from hosted rows. Authenticated HTTP calls still need the admin smoke run.
+- Docs: `api.md`, `CONTEXT.md`, `schema.dbml`, local `postman/` collection (mirror repo + cloud not synced yet — run `/sync-postman`).
 
 ### 2026-10-08 — Dealer app handoff, round 2
 

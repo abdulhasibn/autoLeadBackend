@@ -7,6 +7,7 @@ import type { CreateLeadController } from './controllers/create-lead.controller'
 import type { GetLeadController } from './controllers/get-lead.controller';
 import type { ListLeadStatusHistoryController } from './controllers/list-lead-status-history.controller';
 import type { ListLeadsController } from './controllers/list-leads.controller';
+import type { ListVehicleLeadMatchesController } from './controllers/list-vehicle-lead-matches.controller';
 import type { RemoveLeadVehicleController } from './controllers/remove-lead-vehicle.controller';
 import type { ScheduleFollowUpController } from './controllers/schedule-follow-up.controller';
 import type { SetLeadPreferenceController } from './controllers/set-lead-preference.controller';
@@ -25,6 +26,7 @@ export interface LeadsRouterDeps {
   readonly updateLeadController: UpdateLeadController;
   readonly removeLeadVehicleController: RemoveLeadVehicleController;
   readonly listLeadStatusHistoryController: ListLeadStatusHistoryController;
+  readonly listVehicleLeadMatchesController: ListVehicleLeadMatchesController;
 }
 
 export function createLeadsRouter(deps: LeadsRouterDeps): Router {
@@ -34,6 +36,8 @@ export function createLeadsRouter(deps: LeadsRouterDeps): Router {
 
   router.post('/', deps.createLeadController.handle());
   router.get('/', deps.listLeadsController.handle());
+  // Before '/:id' so 'vehicle-matches' is not read as a lead id.
+  router.get('/vehicle-matches/:vehicleId', deps.listVehicleLeadMatchesController.handle());
   router.get('/:id', deps.getLeadController.handle());
   router.patch('/:id', deps.updateLeadController.handle());
   router.patch('/:id/vehicle', deps.associateLeadVehicleController.handle());

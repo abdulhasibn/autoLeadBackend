@@ -11,7 +11,7 @@ import type { LeadDto } from '../dtos/lead.dto';
 import { toLeadDto } from '../dtos/lead.dto';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
 import { requireLinkableVehicle } from '../services/require-linkable-vehicle';
-import { resolvePreferredCatalog } from '../services/resolve-preferred-catalog';
+import { buildLeadPreference } from '../services/build-lead-preference';
 import type { VehicleLinkRefresher } from '../services/vehicle-link-refresher';
 import { Contact } from '../../domain/contact.entity';
 import { toContactId } from '../../domain/contact-id';
@@ -41,11 +41,7 @@ export class CreateLeadUseCase {
     if (vehicleId !== null) {
       await requireLinkableVehicle(this.vehicles, vehicleId);
     }
-    const preferredCatalog = await resolvePreferredCatalog(this.catalog, {
-      makeId: command.preferredMakeId,
-      modelId: command.preferredModelId,
-      variantId: command.preferredVariantId,
-    });
+    const preference = await buildLeadPreference(this.catalog, command);
 
     const now = this.clock.now();
     const phone = Phone.create(command.phone);
@@ -75,7 +71,7 @@ export class CreateLeadUseCase {
       source: LeadSource.create(command.source),
       budget: command.budget === null ? null : Budget.create(command.budget).value,
       preferredVehicle: command.preferredVehicle,
-      preferredCatalog,
+      preference,
       purchaseTimeline: command.purchaseTimeline,
       financeRequired: command.financeRequired,
       currentVehicle: command.currentVehicle,

@@ -11,8 +11,14 @@ import { toContactId } from '../domain/contact-id';
 import { Lead } from '../domain/lead.entity';
 import { LeadSource } from '../domain/lead-source.value-object';
 import { LeadStatus } from '../domain/lead-status.value-object';
+import { LeadPreference } from '../domain/lead-preference.value-object';
 import { PreferredCatalog } from '../domain/preferred-catalog.value-object';
-import { FakeCatalogLineage, FakeClock, FakeLeadRepository } from './fakes';
+import {
+  EMPTY_PREFERENCE_EXTRAS,
+  FakeCatalogLineage,
+  FakeClock,
+  FakeLeadRepository,
+} from './fakes';
 
 const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
@@ -52,7 +58,9 @@ function seedLead(
       status: LeadStatus.create(options.status ?? 'new'),
       budget: null,
       preferredVehicle: null,
-      preferredCatalog: options.preferredCatalog ?? PreferredCatalog.none(),
+      preference: LeadPreference.none().withCatalog(
+        options.preferredCatalog ?? PreferredCatalog.none(),
+      ),
       purchaseTimeline: null,
       financeRequired: null,
       currentVehicle: null,
@@ -66,7 +74,12 @@ function seedLead(
   );
 }
 
-const NO_PREFERENCE = { preferredMakeId: null, preferredModelId: null, preferredVariantId: null };
+const NO_PREFERENCE = {
+  preferredMakeId: null,
+  preferredModelId: null,
+  preferredVariantId: null,
+  ...EMPTY_PREFERENCE_EXTRAS,
+};
 
 describe('SetLeadPreferenceUseCase', () => {
   let useCase: SetLeadPreferenceUseCase;
@@ -93,9 +106,9 @@ describe('SetLeadPreferenceUseCase', () => {
     );
 
     expect(result).toEqual({
+      ...NO_PREFERENCE,
       preferredMakeId: MAKE_ID,
       preferredModelId: MODEL_ID,
-      preferredVariantId: null,
     });
     const saved = repo.leads.get(LEAD_ID);
     expect(saved?.preferredCatalog.makeId).toBe(MAKE_ID);
@@ -157,5 +170,41 @@ describe('SetLeadPreferenceUseCase', () => {
     await expect(
       useCase.execute({ leadId: LEAD_ID, ...NO_PREFERENCE }, ADMIN),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('stores the whole preference profile and replaces it wholesale', async () => {
+    seedLead(repo);
+
+    const result = await useCase.execute(
+      {
+        leadId: LEAD_ID,
+        ...NO_PREFERENCE,
+        preferredModelId: MODEL_ID,
+        preferredColours: ['White', 'silver'],
+        preferredFuelTypes: ['petrol'],
+        preferredTransmissions: ['amt', 'manual'],
+        preferredBodyTypes: ['hatchback'],
+        preferredYearMin: 2018,
+        preferredYearMax: 2022,
+        preferredKmMax: 60000,
+        preferredMaxOwners: 1,
+      },
+      ADMIN,
+    );
+
+    expect(result).toMatchObject({
+      preferredMakeId: MAKE_ID,
+      preferredColours: ['white', 'silver'],
+      preferredTransmissions: ['amt', 'manual'],
+      preferredYearMin: 2018,
+      preferredKmMax: 60000,
+    });
+    expect(repo.leads.get(LEAD_ID)?.preference.maxOwners).toBe(1);
+
+    await useCase.execute({ leadId: LEAD_ID, ...NO_PREFERENCE, preferredKmMax: 30000 }, ADMIN);
+    const replaced = repo.leads.get(LEAD_ID)?.preference;
+    expect(replaced?.kmMax).toBe(30000);
+    expect(replaced?.colours).toEqual([]);
+    expect(replaced?.catalog.isEmpty).toBe(true);
   });
 });
