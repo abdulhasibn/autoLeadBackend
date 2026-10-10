@@ -1,0 +1,1513 @@
+{
+  "_note": "Demo vehicle photos from Wikimedia Commons (1280px thumbnails). Each entry links to its source page with author and licence; keep that attribution if these images are shown publicly.",
+  "models": [
+    {
+      "make": "Hyundai",
+      "model": "Creta",
+      "years": [2016, 2023],
+      "front": [
+        "Hyundai Creta orange.jpg",
+        "2021 Hyundai Creta SX(O) CRDi (India) front view.jpg",
+        "2021 Hyundai Creta 1.5 Value (Chile) front view.jpg",
+        "2022 Hyundai Creta 1.6 Plus (Chile) front view.jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (front shot view).jpg"
+      ],
+      "rear": [
+        "Hyundai Creta (Rear), Jakarta, Indonesia.jpg",
+        "2021 Hyundai Creta 1.5 Value (Chile) rear view.jpg",
+        "2022 Hyundai Creta SEL (Rear).jpg",
+        "2021 Hyundai Creta SX(O) CRDi (India) rear view.jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Rear view).jpg"
+      ],
+      "side": [
+        "Hyundai Creta (Side), Jakarta, Indonesia.jpg",
+        "Hyundai Creta (Side) (2), Jakarta, Indonesia.jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (side view).jpg",
+        "Hyundai creta 2024 ban tieu chuan.jpg"
+      ],
+      "interior": [
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Rear seats).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Front seats).jpg"
+      ],
+      "dashboard": [
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Interior).jpg",
+        "2022 Hyundai Creta (SU2) 1.5AT grey interior view in Brunei.jpg",
+        "2022 Hyundai Creta 1.5 IVT orange and black interior view in Brunei.jpg",
+        "2021 Hyundai Creta 1.5 Trend (SU2id, Indonesia) interior.jpg",
+        "Hyundai Creta SU2 PE 1.5 Premium Black.jpg"
+      ],
+      "engine": [
+        "2021 Hyundai Creta 1.5 Trend (SU2id, Indonesia) Smartstream G1.5 MPi (G4FL) engine.jpg"
+      ],
+      "tyres": [
+        "2023 Denver Auto Show Hyundai wheel 1.jpg",
+        "2023 Denver Auto Show Hyundai wheel 2.jpg",
+        "2023 Denver Auto Show Hyundai Santa Cruz wheel.jpg",
+        "2023 Denver Auto Show Hyundai Santa Fe wheel 1.jpg",
+        "Hyundai Wheel with Sailun Atrezzo SH408 Tire.jpg",
+        "Hyundai Wheel with Haida Ex-Comfort Tire.jpg"
+      ]
+    },
+    {
+      "make": "Kia",
+      "model": "Seltos",
+      "years": [2019, 2023],
+      "front": [
+        "White KIA Seltos (Front).jpg",
+        "2020 Kia Seltos SX - Front.jpg",
+        "2024 Kia Seltos EX, front right, 03-15-2026.jpg",
+        "2022 Kia Seltos (gray, front).jpg"
+      ],
+      "rear": [
+        "2024 Kia Seltos EX, rear right, 03-15-2026.jpg",
+        "2020 Kia Seltos SX - Rear.jpg",
+        "2022 Kia Seltos (gray, rear).jpg",
+        "2020 Kia Seltos SX - Rear (cropped).jpg",
+        "2020 Kia Seltos X-Line Rear View.jpg"
+      ],
+      "side": [
+        "White KIA Seltos (Side).jpg",
+        "2020 Kia Seltos LX - Side.jpg",
+        "2020 Kia Seltos SX - Side.jpg",
+        "2020 Kia Seltos LX - Side (cropped).jpg"
+      ],
+      "interior": [
+        "Front Seats - 2014 Scion tC (15851813182).jpg",
+        "RS 265 Rear Seats (8165621502).jpg",
+        "Rear Seats - 2013 Lexus LS 460 (9864206835).jpg",
+        "Rear Seats - 2014 Jaguar XJL Supercharged (15391470099).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Rear seats).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Front seats).jpg",
+        "2018 Honda City Hybrid (68).jpg",
+        "2018 Honda City Hybrid (38).jpg",
+        "2018 Honda City Hybrid (43).jpg",
+        "2011 Suzuki Swift Interior.jpg"
+      ],
+      "dashboard": [
+        "2020 Kia Seltos SX - Interior 2.jpg",
+        "2020 Kia Seltos SX - Interior 1.jpg",
+        "2020 KIA SELTOS INTERIOR IN BRUNEI.jpg",
+        "2021 Kia Seltos Base grey interior view in Brunei.jpg",
+        "2021 Kia Seltos 1.4 GT Line (SP2i, Indonesia) interior.jpg"
+      ],
+      "engine": [
+        "2020 Kia Seltos SX - Engine.jpg",
+        "Closer look of Kia All-new Seltos engine bay during GIIAS 2026 in Bandung 20260913 201921.jpg",
+        "Engine bay of Kia All-new Seltos during GIIAS 2026 in Bandung 20260913 201904.jpg"
+      ],
+      "tyres": [
+        "2023 Denver Auto Show Hyundai wheel 1.jpg",
+        "2023 Denver Auto Show Hyundai wheel 2.jpg",
+        "2023 Denver Auto Show Hyundai Santa Cruz wheel.jpg",
+        "2023 Denver Auto Show Hyundai Santa Fe wheel 1.jpg",
+        "Hyundai Wheel with Sailun Atrezzo SH408 Tire.jpg",
+        "Hyundai Wheel with Haida Ex-Comfort Tire.jpg"
+      ]
+    },
+    {
+      "make": "Hyundai",
+      "model": "Venue",
+      "years": [2019, 2023],
+      "front": [
+        "2023 Hyundai Venue base front.jpg",
+        "20190710 hyundai venue front side.jpg",
+        "2022 Hyundai Venue, front 11.30.21.jpg",
+        "2022 Hyundai Venue Preferred in Polar White, Front Right.jpg"
+      ],
+      "rear": [
+        "2023 Hyundai Venue base rear.jpg",
+        "20190710 Hyundai Venue Rear Side.jpg",
+        "2019 Hyundai Venue rear NYIAS 2019.jpg",
+        "2022 Hyundai Venue, rear 11.30.21.jpg",
+        "2022 Hyundai Venue Preferred in Polar White, Rear Right.jpg"
+      ],
+      "side": [
+        "Hyundai Venue BLP-5902 left side and Bai 7th St. Intersection bus stop 20250503.jpg",
+        "2021 Hyundai Venue SE, front left, 08-24-2022.jpg",
+        "2021 Hyundai Venue SE, front left.jpg"
+      ],
+      "interior": [
+        "Front Seats - 2014 Scion tC (15851813182).jpg",
+        "RS 265 Rear Seats (8165621502).jpg",
+        "Rear Seats - 2013 Lexus LS 460 (9864206835).jpg",
+        "Rear Seats - 2014 Jaguar XJL Supercharged (15391470099).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Rear seats).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Front seats).jpg",
+        "2018 Honda City Hybrid (68).jpg",
+        "2018 Honda City Hybrid (38).jpg",
+        "2018 Honda City Hybrid (43).jpg",
+        "2011 Suzuki Swift Interior.jpg"
+      ],
+      "dashboard": [
+        "Hyundai Venue QX1 Black Interior (1).jpg",
+        "Hyundai Venue QX1 Black Interior (4).jpg",
+        "Hyundai Venue QX1 Black Interior (2).jpg",
+        "2020-21 Hyundai Venue High spec interior in Brunei.jpg",
+        "2023 Hyundai Venue interior.jpg",
+        "2020 Hyundai Venue 1.6 Standard spec interior view in Brunei.jpg"
+      ],
+      "engine": [
+        "2020 Hyundai Venue 1.6 Standard spec engine view in Brunei.jpg",
+        "2021 Hyundai Venue 1.6 Standard Spec Acid Yellow engine view in Brunei.jpg",
+        "2020-21 Hyundai Venue High spec 1.6 Gamma engine view in Brunei.jpg"
+      ],
+      "tyres": [
+        "2023 Denver Auto Show Hyundai wheel 1.jpg",
+        "2023 Denver Auto Show Hyundai wheel 2.jpg",
+        "2023 Denver Auto Show Hyundai Santa Cruz wheel.jpg",
+        "2023 Denver Auto Show Hyundai Santa Fe wheel 1.jpg",
+        "Hyundai Wheel with Sailun Atrezzo SH408 Tire.jpg",
+        "Hyundai Wheel with Haida Ex-Comfort Tire.jpg"
+      ]
+    },
+    {
+      "make": "Maruti Suzuki",
+      "model": "Swift",
+      "years": [2015, 2023],
+      "front": [
+        "2018 Suzuki Swift SZ5 Boosterjet SHVS 1.0 Front.jpg",
+        "2020 Suzuki Swift Facelift IMG 1884.jpg",
+        "Suzuki Swift Sport (A2L) Front.jpg"
+      ],
+      "rear": [
+        "2020 Suzuki Swift Facelift IMG 1880.jpg",
+        "2018 Suzuki Swift SZ5 Boosterjet SHVS 1.0 Rear.jpg",
+        "Suzuki Swift Sport (A2L) Rear.jpg",
+        "2020 Suzuki Swift Sport silver rear.jpg"
+      ],
+      "side": ["Swift nov.jpg"],
+      "interior": ["2011 Suzuki Swift Interior.jpg"],
+      "dashboard": [
+        "2021 Suzuki Swift Sport 1.4 auto yellow interior view in Brunei.jpg",
+        "2020 Suzuki Swift facelift Interior.jpg",
+        "2021 Suzuki Swift Hybrid Interior.jpg",
+        "2021 Suzuki Swift Sport 1.4 AT red interior view in Brunei.jpg",
+        "Suzuki SWIFT HYBRID SL (DAA-ZC43S) interior.jpg",
+        "Suzuki SWIFT Sport (CBA-ZC33S-VBRM) interior.jpg"
+      ],
+      "engine": [
+        "Suzuki Swift Sport M15A engine.jpg",
+        "The engine room of Suzuki SWIFT Sport (CBA-ZC32S).JPG",
+        "Suzuki K14B Engine.jpg",
+        "2021 Suzuki Swift Sport 1.4 auto yellow engine view in Brunei.jpg"
+      ],
+      "tyres": [
+        "The tire wheel of Suzuki WAGON R HYBRID FX (DAA-MH55S).jpg",
+        "Bridgestone Sneaker Tire on Suzuki Wheel (50978005137).jpg",
+        "The tire wheel of Suzuki SWIFT HYBRID SL (DAA-ZC43S).jpg",
+        "The tire wheel of Suzuki SWIFT HYBRID RS (DAA-ZC53S).jpg",
+        "The tire wheel of Suzuki SWIFT Sport (CBA-ZC33S-VBRM-J).jpg",
+        "The tire wheel of Suzuki SWIFT Sport (CBA-ZC33S-VBRM).jpg"
+      ]
+    },
+    {
+      "make": "Maruti Suzuki",
+      "model": "Baleno",
+      "years": [2016, 2023],
+      "front": [
+        "Suzuki Baleno front.jpg",
+        "2022 Maruti Suzuki Baleno Alpha (India) front view.jpg",
+        "2019 Suzuki Baleno 1.4 (Indonesia) front view.jpg",
+        "Suzuki Baleno (Front), Jakarta, Indonesia.jpg"
+      ],
+      "rear": [
+        "Suzuki Baleno rear.jpg",
+        "Suzuki Baleno (rear).jpg",
+        "Suzuki Baleno 1.4 GLX 2018 (rear).jpg",
+        "Suzuki Baleno Hatchback (rear).jpg"
+      ],
+      "side": ["Suzuki Baleno (22147755445).jpg", "MarutiSusukiBalenoSide2018Prd.jpg"],
+      "interior": [
+        "Front Seats - 2014 Scion tC (15851813182).jpg",
+        "RS 265 Rear Seats (8165621502).jpg",
+        "Rear Seats - 2013 Lexus LS 460 (9864206835).jpg",
+        "Rear Seats - 2014 Jaguar XJL Supercharged (15391470099).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Rear seats).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Front seats).jpg",
+        "2018 Honda City Hybrid (68).jpg",
+        "2018 Honda City Hybrid (38).jpg",
+        "2018 Honda City Hybrid (43).jpg",
+        "2011 Suzuki Swift Interior.jpg"
+      ],
+      "dashboard": ["2022 Maruti Suzuki Baleno Alpha (India) interior.jpg"],
+      "engine": ["Suzuki K14B Engine.jpg"],
+      "tyres": [
+        "The tire wheel of Suzuki WAGON R HYBRID FX (DAA-MH55S).jpg",
+        "Bridgestone Sneaker Tire on Suzuki Wheel (50978005137).jpg",
+        "The tire wheel of Suzuki SWIFT HYBRID SL (DAA-ZC43S).jpg",
+        "The tire wheel of Suzuki SWIFT HYBRID RS (DAA-ZC53S).jpg",
+        "The tire wheel of Suzuki SWIFT Sport (CBA-ZC33S-VBRM-J).jpg",
+        "The tire wheel of Suzuki SWIFT Sport (CBA-ZC33S-VBRM).jpg"
+      ]
+    },
+    {
+      "make": "Honda",
+      "model": "City",
+      "years": [2014, 2023],
+      "front": ["2010-2012 Honda City front.jpg", "2019 Honda City E (Indonesia) front view.jpg"],
+      "rear": [
+        "2007 Honda City (rear), West Surabaya.jpg",
+        "Honda City (Rear), Jakarta, Indonesia.jpg",
+        "2005 Honda City i-DSI (rear), West Surabaya.jpg"
+      ],
+      "side": [
+        "2024 Honda City RS - Sideview.jpg",
+        "2018 Honda City Hybrid (36).jpg",
+        "Atiyas Honda City 2015 C.jpg",
+        "Honda City 1.5 EX 2022.jpg",
+        "Honda City 1.5 V 2025.jpg"
+      ],
+      "interior": [
+        "2018 Honda City Hybrid (68).jpg",
+        "2018 Honda City Hybrid (38).jpg",
+        "2018 Honda City Hybrid (43).jpg"
+      ],
+      "dashboard": ["Honda City GN2 1.5 V - interior view.jpg"],
+      "engine": [
+        "Honda City engine i-DSI.jpg",
+        "Honda P10A6 Engine.jpg",
+        "Honda LEB8 Engine.jpg",
+        "Honda City Pakistan L13A i-VTEC Engine Dec2013.jpg"
+      ],
+      "tyres": [
+        "All-terrain tyre on Land Rover wheel, Oban, July 2020.jpg",
+        "2012 alloy wheel of Rolls-Royce Phantom in BMW-Museum in Munich, Bayern.JPG",
+        "Bremstromme mit Leichtmetallfelge und Niederquerschnittsreifen DSCF0565.jpg",
+        "SEAT Ibiza FR wheel.jpg"
+      ]
+    },
+    {
+      "make": "Toyota",
+      "model": "Innova Crysta",
+      "years": [2016, 2023],
+      "front": [
+        "Toyota Innova GCC front.jpg",
+        "2021 Toyota Kijang Innova 2.0 V Luxury (front), Citraland, West Surabaya.jpg"
+      ],
+      "rear": [
+        "Toyota Innova V (Rear), Jakarta, Indonesia.jpg",
+        "Toyota Innova V (Rear) (2), Jakarta, Indonesia.jpg",
+        "Toyota Innova GCC rear.jpg",
+        "Toyota Kijang Innova (Rear) (4), Jakarta, Indonesia.jpg"
+      ],
+      "side": [
+        "Toyota Kijang Innova (Side), Jakarta, Indonesia.jpg",
+        "Toyota Innova Crysta 2.4 Z side.jpg",
+        "Toyota Innova 2.8 E 2020.jpg"
+      ],
+      "interior": [
+        "Front Seats - 2014 Scion tC (15851813182).jpg",
+        "RS 265 Rear Seats (8165621502).jpg",
+        "Rear Seats - 2013 Lexus LS 460 (9864206835).jpg",
+        "Rear Seats - 2014 Jaguar XJL Supercharged (15391470099).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Rear seats).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Front seats).jpg",
+        "2018 Honda City Hybrid (68).jpg",
+        "2018 Honda City Hybrid (38).jpg",
+        "2018 Honda City Hybrid (43).jpg",
+        "2011 Suzuki Swift Interior.jpg"
+      ],
+      "dashboard": [
+        "2015 Toyota Kijang Innova (GUN142R) 2.4 Q AT (2015-12-05) interior view.jpg",
+        "2021 Toyota Innova 2.4G diesel 6AT grey interior view in Brunei.jpg"
+      ],
+      "engine": [
+        "2021 Toyota Innova 2.4G diesel 6AT grey engine view in Brunei.jpg",
+        "Toyota 2GD-FTV Innova GUN142R (2015-12-05).jpg",
+        "2022 Toyota Kijang Innova 2.0 V TGN140R 1TR-FE engine (20220317).jpg",
+        "Toyota 1TR-FE Engine.jpg"
+      ],
+      "tyres": [
+        "The alloy wheel of Toyota CROWN SPORT Z (6AA-AZSH36W-BNXGB).jpg",
+        "The alloy wheel of Toyota bZ4X\"Z\"4WD (ZAA-YEAM15-MWDHS).jpg",
+        "The alloy wheel of Toyota RAIZE Z (5BA-A200A-GBSV).jpg",
+        "2021 Toyota Veloz 1.5 Q Toyota Safety Sense W101RE alloy wheel (20211117).jpg"
+      ]
+    },
+    {
+      "make": "Toyota",
+      "model": "Fortuner",
+      "years": [2016, 2023],
+      "front": [
+        "2021 Toyota Fortuner SRZ 2.7 4x2 (Indonesia) front view 01.jpg",
+        "2018 Toyota Fortuner TRD Sportivo looking from front.jpg",
+        "2016 Toyota Fortuner VRZ (front), West Surabaya.jpg",
+        "Toyota Fortuner (AN160) Front.jpg"
+      ],
+      "rear": [
+        "Toyota Fortuner LTD 4x2 rear 20221019.jpg",
+        "Toyota Fortuner (Rear) (2), Jakarta, Indonesia.jpg",
+        "Toyota Fortuner (Rear) (4), Jakarta, Indonesia.jpg",
+        "2020 Toyota Fortuner 2.4V (Rear).jpg"
+      ],
+      "side": ["2019 Toyota Fortuner 2.7 SRZ 4x4 (15).jpg", "PSG Fortuner SUV side view.JPG"],
+      "interior": [
+        "Front Seats - 2014 Scion tC (15851813182).jpg",
+        "RS 265 Rear Seats (8165621502).jpg",
+        "Rear Seats - 2013 Lexus LS 460 (9864206835).jpg",
+        "Rear Seats - 2014 Jaguar XJL Supercharged (15391470099).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Rear seats).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Front seats).jpg",
+        "2018 Honda City Hybrid (68).jpg",
+        "2018 Honda City Hybrid (38).jpg",
+        "2018 Honda City Hybrid (43).jpg",
+        "2011 Suzuki Swift Interior.jpg"
+      ],
+      "dashboard": [
+        "Toyota Fortuner LTD 4x2 interior 20221019.jpg",
+        "Toyota Fortuner GUN165 2.4 G 4x2 MT - interior view.jpg",
+        "2019 Toyota Fortuner 2.4 VRZ TRD Sportivo 4x2 GUN165R interior (20190722).jpg",
+        "Toyota Fortuner interior.jpg",
+        "2021 Toyota Fortuner 2.4 VRZ GR Sport 4x2 GUN165R interior (20211117).jpg"
+      ],
+      "engine": [
+        "2019 Toyota FORTUNER 2.4 2GD-FTV (190428).jpg",
+        "2022 Toyota Fortuner 2.8 VRZ GR Sport 4x2 GUN166R 1GD-FTV engine (20220317).jpg"
+      ],
+      "tyres": [
+        "The alloy wheel of Toyota CROWN SPORT Z (6AA-AZSH36W-BNXGB).jpg",
+        "The alloy wheel of Toyota bZ4X\"Z\"4WD (ZAA-YEAM15-MWDHS).jpg",
+        "The alloy wheel of Toyota RAIZE Z (5BA-A200A-GBSV).jpg",
+        "2021 Toyota Veloz 1.5 Q Toyota Safety Sense W101RE alloy wheel (20211117).jpg"
+      ]
+    },
+    {
+      "make": "Maruti Suzuki",
+      "model": "Ertiga",
+      "years": [2015, 2023],
+      "front": [
+        "Suzuki Ertiga (Front), Jakarta, Indonesia.jpg",
+        "Suzuki Ertiga (Front) (2), Jakarta, Indonesia.jpg",
+        "Suzuki Ertiga, MPV front view.jpg",
+        "2019 Suzuki Ertiga \"Suzuki Sport\" (front), West Surabaya.jpg",
+        "2019 Suzuki Ertiga GX (Indonesia) front view.jpg",
+        "2019 Suzuki Ertiga \"Suzuki Sport\" (front), Kapas Krampung Plaza, East Surabaya.jpg"
+      ],
+      "rear": [
+        "Suzuki Ertiga (Rear), Jakarta, Indonesia.jpg",
+        "2023 Suzuki Ertiga Hybrid GX (rear), South Surabaya.jpg",
+        "2014 Suzuki Ertiga GX (rear).jpg",
+        "2024 Suzuki Ertiga Cruise (rear right).jpg",
+        "Suzuki Ertiga, MPV rear view.jpg",
+        "2020 Suzuki Ertiga GX (Rear).jpg"
+      ],
+      "side": [
+        "Suzuki Ertiga (Side), Jakarta, Indonesia.jpg",
+        "Suzuki Ertiga (Side) (2), Jakarta, Indonesia.jpg",
+        "2013 Suzuki Ertiga GL (side), Candikuning.jpg"
+      ],
+      "interior": [
+        "Front Seats - 2014 Scion tC (15851813182).jpg",
+        "RS 265 Rear Seats (8165621502).jpg",
+        "Rear Seats - 2013 Lexus LS 460 (9864206835).jpg",
+        "Rear Seats - 2014 Jaguar XJL Supercharged (15391470099).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Rear seats).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Front seats).jpg",
+        "2018 Honda City Hybrid (68).jpg",
+        "2018 Honda City Hybrid (38).jpg",
+        "2018 Honda City Hybrid (43).jpg",
+        "2011 Suzuki Swift Interior.jpg"
+      ],
+      "dashboard": [
+        "2019 Suzuki Ertiga Interior.jpg",
+        "2021 Suzuki Ertiga Suzuki Sport FF 1.5 NC22S interior (20211117).jpg",
+        "2021 Suzuki Ertiga 1.5 manual white interior view in Brunei.jpg",
+        "2020 Suzuki Ertiga 1.5 Auto with Kenstyle bodykit interior view in Brunei.jpg",
+        "Suzuki Ertiga 1.5 GL Hybrid interior.jpg"
+      ],
+      "engine": [
+        "2021 Suzuki Ertiga 1.5 manual white engine view in Brunei.jpg",
+        "2020 Suzuki Ertiga 1.5 Auto with Kenstyle bodykit engine view in Brunei.jpg"
+      ],
+      "tyres": [
+        "The tire wheel of Suzuki WAGON R HYBRID FX (DAA-MH55S).jpg",
+        "Bridgestone Sneaker Tire on Suzuki Wheel (50978005137).jpg",
+        "The tire wheel of Suzuki SWIFT HYBRID SL (DAA-ZC43S).jpg",
+        "The tire wheel of Suzuki SWIFT HYBRID RS (DAA-ZC53S).jpg",
+        "The tire wheel of Suzuki SWIFT Sport (CBA-ZC33S-VBRM-J).jpg",
+        "The tire wheel of Suzuki SWIFT Sport (CBA-ZC33S-VBRM).jpg"
+      ]
+    },
+    {
+      "make": "Volkswagen",
+      "model": "Polo",
+      "years": [2014, 2022],
+      "front": [
+        "Volkswagen Polo V GTI DSC 0616.jpg",
+        "Volkswagen Polo R WRC Street IMG 8226.jpg",
+        "2011 Volkswagen Polo S 60 1.2 Front.jpg"
+      ],
+      "rear": [
+        "Volkswagen Polo VI (2021) IMG 5322.jpg",
+        "Volkswagen Polo VI GTI DSC 7034.jpg",
+        "Volkswagen Polo Track 2024 1.0 in Montevideo (rear).jpg"
+      ],
+      "side": [
+        "2019 Volkswagen Polo SEL TSI - 999cc 1.0 (115PS) Petrol - Flash Red - 03-2024, Side.jpg",
+        "VW Polo Allstar, Bj. 2016, li. u. hint. (2022-05-12 Sp).jpg",
+        "VW Polo IV Facelift side 20071030 retouched.jpg"
+      ],
+      "interior": [
+        "Front Seats - 2014 Scion tC (15851813182).jpg",
+        "RS 265 Rear Seats (8165621502).jpg",
+        "Rear Seats - 2013 Lexus LS 460 (9864206835).jpg",
+        "Rear Seats - 2014 Jaguar XJL Supercharged (15391470099).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Rear seats).jpg",
+        "2018 HYUNDAI Creta facelift 1.6 Brunei (Front seats).jpg",
+        "2018 Honda City Hybrid (68).jpg",
+        "2018 Honda City Hybrid (38).jpg",
+        "2018 Honda City Hybrid (43).jpg",
+        "2011 Suzuki Swift Interior.jpg"
+      ],
+      "dashboard": [
+        "2021 Volkswagen Polo Mk5 brown interior view in Brunei.jpg",
+        "Volkswagen Polo V interior.jpg",
+        "2021 Volkswagen Polo 1.6 MPi sport rims grey interior view in Brunei.jpg",
+        "2018 Volkswagen Polo SE TSi BlueMotion 1.0 Interior.jpg"
+      ],
+      "engine": [
+        "Volkswagen Polo 2003 - Engine.jpg",
+        "2021 Volkswagen Polo 1.6 MPi sport rims grey engine view in Brunei.jpg",
+        "Volkswagen Polo GTE - silnik 1.4 TSI + elektryczny (MSP15).JPG"
+      ],
+      "tyres": [
+        "All-terrain tyre on Land Rover wheel, Oban, July 2020.jpg",
+        "2012 alloy wheel of Rolls-Royce Phantom in BMW-Museum in Munich, Bayern.JPG",
+        "Bremstromme mit Leichtmetallfelge und Niederquerschnittsreifen DSCF0565.jpg",
+        "SEAT Ibiza FR wheel.jpg"
+      ]
+    }
+  ],
+  "photos": {
+    "Hyundai Creta orange.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9d/Hyundai_Creta_orange.jpg/1280px-Hyundai_Creta_orange.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Creta_orange.jpg",
+      "license": "CC0"
+    },
+    "2021 Hyundai Creta SX(O) CRDi (India) front view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/2021_Hyundai_Creta_SX%28O%29_CRDi_%28India%29_front_view.jpg/1280px-2021_Hyundai_Creta_SX%28O%29_CRDi_%28India%29_front_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Hyundai_Creta_SX(O)_CRDi_(India)_front_view.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Hyundai Creta 1.5 Value (Chile) front view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/2021_Hyundai_Creta_1.5_Value_%28Chile%29_front_view.jpg/1280px-2021_Hyundai_Creta_1.5_Value_%28Chile%29_front_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Hyundai_Creta_1.5_Value_(Chile)_front_view.jpg",
+      "license": "CC BY-SA 2.0"
+    },
+    "2022 Hyundai Creta 1.6 Plus (Chile) front view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/25/2022_Hyundai_Creta_1.6_Plus_%28Chile%29_front_view.jpg/1280px-2022_Hyundai_Creta_1.6_Plus_%28Chile%29_front_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Hyundai_Creta_1.6_Plus_(Chile)_front_view.jpg",
+      "license": "CC BY-SA 2.0"
+    },
+    "2018 HYUNDAI Creta facelift 1.6 Brunei (front shot view).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/2018_HYUNDAI_Creta_facelift_1.6_Brunei_%28front_shot_view%29.jpg/1280px-2018_HYUNDAI_Creta_facelift_1.6_Brunei_%28front_shot_view%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_HYUNDAI_Creta_facelift_1.6_Brunei_(front_shot_view).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Hyundai Creta (Rear), Jakarta, Indonesia.jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Hyundai_Creta_%28Rear%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Creta_(Rear),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "2021 Hyundai Creta 1.5 Value (Chile) rear view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a8/2021_Hyundai_Creta_1.5_Value_%28Chile%29_rear_view.jpg/1280px-2021_Hyundai_Creta_1.5_Value_%28Chile%29_rear_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Hyundai_Creta_1.5_Value_(Chile)_rear_view.jpg",
+      "license": "CC BY-SA 2.0"
+    },
+    "2022 Hyundai Creta SEL (Rear).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/2022_Hyundai_Creta_SEL_%28Rear%29.jpg/1280px-2022_Hyundai_Creta_SEL_%28Rear%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Hyundai_Creta_SEL_(Rear).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Hyundai Creta SX(O) CRDi (India) rear view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/2021_Hyundai_Creta_SX%28O%29_CRDi_%28India%29_rear_view.jpg/1280px-2021_Hyundai_Creta_SX%28O%29_CRDi_%28India%29_rear_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Hyundai_Creta_SX(O)_CRDi_(India)_rear_view.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2018 HYUNDAI Creta facelift 1.6 Brunei (Rear view).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/be/2018_HYUNDAI_Creta_facelift_1.6_Brunei_%28Rear_view%29.jpg/1280px-2018_HYUNDAI_Creta_facelift_1.6_Brunei_%28Rear_view%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_HYUNDAI_Creta_facelift_1.6_Brunei_(Rear_view).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Hyundai Creta (Side), Jakarta, Indonesia.jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/3b/Hyundai_Creta_%28Side%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Creta_(Side),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "Hyundai Creta (Side) (2), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a9/Hyundai_Creta_%28Side%29_%282%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Hyundai_Creta_%28Side%29_%282%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Creta_(Side)_(2),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "2018 HYUNDAI Creta facelift 1.6 Brunei (side view).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/2018_HYUNDAI_Creta_facelift_1.6_Brunei_%28side_view%29.jpg/1280px-2018_HYUNDAI_Creta_facelift_1.6_Brunei_%28side_view%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_HYUNDAI_Creta_facelift_1.6_Brunei_(side_view).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Hyundai creta 2024 ban tieu chuan.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Hyundai_creta_2024_ban_tieu_chuan.jpg/1280px-Hyundai_creta_2024_ban_tieu_chuan.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_creta_2024_ban_tieu_chuan.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2018 HYUNDAI Creta facelift 1.6 Brunei (Rear seats).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/2018_HYUNDAI_Creta_facelift_1.6_Brunei_%28Rear_seats%29.jpg/1280px-2018_HYUNDAI_Creta_facelift_1.6_Brunei_%28Rear_seats%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_HYUNDAI_Creta_facelift_1.6_Brunei_(Rear_seats).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2018 HYUNDAI Creta facelift 1.6 Brunei (Front seats).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/2018_HYUNDAI_Creta_facelift_1.6_Brunei_%28Front_seats%29.jpg/1280px-2018_HYUNDAI_Creta_facelift_1.6_Brunei_%28Front_seats%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_HYUNDAI_Creta_facelift_1.6_Brunei_(Front_seats).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2018 HYUNDAI Creta facelift 1.6 Brunei (Interior).jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/fb/2018_HYUNDAI_Creta_facelift_1.6_Brunei_%28Interior%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_HYUNDAI_Creta_facelift_1.6_Brunei_(Interior).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2022 Hyundai Creta (SU2) 1.5AT grey interior view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/2022_Hyundai_Creta_%28SU2%29_1.5AT_grey_interior_view_in_Brunei.jpg/1280px-2022_Hyundai_Creta_%28SU2%29_1.5AT_grey_interior_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Hyundai_Creta_(SU2)_1.5AT_grey_interior_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2022 Hyundai Creta 1.5 IVT orange and black interior view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/2022_Hyundai_Creta_1.5_IVT_orange_and_black_interior_view_in_Brunei.jpg/1280px-2022_Hyundai_Creta_1.5_IVT_orange_and_black_interior_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Hyundai_Creta_1.5_IVT_orange_and_black_interior_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Hyundai Creta 1.5 Trend (SU2id, Indonesia) interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/2021_Hyundai_Creta_1.5_Trend_%28SU2id%2C_Indonesia%29_interior.jpg/1280px-2021_Hyundai_Creta_1.5_Trend_%28SU2id%2C_Indonesia%29_interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Hyundai_Creta_1.5_Trend_(SU2id,_Indonesia)_interior.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Hyundai Creta SU2 PE 1.5 Premium Black.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d0/Hyundai_Creta_SU2_PE_1.5_Premium_Black.jpg/1280px-Hyundai_Creta_SU2_PE_1.5_Premium_Black.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Creta_SU2_PE_1.5_Premium_Black.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Hyundai Creta 1.5 Trend (SU2id, Indonesia) Smartstream G1.5 MPi (G4FL) engine.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/2021_Hyundai_Creta_1.5_Trend_%28SU2id%2C_Indonesia%29_Smartstream_G1.5_MPi_%28G4FL%29_engine.jpg/1280px-2021_Hyundai_Creta_1.5_Trend_%28SU2id%2C_Indonesia%29_Smartstream_G1.5_MPi_%28G4FL%29_engine.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Hyundai_Creta_1.5_Trend_(SU2id,_Indonesia)_Smartstream_G1.5_MPi_(G4FL)_engine.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2023 Denver Auto Show Hyundai wheel 1.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/2023_Denver_Auto_Show_Hyundai_wheel_1.jpg/1280px-2023_Denver_Auto_Show_Hyundai_wheel_1.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2023_Denver_Auto_Show_Hyundai_wheel_1.jpg",
+      "license": "CC0"
+    },
+    "2023 Denver Auto Show Hyundai wheel 2.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/2023_Denver_Auto_Show_Hyundai_wheel_2.jpg/1280px-2023_Denver_Auto_Show_Hyundai_wheel_2.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2023_Denver_Auto_Show_Hyundai_wheel_2.jpg",
+      "license": "CC0"
+    },
+    "2023 Denver Auto Show Hyundai Santa Cruz wheel.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/2023_Denver_Auto_Show_Hyundai_Santa_Cruz_wheel.jpg/1280px-2023_Denver_Auto_Show_Hyundai_Santa_Cruz_wheel.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2023_Denver_Auto_Show_Hyundai_Santa_Cruz_wheel.jpg",
+      "license": "CC0"
+    },
+    "2023 Denver Auto Show Hyundai Santa Fe wheel 1.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/2023_Denver_Auto_Show_Hyundai_Santa_Fe_wheel_1.jpg/1280px-2023_Denver_Auto_Show_Hyundai_Santa_Fe_wheel_1.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2023_Denver_Auto_Show_Hyundai_Santa_Fe_wheel_1.jpg",
+      "license": "CC0"
+    },
+    "Hyundai Wheel with Sailun Atrezzo SH408 Tire.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Hyundai_Wheel_with_Sailun_Atrezzo_SH408_Tire.jpg/1280px-Hyundai_Wheel_with_Sailun_Atrezzo_SH408_Tire.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Wheel_with_Sailun_Atrezzo_SH408_Tire.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Hyundai Wheel with Haida Ex-Comfort Tire.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Hyundai_Wheel_with_Haida_Ex-Comfort_Tire.jpg/1280px-Hyundai_Wheel_with_Haida_Ex-Comfort_Tire.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Wheel_with_Haida_Ex-Comfort_Tire.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "White KIA Seltos (Front).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/White_KIA_Seltos_%28Front%29.jpg/1280px-White_KIA_Seltos_%28Front%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:White_KIA_Seltos_(Front).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Kia Seltos SX - Front.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/af/2020_Kia_Seltos_SX_-_Front.jpg/1280px-2020_Kia_Seltos_SX_-_Front.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Kia_Seltos_SX_-_Front.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2024 Kia Seltos EX, front right, 03-15-2026.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/2024_Kia_Seltos_EX%2C_front_right%2C_03-15-2026.jpg/1280px-2024_Kia_Seltos_EX%2C_front_right%2C_03-15-2026.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2024_Kia_Seltos_EX,_front_right,_03-15-2026.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2022 Kia Seltos (gray, front).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/2022_Kia_Seltos_%28gray%2C_front%29.jpg/1280px-2022_Kia_Seltos_%28gray%2C_front%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Kia_Seltos_(gray,_front).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2024 Kia Seltos EX, rear right, 03-15-2026.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/2024_Kia_Seltos_EX%2C_rear_right%2C_03-15-2026.jpg/1280px-2024_Kia_Seltos_EX%2C_rear_right%2C_03-15-2026.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2024_Kia_Seltos_EX,_rear_right,_03-15-2026.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Kia Seltos SX - Rear.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f7/2020_Kia_Seltos_SX_-_Rear.jpg/1280px-2020_Kia_Seltos_SX_-_Rear.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Kia_Seltos_SX_-_Rear.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2022 Kia Seltos (gray, rear).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/2022_Kia_Seltos_%28gray%2C_rear%29.jpg/1280px-2022_Kia_Seltos_%28gray%2C_rear%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Kia_Seltos_(gray,_rear).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Kia Seltos SX - Rear (cropped).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e2/2020_Kia_Seltos_SX_-_Rear_%28cropped%29.jpg/1280px-2020_Kia_Seltos_SX_-_Rear_%28cropped%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Kia_Seltos_SX_-_Rear_(cropped).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Kia Seltos X-Line Rear View.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/58/2020_Kia_Seltos_X-Line_Rear_View.jpg/1280px-2020_Kia_Seltos_X-Line_Rear_View.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Kia_Seltos_X-Line_Rear_View.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "White KIA Seltos (Side).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/White_KIA_Seltos_%28Side%29.jpg/1280px-White_KIA_Seltos_%28Side%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:White_KIA_Seltos_(Side).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Kia Seltos LX - Side.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/2020_Kia_Seltos_LX_-_Side.jpg/1280px-2020_Kia_Seltos_LX_-_Side.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Kia_Seltos_LX_-_Side.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Kia Seltos SX - Side.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/2020_Kia_Seltos_SX_-_Side.jpg/1280px-2020_Kia_Seltos_SX_-_Side.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Kia_Seltos_SX_-_Side.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Kia Seltos LX - Side (cropped).jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/7c/2020_Kia_Seltos_LX_-_Side_%28cropped%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Kia_Seltos_LX_-_Side_(cropped).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Front Seats - 2014 Scion tC (15851813182).jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/0/08/Front_Seats_-_2014_Scion_tC_%2815851813182%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Front_Seats_-_2014_Scion_tC_(15851813182).jpg",
+      "license": "CC BY 2.0"
+    },
+    "RS 265 Rear Seats (8165621502).jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/RS_265_Rear_Seats_%288165621502%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:RS_265_Rear_Seats_(8165621502).jpg",
+      "license": "CC BY 2.0"
+    },
+    "Rear Seats - 2013 Lexus LS 460 (9864206835).jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/92/Rear_Seats_-_2013_Lexus_LS_460_%289864206835%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Rear_Seats_-_2013_Lexus_LS_460_(9864206835).jpg",
+      "license": "CC BY 2.0"
+    },
+    "Rear Seats - 2014 Jaguar XJL Supercharged (15391470099).jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Rear_Seats_-_2014_Jaguar_XJL_Supercharged_%2815391470099%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Rear_Seats_-_2014_Jaguar_XJL_Supercharged_(15391470099).jpg",
+      "license": "CC BY 2.0"
+    },
+    "2018 Honda City Hybrid (68).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/2018_Honda_City_Hybrid_%2868%29.jpg/1280px-2018_Honda_City_Hybrid_%2868%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_Honda_City_Hybrid_(68).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2018 Honda City Hybrid (38).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/64/2018_Honda_City_Hybrid_%2838%29.jpg/1280px-2018_Honda_City_Hybrid_%2838%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_Honda_City_Hybrid_(38).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2018 Honda City Hybrid (43).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/43/2018_Honda_City_Hybrid_%2843%29.jpg/1280px-2018_Honda_City_Hybrid_%2843%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_Honda_City_Hybrid_(43).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2011 Suzuki Swift Interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/2011_Suzuki_Swift_Interior.jpg/1280px-2011_Suzuki_Swift_Interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2011_Suzuki_Swift_Interior.jpg",
+      "license": "CC BY-SA 3.0"
+    },
+    "2020 Kia Seltos SX - Interior 2.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/2020_Kia_Seltos_SX_-_Interior_2.jpg/1280px-2020_Kia_Seltos_SX_-_Interior_2.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Kia_Seltos_SX_-_Interior_2.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Kia Seltos SX - Interior 1.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/2020_Kia_Seltos_SX_-_Interior_1.jpg/1280px-2020_Kia_Seltos_SX_-_Interior_1.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Kia_Seltos_SX_-_Interior_1.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 KIA SELTOS INTERIOR IN BRUNEI.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4d/2020_KIA_SELTOS_INTERIOR_IN_BRUNEI.jpg/1280px-2020_KIA_SELTOS_INTERIOR_IN_BRUNEI.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_KIA_SELTOS_INTERIOR_IN_BRUNEI.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Kia Seltos Base grey interior view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/2021_Kia_Seltos_Base_grey_interior_view_in_Brunei.jpg/1280px-2021_Kia_Seltos_Base_grey_interior_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Kia_Seltos_Base_grey_interior_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Kia Seltos 1.4 GT Line (SP2i, Indonesia) interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/08/2021_Kia_Seltos_1.4_GT_Line_%28SP2i%2C_Indonesia%29_interior.jpg/1280px-2021_Kia_Seltos_1.4_GT_Line_%28SP2i%2C_Indonesia%29_interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Kia_Seltos_1.4_GT_Line_(SP2i,_Indonesia)_interior.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Kia Seltos SX - Engine.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/2020_Kia_Seltos_SX_-_Engine.jpg/1280px-2020_Kia_Seltos_SX_-_Engine.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Kia_Seltos_SX_-_Engine.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Closer look of Kia All-new Seltos engine bay during GIIAS 2026 in Bandung 20260913 201921.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Closer_look_of_Kia_All-new_Seltos_engine_bay_during_GIIAS_2026_in_Bandung_20260913_201921.jpg/1280px-Closer_look_of_Kia_All-new_Seltos_engine_bay_during_GIIAS_2026_in_Bandung_20260913_201921.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Closer_look_of_Kia_All-new_Seltos_engine_bay_during_GIIAS_2026_in_Bandung_20260913_201921.jpg",
+      "license": "CC BY 4.0"
+    },
+    "Engine bay of Kia All-new Seltos during GIIAS 2026 in Bandung 20260913 201904.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Engine_bay_of_Kia_All-new_Seltos_during_GIIAS_2026_in_Bandung_20260913_201904.jpg/1280px-Engine_bay_of_Kia_All-new_Seltos_during_GIIAS_2026_in_Bandung_20260913_201904.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Engine_bay_of_Kia_All-new_Seltos_during_GIIAS_2026_in_Bandung_20260913_201904.jpg",
+      "license": "CC BY 4.0"
+    },
+    "2023 Hyundai Venue base front.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/2023_Hyundai_Venue_base_front.jpg/1280px-2023_Hyundai_Venue_base_front.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2023_Hyundai_Venue_base_front.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "20190710 hyundai venue front side.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/20190710_hyundai_venue_front_side.jpg/1280px-20190710_hyundai_venue_front_side.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:20190710_hyundai_venue_front_side.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2022 Hyundai Venue, front 11.30.21.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c5/2022_Hyundai_Venue%2C_front_11.30.21.jpg/1280px-2022_Hyundai_Venue%2C_front_11.30.21.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Hyundai_Venue,_front_11.30.21.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2022 Hyundai Venue Preferred in Polar White, Front Right.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b9/2022_Hyundai_Venue_Preferred_in_Polar_White%2C_Front_Right.jpg/1280px-2022_Hyundai_Venue_Preferred_in_Polar_White%2C_Front_Right.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Hyundai_Venue_Preferred_in_Polar_White,_Front_Right.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2023 Hyundai Venue base rear.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/52/2023_Hyundai_Venue_base_rear.jpg/1280px-2023_Hyundai_Venue_base_rear.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2023_Hyundai_Venue_base_rear.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "20190710 Hyundai Venue Rear Side.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7b/20190710_Hyundai_Venue_Rear_Side.jpg/1280px-20190710_Hyundai_Venue_Rear_Side.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:20190710_Hyundai_Venue_Rear_Side.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2019 Hyundai Venue rear NYIAS 2019.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3b/2019_Hyundai_Venue_rear_NYIAS_2019.jpg/1280px-2019_Hyundai_Venue_rear_NYIAS_2019.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2019_Hyundai_Venue_rear_NYIAS_2019.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2022 Hyundai Venue, rear 11.30.21.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/2022_Hyundai_Venue%2C_rear_11.30.21.jpg/1280px-2022_Hyundai_Venue%2C_rear_11.30.21.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Hyundai_Venue,_rear_11.30.21.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2022 Hyundai Venue Preferred in Polar White, Rear Right.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/2022_Hyundai_Venue_Preferred_in_Polar_White%2C_Rear_Right.jpg/1280px-2022_Hyundai_Venue_Preferred_in_Polar_White%2C_Rear_Right.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Hyundai_Venue_Preferred_in_Polar_White,_Rear_Right.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Hyundai Venue BLP-5902 left side and Bai 7th St. Intersection bus stop 20250503.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ac/Hyundai_Venue_BLP-5902_left_side_and_Bai_7th_St._Intersection_bus_stop_20250503.jpg/1280px-Hyundai_Venue_BLP-5902_left_side_and_Bai_7th_St._Intersection_bus_stop_20250503.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Venue_BLP-5902_left_side_and_Bai_7th_St._Intersection_bus_stop_20250503.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Hyundai Venue SE, front left, 08-24-2022.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/2021_Hyundai_Venue_SE%2C_front_left%2C_08-24-2022.jpg/1280px-2021_Hyundai_Venue_SE%2C_front_left%2C_08-24-2022.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Hyundai_Venue_SE,_front_left,_08-24-2022.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Hyundai Venue SE, front left.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/08/2021_Hyundai_Venue_SE%2C_front_left.jpg/1280px-2021_Hyundai_Venue_SE%2C_front_left.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Hyundai_Venue_SE,_front_left.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Hyundai Venue QX1 Black Interior (1).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1b/Hyundai_Venue_QX1_Black_Interior_%281%29.jpg/1280px-Hyundai_Venue_QX1_Black_Interior_%281%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Venue_QX1_Black_Interior_(1).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Hyundai Venue QX1 Black Interior (4).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/Hyundai_Venue_QX1_Black_Interior_%284%29.jpg/1280px-Hyundai_Venue_QX1_Black_Interior_%284%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Venue_QX1_Black_Interior_(4).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Hyundai Venue QX1 Black Interior (2).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/Hyundai_Venue_QX1_Black_Interior_%282%29.jpg/1280px-Hyundai_Venue_QX1_Black_Interior_%282%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Venue_QX1_Black_Interior_(2).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020-21 Hyundai Venue High spec interior in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4e/2020-21_Hyundai_Venue_High_spec_interior_in_Brunei.jpg/1280px-2020-21_Hyundai_Venue_High_spec_interior_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020-21_Hyundai_Venue_High_spec_interior_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2023 Hyundai Venue interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/2023_Hyundai_Venue_interior.jpg/1280px-2023_Hyundai_Venue_interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2023_Hyundai_Venue_interior.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Hyundai Venue 1.6 Standard spec interior view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/2020_Hyundai_Venue_1.6_Standard_spec_interior_view_in_Brunei.jpg/1280px-2020_Hyundai_Venue_1.6_Standard_spec_interior_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Hyundai_Venue_1.6_Standard_spec_interior_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Hyundai Venue 1.6 Standard spec engine view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/58/2020_Hyundai_Venue_1.6_Standard_spec_engine_view_in_Brunei.jpg/1280px-2020_Hyundai_Venue_1.6_Standard_spec_engine_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Hyundai_Venue_1.6_Standard_spec_engine_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Hyundai Venue 1.6 Standard Spec Acid Yellow engine view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/76/2021_Hyundai_Venue_1.6_Standard_Spec_Acid_Yellow_engine_view_in_Brunei.jpg/1280px-2021_Hyundai_Venue_1.6_Standard_Spec_Acid_Yellow_engine_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Hyundai_Venue_1.6_Standard_Spec_Acid_Yellow_engine_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020-21 Hyundai Venue High spec 1.6 Gamma engine view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c1/2020-21_Hyundai_Venue_High_spec_1.6_Gamma_engine_view_in_Brunei.jpg/1280px-2020-21_Hyundai_Venue_High_spec_1.6_Gamma_engine_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020-21_Hyundai_Venue_High_spec_1.6_Gamma_engine_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2018 Suzuki Swift SZ5 Boosterjet SHVS 1.0 Front.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/2018_Suzuki_Swift_SZ5_Boosterjet_SHVS_1.0_Front.jpg/1280px-2018_Suzuki_Swift_SZ5_Boosterjet_SHVS_1.0_Front.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_Suzuki_Swift_SZ5_Boosterjet_SHVS_1.0_Front.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Suzuki Swift Facelift IMG 1884.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/2020_Suzuki_Swift_Facelift_IMG_1884.jpg/1280px-2020_Suzuki_Swift_Facelift_IMG_1884.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Suzuki_Swift_Facelift_IMG_1884.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki Swift Sport (A2L) Front.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/40/Suzuki_Swift_Sport_%28A2L%29_Front.jpg/1280px-Suzuki_Swift_Sport_%28A2L%29_Front.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Swift_Sport_(A2L)_Front.jpg",
+      "license": "CC BY 4.0"
+    },
+    "2020 Suzuki Swift Facelift IMG 1880.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/08/2020_Suzuki_Swift_Facelift_IMG_1880.jpg/1280px-2020_Suzuki_Swift_Facelift_IMG_1880.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Suzuki_Swift_Facelift_IMG_1880.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2018 Suzuki Swift SZ5 Boosterjet SHVS 1.0 Rear.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1e/2018_Suzuki_Swift_SZ5_Boosterjet_SHVS_1.0_Rear.jpg/1280px-2018_Suzuki_Swift_SZ5_Boosterjet_SHVS_1.0_Rear.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_Suzuki_Swift_SZ5_Boosterjet_SHVS_1.0_Rear.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki Swift Sport (A2L) Rear.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/Suzuki_Swift_Sport_%28A2L%29_Rear.jpg/1280px-Suzuki_Swift_Sport_%28A2L%29_Rear.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Swift_Sport_(A2L)_Rear.jpg",
+      "license": "CC BY 4.0"
+    },
+    "2020 Suzuki Swift Sport silver rear.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/38/2020_Suzuki_Swift_Sport_silver_rear.jpg/1280px-2020_Suzuki_Swift_Sport_silver_rear.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Suzuki_Swift_Sport_silver_rear.jpg",
+      "license": "CC BY 4.0"
+    },
+    "Swift nov.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7a/Swift_nov.jpg/1280px-Swift_nov.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Swift_nov.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Suzuki Swift Sport 1.4 auto yellow interior view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/2021_Suzuki_Swift_Sport_1.4_auto_yellow_interior_view_in_Brunei.jpg/1280px-2021_Suzuki_Swift_Sport_1.4_auto_yellow_interior_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Suzuki_Swift_Sport_1.4_auto_yellow_interior_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Suzuki Swift facelift Interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/2020_Suzuki_Swift_facelift_Interior.jpg/1280px-2020_Suzuki_Swift_facelift_Interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Suzuki_Swift_facelift_Interior.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Suzuki Swift Hybrid Interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d3/2021_Suzuki_Swift_Hybrid_Interior.jpg/1280px-2021_Suzuki_Swift_Hybrid_Interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Suzuki_Swift_Hybrid_Interior.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Suzuki Swift Sport 1.4 AT red interior view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d5/2021_Suzuki_Swift_Sport_1.4_AT_red_interior_view_in_Brunei.jpg/1280px-2021_Suzuki_Swift_Sport_1.4_AT_red_interior_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Suzuki_Swift_Sport_1.4_AT_red_interior_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki SWIFT HYBRID SL (DAA-ZC43S) interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c5/Suzuki_SWIFT_HYBRID_SL_%28DAA-ZC43S%29_interior.jpg/1280px-Suzuki_SWIFT_HYBRID_SL_%28DAA-ZC43S%29_interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_SWIFT_HYBRID_SL_(DAA-ZC43S)_interior.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki SWIFT Sport (CBA-ZC33S-VBRM) interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Suzuki_SWIFT_Sport_%28CBA-ZC33S-VBRM%29_interior.jpg/1280px-Suzuki_SWIFT_Sport_%28CBA-ZC33S-VBRM%29_interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_SWIFT_Sport_(CBA-ZC33S-VBRM)_interior.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki Swift Sport M15A engine.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ee/Suzuki_Swift_Sport_M15A_engine.jpg/1280px-Suzuki_Swift_Sport_M15A_engine.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Swift_Sport_M15A_engine.jpg",
+      "license": "CC0"
+    },
+    "The engine room of Suzuki SWIFT Sport (CBA-ZC32S).JPG": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/59/The_engine_room_of_Suzuki_SWIFT_Sport_%28CBA-ZC32S%29.JPG/1280px-The_engine_room_of_Suzuki_SWIFT_Sport_%28CBA-ZC32S%29.JPG",
+      "source": "https://commons.wikimedia.org/wiki/File:The_engine_room_of_Suzuki_SWIFT_Sport_(CBA-ZC32S).JPG",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki K14B Engine.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/Suzuki_K14B_Engine.jpg/1280px-Suzuki_K14B_Engine.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_K14B_Engine.jpg",
+      "license": "CC BY 4.0"
+    },
+    "2021 Suzuki Swift Sport 1.4 auto yellow engine view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/2021_Suzuki_Swift_Sport_1.4_auto_yellow_engine_view_in_Brunei.jpg/1280px-2021_Suzuki_Swift_Sport_1.4_auto_yellow_engine_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Suzuki_Swift_Sport_1.4_auto_yellow_engine_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "The tire wheel of Suzuki WAGON R HYBRID FX (DAA-MH55S).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/The_tire_wheel_of_Suzuki_WAGON_R_HYBRID_FX_%28DAA-MH55S%29.jpg/1280px-The_tire_wheel_of_Suzuki_WAGON_R_HYBRID_FX_%28DAA-MH55S%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:The_tire_wheel_of_Suzuki_WAGON_R_HYBRID_FX_(DAA-MH55S).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Bridgestone Sneaker Tire on Suzuki Wheel (50978005137).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Bridgestone_Sneaker_Tire_on_Suzuki_Wheel_%2850978005137%29.jpg/1280px-Bridgestone_Sneaker_Tire_on_Suzuki_Wheel_%2850978005137%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Bridgestone_Sneaker_Tire_on_Suzuki_Wheel_(50978005137).jpg",
+      "license": "CC BY 2.0"
+    },
+    "The tire wheel of Suzuki SWIFT HYBRID SL (DAA-ZC43S).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/39/The_tire_wheel_of_Suzuki_SWIFT_HYBRID_SL_%28DAA-ZC43S%29.jpg/1280px-The_tire_wheel_of_Suzuki_SWIFT_HYBRID_SL_%28DAA-ZC43S%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:The_tire_wheel_of_Suzuki_SWIFT_HYBRID_SL_(DAA-ZC43S).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "The tire wheel of Suzuki SWIFT HYBRID RS (DAA-ZC53S).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/The_tire_wheel_of_Suzuki_SWIFT_HYBRID_RS_%28DAA-ZC53S%29.jpg/1280px-The_tire_wheel_of_Suzuki_SWIFT_HYBRID_RS_%28DAA-ZC53S%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:The_tire_wheel_of_Suzuki_SWIFT_HYBRID_RS_(DAA-ZC53S).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "The tire wheel of Suzuki SWIFT Sport (CBA-ZC33S-VBRM-J).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/The_tire_wheel_of_Suzuki_SWIFT_Sport_%28CBA-ZC33S-VBRM-J%29.jpg/1280px-The_tire_wheel_of_Suzuki_SWIFT_Sport_%28CBA-ZC33S-VBRM-J%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:The_tire_wheel_of_Suzuki_SWIFT_Sport_(CBA-ZC33S-VBRM-J).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "The tire wheel of Suzuki SWIFT Sport (CBA-ZC33S-VBRM).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/15/The_tire_wheel_of_Suzuki_SWIFT_Sport_%28CBA-ZC33S-VBRM%29.jpg/1280px-The_tire_wheel_of_Suzuki_SWIFT_Sport_%28CBA-ZC33S-VBRM%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:The_tire_wheel_of_Suzuki_SWIFT_Sport_(CBA-ZC33S-VBRM).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki Baleno front.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/Suzuki_Baleno_front.jpg/1280px-Suzuki_Baleno_front.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Baleno_front.jpg",
+      "license": "CC BY 2.0"
+    },
+    "2022 Maruti Suzuki Baleno Alpha (India) front view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5b/2022_Maruti_Suzuki_Baleno_Alpha_%28India%29_front_view.jpg/1280px-2022_Maruti_Suzuki_Baleno_Alpha_%28India%29_front_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Maruti_Suzuki_Baleno_Alpha_(India)_front_view.jpg",
+      "license": "CC BY 3.0"
+    },
+    "2019 Suzuki Baleno 1.4 (Indonesia) front view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/21/2019_Suzuki_Baleno_1.4_%28Indonesia%29_front_view.jpg/1280px-2019_Suzuki_Baleno_1.4_%28Indonesia%29_front_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2019_Suzuki_Baleno_1.4_(Indonesia)_front_view.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki Baleno (Front), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/Suzuki_Baleno_%28Front%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Suzuki_Baleno_%28Front%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Baleno_(Front),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "Suzuki Baleno rear.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6f/Suzuki_Baleno_rear.jpg/1280px-Suzuki_Baleno_rear.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Baleno_rear.jpg",
+      "license": "CC BY 2.0"
+    },
+    "Suzuki Baleno (rear).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e2/Suzuki_Baleno_%28rear%29.jpg/1280px-Suzuki_Baleno_%28rear%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Baleno_(rear).jpg",
+      "license": "CC BY 2.0"
+    },
+    "Suzuki Baleno 1.4 GLX 2018 (rear).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Suzuki_Baleno_1.4_GLX_2018_%28rear%29.jpg/1280px-Suzuki_Baleno_1.4_GLX_2018_%28rear%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Baleno_1.4_GLX_2018_(rear).jpg",
+      "license": "CC BY-SA 2.0"
+    },
+    "Suzuki Baleno Hatchback (rear).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6b/Suzuki_Baleno_Hatchback_%28rear%29.jpg/1280px-Suzuki_Baleno_Hatchback_%28rear%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Baleno_Hatchback_(rear).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki Baleno (22147755445).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Suzuki_Baleno_%2822147755445%29.jpg/1280px-Suzuki_Baleno_%2822147755445%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Baleno_(22147755445).jpg",
+      "license": "CC BY 2.0"
+    },
+    "MarutiSusukiBalenoSide2018Prd.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/90/MarutiSusukiBalenoSide2018Prd.jpg/1280px-MarutiSusukiBalenoSide2018Prd.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:MarutiSusukiBalenoSide2018Prd.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2022 Maruti Suzuki Baleno Alpha (India) interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/2022_Maruti_Suzuki_Baleno_Alpha_%28India%29_interior.jpg/1280px-2022_Maruti_Suzuki_Baleno_Alpha_%28India%29_interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Maruti_Suzuki_Baleno_Alpha_(India)_interior.jpg",
+      "license": "CC BY 3.0"
+    },
+    "2010-2012 Honda City front.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/2010-2012_Honda_City_front.jpg/1280px-2010-2012_Honda_City_front.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2010-2012_Honda_City_front.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2019 Honda City E (Indonesia) front view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c3/2019_Honda_City_E_%28Indonesia%29_front_view.jpg/1280px-2019_Honda_City_E_%28Indonesia%29_front_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2019_Honda_City_E_(Indonesia)_front_view.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2007 Honda City (rear), West Surabaya.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/37/2007_Honda_City_%28rear%29%2C_West_Surabaya.jpg/1280px-2007_Honda_City_%28rear%29%2C_West_Surabaya.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2007_Honda_City_(rear),_West_Surabaya.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Honda City (Rear), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/97/Honda_City_%28Rear%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Honda_City_%28Rear%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Honda_City_(Rear),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "2005 Honda City i-DSI (rear), West Surabaya.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4d/2005_Honda_City_i-DSI_%28rear%29%2C_West_Surabaya.jpg/1280px-2005_Honda_City_i-DSI_%28rear%29%2C_West_Surabaya.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2005_Honda_City_i-DSI_(rear),_West_Surabaya.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2024 Honda City RS - Sideview.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/2024_Honda_City_RS_-_Sideview.jpg/1280px-2024_Honda_City_RS_-_Sideview.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2024_Honda_City_RS_-_Sideview.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2018 Honda City Hybrid (36).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/2018_Honda_City_Hybrid_%2836%29.jpg/1280px-2018_Honda_City_Hybrid_%2836%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_Honda_City_Hybrid_(36).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Atiyas Honda City 2015 C.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/Atiyas_Honda_City_2015_C.jpg/1280px-Atiyas_Honda_City_2015_C.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Atiyas_Honda_City_2015_C.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Honda City 1.5 EX 2022.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9c/Honda_City_1.5_EX_2022.jpg/1280px-Honda_City_1.5_EX_2022.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Honda_City_1.5_EX_2022.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Honda City 1.5 V 2025.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6b/Honda_City_1.5_V_2025.jpg/1280px-Honda_City_1.5_V_2025.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Honda_City_1.5_V_2025.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Honda City GN2 1.5 V - interior view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1b/Honda_City_GN2_1.5_V_-_interior_view.jpg/1280px-Honda_City_GN2_1.5_V_-_interior_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Honda_City_GN2_1.5_V_-_interior_view.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Honda City engine i-DSI.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/Honda_City_engine_i-DSI.jpg/1280px-Honda_City_engine_i-DSI.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Honda_City_engine_i-DSI.jpg",
+      "license": "Public domain"
+    },
+    "Honda P10A6 Engine.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/11/Honda_P10A6_Engine.jpg/1280px-Honda_P10A6_Engine.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Honda_P10A6_Engine.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Honda LEB8 Engine.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0d/Honda_LEB8_Engine.jpg/1280px-Honda_LEB8_Engine.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Honda_LEB8_Engine.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Honda City Pakistan L13A i-VTEC Engine Dec2013.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Honda_City_Pakistan_L13A_i-VTEC_Engine_Dec2013.jpg/1280px-Honda_City_Pakistan_L13A_i-VTEC_Engine_Dec2013.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Honda_City_Pakistan_L13A_i-VTEC_Engine_Dec2013.jpg",
+      "license": "CC BY-SA 3.0"
+    },
+    "All-terrain tyre on Land Rover wheel, Oban, July 2020.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/All-terrain_tyre_on_Land_Rover_wheel%2C_Oban%2C_July_2020.jpg/1280px-All-terrain_tyre_on_Land_Rover_wheel%2C_Oban%2C_July_2020.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:All-terrain_tyre_on_Land_Rover_wheel,_Oban,_July_2020.jpg",
+      "license": "CC BY 4.0"
+    },
+    "2012 alloy wheel of Rolls-Royce Phantom in BMW-Museum in Munich, Bayern.JPG": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/2012_alloy_wheel_of_Rolls-Royce_Phantom_in_BMW-Museum_in_Munich%2C_Bayern.JPG/1280px-2012_alloy_wheel_of_Rolls-Royce_Phantom_in_BMW-Museum_in_Munich%2C_Bayern.JPG",
+      "source": "https://commons.wikimedia.org/wiki/File:2012_alloy_wheel_of_Rolls-Royce_Phantom_in_BMW-Museum_in_Munich,_Bayern.JPG",
+      "license": "CC BY-SA 4.0"
+    },
+    "Bremstromme mit Leichtmetallfelge und Niederquerschnittsreifen DSCF0565.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/Bremstromme_mit_Leichtmetallfelge_und_Niederquerschnittsreifen_DSCF0565.jpg/1280px-Bremstromme_mit_Leichtmetallfelge_und_Niederquerschnittsreifen_DSCF0565.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Bremstromme_mit_Leichtmetallfelge_und_Niederquerschnittsreifen_DSCF0565.jpg",
+      "license": "GFDL 1.2"
+    },
+    "SEAT Ibiza FR wheel.jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c7/SEAT_Ibiza_FR_wheel.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:SEAT_Ibiza_FR_wheel.jpg",
+      "license": "CC BY-SA 2.0"
+    },
+    "Toyota Innova GCC front.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/76/Toyota_Innova_GCC_front.jpg/1280px-Toyota_Innova_GCC_front.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Innova_GCC_front.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Toyota Kijang Innova 2.0 V Luxury (front), Citraland, West Surabaya.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/2021_Toyota_Kijang_Innova_2.0_V_Luxury_%28front%29%2C_Citraland%2C_West_Surabaya.jpg/1280px-2021_Toyota_Kijang_Innova_2.0_V_Luxury_%28front%29%2C_Citraland%2C_West_Surabaya.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Toyota_Kijang_Innova_2.0_V_Luxury_(front),_Citraland,_West_Surabaya.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Toyota Innova V (Rear), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cf/Toyota_Innova_V_%28Rear%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Toyota_Innova_V_%28Rear%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Innova_V_(Rear),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "Toyota Innova V (Rear) (2), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ae/Toyota_Innova_V_%28Rear%29_%282%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Toyota_Innova_V_%28Rear%29_%282%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Innova_V_(Rear)_(2),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "Toyota Innova GCC rear.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b2/Toyota_Innova_GCC_rear.jpg/1280px-Toyota_Innova_GCC_rear.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Innova_GCC_rear.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Toyota Kijang Innova (Rear) (4), Jakarta, Indonesia.jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/fa/Toyota_Kijang_Innova_%28Rear%29_%284%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Kijang_Innova_(Rear)_(4),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "Toyota Kijang Innova (Side), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6c/Toyota_Kijang_Innova_%28Side%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Toyota_Kijang_Innova_%28Side%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Kijang_Innova_(Side),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "Toyota Innova Crysta 2.4 Z side.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/Toyota_Innova_Crysta_2.4_Z_side.jpg/1280px-Toyota_Innova_Crysta_2.4_Z_side.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Innova_Crysta_2.4_Z_side.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Toyota Innova 2.8 E 2020.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/Toyota_Innova_2.8_E_2020.jpg/1280px-Toyota_Innova_2.8_E_2020.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Innova_2.8_E_2020.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2015 Toyota Kijang Innova (GUN142R) 2.4 Q AT (2015-12-05) interior view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/2015_Toyota_Kijang_Innova_%28GUN142R%29_2.4_Q_AT_%282015-12-05%29_interior_view.jpg/1280px-2015_Toyota_Kijang_Innova_%28GUN142R%29_2.4_Q_AT_%282015-12-05%29_interior_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2015_Toyota_Kijang_Innova_(GUN142R)_2.4_Q_AT_(2015-12-05)_interior_view.jpg",
+      "license": "CC BY-SA 3.0"
+    },
+    "2021 Toyota Innova 2.4G diesel 6AT grey interior view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/2021_Toyota_Innova_2.4G_diesel_6AT_grey_interior_view_in_Brunei.jpg/1280px-2021_Toyota_Innova_2.4G_diesel_6AT_grey_interior_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Toyota_Innova_2.4G_diesel_6AT_grey_interior_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Toyota Innova 2.4G diesel 6AT grey engine view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/2021_Toyota_Innova_2.4G_diesel_6AT_grey_engine_view_in_Brunei.jpg/1280px-2021_Toyota_Innova_2.4G_diesel_6AT_grey_engine_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Toyota_Innova_2.4G_diesel_6AT_grey_engine_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Toyota 2GD-FTV Innova GUN142R (2015-12-05).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6f/Toyota_2GD-FTV_Innova_GUN142R_%282015-12-05%29.jpg/1280px-Toyota_2GD-FTV_Innova_GUN142R_%282015-12-05%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_2GD-FTV_Innova_GUN142R_(2015-12-05).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2022 Toyota Kijang Innova 2.0 V TGN140R 1TR-FE engine (20220317).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/2022_Toyota_Kijang_Innova_2.0_V_TGN140R_1TR-FE_engine_%2820220317%29.jpg/1280px-2022_Toyota_Kijang_Innova_2.0_V_TGN140R_1TR-FE_engine_%2820220317%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Toyota_Kijang_Innova_2.0_V_TGN140R_1TR-FE_engine_(20220317).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Toyota 1TR-FE Engine.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/21/Toyota_1TR-FE_Engine.jpg/1280px-Toyota_1TR-FE_Engine.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_1TR-FE_Engine.jpg",
+      "license": "CC BY 2.0"
+    },
+    "The alloy wheel of Toyota CROWN SPORT Z (6AA-AZSH36W-BNXGB).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/The_alloy_wheel_of_Toyota_CROWN_SPORT_Z_%286AA-AZSH36W-BNXGB%29.jpg/1280px-The_alloy_wheel_of_Toyota_CROWN_SPORT_Z_%286AA-AZSH36W-BNXGB%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:The_alloy_wheel_of_Toyota_CROWN_SPORT_Z_(6AA-AZSH36W-BNXGB).jpg",
+      "license": "CC0"
+    },
+    "The alloy wheel of Toyota bZ4X\"Z\"4WD (ZAA-YEAM15-MWDHS).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/The_alloy_wheel_of_Toyota_bZ4X%22Z%224WD_%28ZAA-YEAM15-MWDHS%29.jpg/1280px-The_alloy_wheel_of_Toyota_bZ4X%22Z%224WD_%28ZAA-YEAM15-MWDHS%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:The_alloy_wheel_of_Toyota_bZ4X%22Z%224WD_(ZAA-YEAM15-MWDHS).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "The alloy wheel of Toyota RAIZE Z (5BA-A200A-GBSV).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/The_alloy_wheel_of_Toyota_RAIZE_Z_%285BA-A200A-GBSV%29.jpg/1280px-The_alloy_wheel_of_Toyota_RAIZE_Z_%285BA-A200A-GBSV%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:The_alloy_wheel_of_Toyota_RAIZE_Z_(5BA-A200A-GBSV).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Toyota Veloz 1.5 Q Toyota Safety Sense W101RE alloy wheel (20211117).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/2021_Toyota_Veloz_1.5_Q_Toyota_Safety_Sense_W101RE_alloy_wheel_%2820211117%29.jpg/1280px-2021_Toyota_Veloz_1.5_Q_Toyota_Safety_Sense_W101RE_alloy_wheel_%2820211117%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Toyota_Veloz_1.5_Q_Toyota_Safety_Sense_W101RE_alloy_wheel_(20211117).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Toyota Fortuner SRZ 2.7 4x2 (Indonesia) front view 01.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/2021_Toyota_Fortuner_SRZ_2.7_4x2_%28Indonesia%29_front_view_01.jpg/1280px-2021_Toyota_Fortuner_SRZ_2.7_4x2_%28Indonesia%29_front_view_01.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Toyota_Fortuner_SRZ_2.7_4x2_(Indonesia)_front_view_01.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2018 Toyota Fortuner TRD Sportivo looking from front.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/2018_Toyota_Fortuner_TRD_Sportivo_looking_from_front.jpg/1280px-2018_Toyota_Fortuner_TRD_Sportivo_looking_from_front.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_Toyota_Fortuner_TRD_Sportivo_looking_from_front.jpg",
+      "license": "CC BY 4.0"
+    },
+    "2016 Toyota Fortuner VRZ (front), West Surabaya.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/2016_Toyota_Fortuner_VRZ_%28front%29%2C_West_Surabaya.jpg/1280px-2016_Toyota_Fortuner_VRZ_%28front%29%2C_West_Surabaya.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2016_Toyota_Fortuner_VRZ_(front),_West_Surabaya.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Toyota Fortuner (AN160) Front.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Toyota_Fortuner_%28AN160%29_Front.jpg/1280px-Toyota_Fortuner_%28AN160%29_Front.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Fortuner_(AN160)_Front.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Toyota Fortuner LTD 4x2 rear 20221019.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Toyota_Fortuner_LTD_4x2_rear_20221019.jpg/1280px-Toyota_Fortuner_LTD_4x2_rear_20221019.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Fortuner_LTD_4x2_rear_20221019.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Toyota Fortuner (Rear) (2), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Toyota_Fortuner_%28Rear%29_%282%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Toyota_Fortuner_%28Rear%29_%282%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Fortuner_(Rear)_(2),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "Toyota Fortuner (Rear) (4), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2e/Toyota_Fortuner_%28Rear%29_%284%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Toyota_Fortuner_%28Rear%29_%284%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Fortuner_(Rear)_(4),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "2020 Toyota Fortuner 2.4V (Rear).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/2020_Toyota_Fortuner_2.4V_%28Rear%29.jpg/1280px-2020_Toyota_Fortuner_2.4V_%28Rear%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Toyota_Fortuner_2.4V_(Rear).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2019 Toyota Fortuner 2.7 SRZ 4x4 (15).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/2019_Toyota_Fortuner_2.7_SRZ_4x4_%2815%29.jpg/1280px-2019_Toyota_Fortuner_2.7_SRZ_4x4_%2815%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2019_Toyota_Fortuner_2.7_SRZ_4x4_(15).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "PSG Fortuner SUV side view.JPG": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/69/PSG_Fortuner_SUV_side_view.JPG/1280px-PSG_Fortuner_SUV_side_view.JPG",
+      "source": "https://commons.wikimedia.org/wiki/File:PSG_Fortuner_SUV_side_view.JPG",
+      "license": "CC BY-SA 3.0"
+    },
+    "Toyota Fortuner LTD 4x2 interior 20221019.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/18/Toyota_Fortuner_LTD_4x2_interior_20221019.jpg/1280px-Toyota_Fortuner_LTD_4x2_interior_20221019.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Fortuner_LTD_4x2_interior_20221019.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Toyota Fortuner GUN165 2.4 G 4x2 MT - interior view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9f/Toyota_Fortuner_GUN165_2.4_G_4x2_MT_-_interior_view.jpg/1280px-Toyota_Fortuner_GUN165_2.4_G_4x2_MT_-_interior_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Fortuner_GUN165_2.4_G_4x2_MT_-_interior_view.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2019 Toyota Fortuner 2.4 VRZ TRD Sportivo 4x2 GUN165R interior (20190722).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/23/2019_Toyota_Fortuner_2.4_VRZ_TRD_Sportivo_4x2_GUN165R_interior_%2820190722%29.jpg/1280px-2019_Toyota_Fortuner_2.4_VRZ_TRD_Sportivo_4x2_GUN165R_interior_%2820190722%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2019_Toyota_Fortuner_2.4_VRZ_TRD_Sportivo_4x2_GUN165R_interior_(20190722).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Toyota Fortuner interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Toyota_Fortuner_interior.jpg/1280px-Toyota_Fortuner_interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Toyota_Fortuner_interior.jpg",
+      "license": "CC0"
+    },
+    "2021 Toyota Fortuner 2.4 VRZ GR Sport 4x2 GUN165R interior (20211117).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/00/2021_Toyota_Fortuner_2.4_VRZ_GR_Sport_4x2_GUN165R_interior_%2820211117%29.jpg/1280px-2021_Toyota_Fortuner_2.4_VRZ_GR_Sport_4x2_GUN165R_interior_%2820211117%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Toyota_Fortuner_2.4_VRZ_GR_Sport_4x2_GUN165R_interior_(20211117).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2019 Toyota FORTUNER 2.4 2GD-FTV (190428).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/2019_Toyota_FORTUNER_2.4_2GD-FTV_%28190428%29.jpg/1280px-2019_Toyota_FORTUNER_2.4_2GD-FTV_%28190428%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2019_Toyota_FORTUNER_2.4_2GD-FTV_(190428).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2022 Toyota Fortuner 2.8 VRZ GR Sport 4x2 GUN166R 1GD-FTV engine (20220317).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/2022_Toyota_Fortuner_2.8_VRZ_GR_Sport_4x2_GUN166R_1GD-FTV_engine_%2820220317%29.jpg/1280px-2022_Toyota_Fortuner_2.8_VRZ_GR_Sport_4x2_GUN166R_1GD-FTV_engine_%2820220317%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2022_Toyota_Fortuner_2.8_VRZ_GR_Sport_4x2_GUN166R_1GD-FTV_engine_(20220317).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki Ertiga (Front), Jakarta, Indonesia.jpg": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Suzuki_Ertiga_%28Front%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Ertiga_(Front),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "Suzuki Ertiga (Front) (2), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5d/Suzuki_Ertiga_%28Front%29_%282%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Suzuki_Ertiga_%28Front%29_%282%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Ertiga_(Front)_(2),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "Suzuki Ertiga, MPV front view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Suzuki_Ertiga%2C_MPV_front_view.jpg/1280px-Suzuki_Ertiga%2C_MPV_front_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Ertiga,_MPV_front_view.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2019 Suzuki Ertiga \"Suzuki Sport\" (front), West Surabaya.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5f/2019_Suzuki_Ertiga_%22Suzuki_Sport%22_%28front%29%2C_West_Surabaya.jpg/1280px-2019_Suzuki_Ertiga_%22Suzuki_Sport%22_%28front%29%2C_West_Surabaya.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2019_Suzuki_Ertiga_%22Suzuki_Sport%22_(front),_West_Surabaya.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2019 Suzuki Ertiga GX (Indonesia) front view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/17/2019_Suzuki_Ertiga_GX_%28Indonesia%29_front_view.jpg/1280px-2019_Suzuki_Ertiga_GX_%28Indonesia%29_front_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2019_Suzuki_Ertiga_GX_(Indonesia)_front_view.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2019 Suzuki Ertiga \"Suzuki Sport\" (front), Kapas Krampung Plaza, East Surabaya.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/2019_Suzuki_Ertiga_%22Suzuki_Sport%22_%28front%29%2C_Kapas_Krampung_Plaza%2C_East_Surabaya.jpg/1280px-2019_Suzuki_Ertiga_%22Suzuki_Sport%22_%28front%29%2C_Kapas_Krampung_Plaza%2C_East_Surabaya.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2019_Suzuki_Ertiga_%22Suzuki_Sport%22_(front),_Kapas_Krampung_Plaza,_East_Surabaya.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki Ertiga (Rear), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e6/Suzuki_Ertiga_%28Rear%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Suzuki_Ertiga_%28Rear%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Ertiga_(Rear),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "2023 Suzuki Ertiga Hybrid GX (rear), South Surabaya.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a5/2023_Suzuki_Ertiga_Hybrid_GX_%28rear%29%2C_South_Surabaya.jpg/1280px-2023_Suzuki_Ertiga_Hybrid_GX_%28rear%29%2C_South_Surabaya.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2023_Suzuki_Ertiga_Hybrid_GX_(rear),_South_Surabaya.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2014 Suzuki Ertiga GX (rear).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/59/2014_Suzuki_Ertiga_GX_%28rear%29.jpg/1280px-2014_Suzuki_Ertiga_GX_%28rear%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2014_Suzuki_Ertiga_GX_(rear).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2024 Suzuki Ertiga Cruise (rear right).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/2024_Suzuki_Ertiga_Cruise_%28rear_right%29.jpg/1280px-2024_Suzuki_Ertiga_Cruise_%28rear_right%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2024_Suzuki_Ertiga_Cruise_(rear_right).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki Ertiga, MPV rear view.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Suzuki_Ertiga%2C_MPV_rear_view.jpg/1280px-Suzuki_Ertiga%2C_MPV_rear_view.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Ertiga,_MPV_rear_view.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Suzuki Ertiga GX (Rear).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/2020_Suzuki_Ertiga_GX_%28Rear%29.jpg/1280px-2020_Suzuki_Ertiga_GX_%28Rear%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Suzuki_Ertiga_GX_(Rear).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki Ertiga (Side), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Suzuki_Ertiga_%28Side%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Suzuki_Ertiga_%28Side%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Ertiga_(Side),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "Suzuki Ertiga (Side) (2), Jakarta, Indonesia.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/13/Suzuki_Ertiga_%28Side%29_%282%29%2C_Jakarta%2C_Indonesia.jpg/1280px-Suzuki_Ertiga_%28Side%29_%282%29%2C_Jakarta%2C_Indonesia.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Ertiga_(Side)_(2),_Jakarta,_Indonesia.jpg",
+      "license": "CC0"
+    },
+    "2013 Suzuki Ertiga GL (side), Candikuning.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/2013_Suzuki_Ertiga_GL_%28side%29%2C_Candikuning.jpg/1280px-2013_Suzuki_Ertiga_GL_%28side%29%2C_Candikuning.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2013_Suzuki_Ertiga_GL_(side),_Candikuning.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2019 Suzuki Ertiga Interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/2019_Suzuki_Ertiga_Interior.jpg/1280px-2019_Suzuki_Ertiga_Interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2019_Suzuki_Ertiga_Interior.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Suzuki Ertiga Suzuki Sport FF 1.5 NC22S interior (20211117).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/58/2021_Suzuki_Ertiga_Suzuki_Sport_FF_1.5_NC22S_interior_%2820211117%29.jpg/1280px-2021_Suzuki_Ertiga_Suzuki_Sport_FF_1.5_NC22S_interior_%2820211117%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Suzuki_Ertiga_Suzuki_Sport_FF_1.5_NC22S_interior_(20211117).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Suzuki Ertiga 1.5 manual white interior view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/2021_Suzuki_Ertiga_1.5_manual_white_interior_view_in_Brunei.jpg/1280px-2021_Suzuki_Ertiga_1.5_manual_white_interior_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Suzuki_Ertiga_1.5_manual_white_interior_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Suzuki Ertiga 1.5 Auto with Kenstyle bodykit interior view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/2020_Suzuki_Ertiga_1.5_Auto_with_Kenstyle_bodykit_interior_view_in_Brunei.jpg/1280px-2020_Suzuki_Ertiga_1.5_Auto_with_Kenstyle_bodykit_interior_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Suzuki_Ertiga_1.5_Auto_with_Kenstyle_bodykit_interior_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Suzuki Ertiga 1.5 GL Hybrid interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Suzuki_Ertiga_1.5_GL_Hybrid_interior.jpg/1280px-Suzuki_Ertiga_1.5_GL_Hybrid_interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Suzuki_Ertiga_1.5_GL_Hybrid_interior.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Suzuki Ertiga 1.5 manual white engine view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ee/2021_Suzuki_Ertiga_1.5_manual_white_engine_view_in_Brunei.jpg/1280px-2021_Suzuki_Ertiga_1.5_manual_white_engine_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Suzuki_Ertiga_1.5_manual_white_engine_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2020 Suzuki Ertiga 1.5 Auto with Kenstyle bodykit engine view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9e/2020_Suzuki_Ertiga_1.5_Auto_with_Kenstyle_bodykit_engine_view_in_Brunei.jpg/1280px-2020_Suzuki_Ertiga_1.5_Auto_with_Kenstyle_bodykit_engine_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2020_Suzuki_Ertiga_1.5_Auto_with_Kenstyle_bodykit_engine_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Volkswagen Polo V GTI DSC 0616.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Volkswagen_Polo_V_GTI_DSC_0616.jpg/1280px-Volkswagen_Polo_V_GTI_DSC_0616.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Volkswagen_Polo_V_GTI_DSC_0616.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Volkswagen Polo R WRC Street IMG 8226.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/70/Volkswagen_Polo_R_WRC_Street_IMG_8226.jpg/1280px-Volkswagen_Polo_R_WRC_Street_IMG_8226.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Volkswagen_Polo_R_WRC_Street_IMG_8226.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2011 Volkswagen Polo S 60 1.2 Front.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f0/2011_Volkswagen_Polo_S_60_1.2_Front.jpg/1280px-2011_Volkswagen_Polo_S_60_1.2_Front.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2011_Volkswagen_Polo_S_60_1.2_Front.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Volkswagen Polo VI (2021) IMG 5322.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/Volkswagen_Polo_VI_%282021%29_IMG_5322.jpg/1280px-Volkswagen_Polo_VI_%282021%29_IMG_5322.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Volkswagen_Polo_VI_(2021)_IMG_5322.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Volkswagen Polo VI GTI DSC 7034.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/71/Volkswagen_Polo_VI_GTI_DSC_7034.jpg/1280px-Volkswagen_Polo_VI_GTI_DSC_7034.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Volkswagen_Polo_VI_GTI_DSC_7034.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Volkswagen Polo Track 2024 1.0 in Montevideo (rear).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Volkswagen_Polo_Track_2024_1.0_in_Montevideo_%28rear%29.jpg/1280px-Volkswagen_Polo_Track_2024_1.0_in_Montevideo_%28rear%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Volkswagen_Polo_Track_2024_1.0_in_Montevideo_(rear).jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2019 Volkswagen Polo SEL TSI - 999cc 1.0 (115PS) Petrol - Flash Red - 03-2024, Side.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a1/2019_Volkswagen_Polo_SEL_TSI_-_999cc_1.0_%28115PS%29_Petrol_-_Flash_Red_-_03-2024%2C_Side.jpg/1280px-2019_Volkswagen_Polo_SEL_TSI_-_999cc_1.0_%28115PS%29_Petrol_-_Flash_Red_-_03-2024%2C_Side.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2019_Volkswagen_Polo_SEL_TSI_-_999cc_1.0_(115PS)_Petrol_-_Flash_Red_-_03-2024,_Side.jpg",
+      "license": "CC BY 4.0"
+    },
+    "VW Polo Allstar, Bj. 2016, li. u. hint. (2022-05-12 Sp).jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e5/VW_Polo_Allstar%2C_Bj._2016%2C_li._u._hint._%282022-05-12_Sp%29.jpg/1280px-VW_Polo_Allstar%2C_Bj._2016%2C_li._u._hint._%282022-05-12_Sp%29.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:VW_Polo_Allstar,_Bj._2016,_li._u._hint._(2022-05-12_Sp).jpg",
+      "license": "CC BY-SA 2.0 de"
+    },
+    "VW Polo IV Facelift side 20071030 retouched.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/VW_Polo_IV_Facelift_side_20071030_retouched.jpg/1280px-VW_Polo_IV_Facelift_side_20071030_retouched.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:VW_Polo_IV_Facelift_side_20071030_retouched.jpg",
+      "license": "CC BY-SA 3.0"
+    },
+    "2021 Volkswagen Polo Mk5 brown interior view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a9/2021_Volkswagen_Polo_Mk5_brown_interior_view_in_Brunei.jpg/1280px-2021_Volkswagen_Polo_Mk5_brown_interior_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Volkswagen_Polo_Mk5_brown_interior_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Volkswagen Polo V interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/74/Volkswagen_Polo_V_interior.jpg/1280px-Volkswagen_Polo_V_interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Volkswagen_Polo_V_interior.jpg",
+      "license": "Public domain"
+    },
+    "2021 Volkswagen Polo 1.6 MPi sport rims grey interior view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/2021_Volkswagen_Polo_1.6_MPi_sport_rims_grey_interior_view_in_Brunei.jpg/1280px-2021_Volkswagen_Polo_1.6_MPi_sport_rims_grey_interior_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Volkswagen_Polo_1.6_MPi_sport_rims_grey_interior_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2018 Volkswagen Polo SE TSi BlueMotion 1.0 Interior.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f8/2018_Volkswagen_Polo_SE_TSi_BlueMotion_1.0_Interior.jpg/1280px-2018_Volkswagen_Polo_SE_TSi_BlueMotion_1.0_Interior.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2018_Volkswagen_Polo_SE_TSi_BlueMotion_1.0_Interior.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Volkswagen Polo 2003 - Engine.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Volkswagen_Polo_2003_-_Engine.jpg/1280px-Volkswagen_Polo_2003_-_Engine.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:Volkswagen_Polo_2003_-_Engine.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "2021 Volkswagen Polo 1.6 MPi sport rims grey engine view in Brunei.jpg": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/2021_Volkswagen_Polo_1.6_MPi_sport_rims_grey_engine_view_in_Brunei.jpg/1280px-2021_Volkswagen_Polo_1.6_MPi_sport_rims_grey_engine_view_in_Brunei.jpg",
+      "source": "https://commons.wikimedia.org/wiki/File:2021_Volkswagen_Polo_1.6_MPi_sport_rims_grey_engine_view_in_Brunei.jpg",
+      "license": "CC BY-SA 4.0"
+    },
+    "Volkswagen Polo GTE - silnik 1.4 TSI + elektryczny (MSP15).JPG": {
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/27/Volkswagen_Polo_GTE_-_silnik_1.4_TSI_%2B_elektryczny_%28MSP15%29.JPG/1280px-Volkswagen_Polo_GTE_-_silnik_1.4_TSI_%2B_elektryczny_%28MSP15%29.JPG",
+      "source": "https://commons.wikimedia.org/wiki/File:Volkswagen_Polo_GTE_-_silnik_1.4_TSI_%2B_elektryczny_(MSP15).JPG",
+      "license": "CC BY-SA 3.0"
+    }
+  }
+}
