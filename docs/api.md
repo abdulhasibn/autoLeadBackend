@@ -510,7 +510,10 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 | `PUT` | `/leads/:id/assignment` | `200` `{ "id", "assignedTo" }` (Admin) |
 | `PUT` | `/leads/:id/preference` | `200` the whole preference (`preferredMakeId` … `preferredMaxOwners`) |
 | `GET` | `/leads/vehicle-matches/:vehicleId` | `200` `{ vehicle, linked, suggested, truncated }`: match % per lead |
+| `GET` | `/leads/:id/follow-ups` | `200` page of follow-ups (`?status=open\|closed\|all`) |
 | `POST` | `/leads/:id/follow-ups` | `201` follow-up |
+| `POST` | `/leads/:id/follow-ups/:followUpId/complete` | `200` `{ "followUp", "next" }` |
+| `POST` | `/leads/:id/follow-ups/:followUpId/cancel` | `200` follow-up |
 | `POST` | `/leads/:id/status` | `200` `{ "status", "vehicleSold" }` |
 | `GET` | `/leads/:id/status-history` | `200` page (newest first) |
 
@@ -613,6 +616,10 @@ Each lead is the usual lead object plus `match`:
 **Schedule follow-up:** `{ "scheduledAt": "2026-10-10T10:00:00.000Z", "taskType": "call", "notes": null }`  
 `taskType`: `call`, `whatsapp`, `meeting`, `test_drive`, `send_quotation`, `other`.  
 The follow-up belongs to the lead's assignee (or to you if the lead is unassigned), and that person gets a `follow_up_due` notification at `scheduledAt`.  
+**List follow-ups:** `GET /leads/:id/follow-ups?status=open|closed|all&limit=&offset=` (default `all`). `open` is the to-do list, earliest first; `closed` is completed and cancelled ones, most recently closed first; `all` is newest `scheduledAt` first. Items: `{ "id", "leadId", "taskType", "scheduledAt", "notes", "status" (open | completed | cancelled), "outcome", "completionNotes", "completedAt", "completedBy", "completedByName", "cancelledAt", "cancelledBy", "cancelledByName", "assignedTo", "assignedToName", "createdBy", "createdByName", "createdAt" }`. Same visibility as `GET /leads/:id`.  
+**Complete follow-up:** `{ "outcome": "no_answer", "notes": null, "next": { "scheduledAt", "taskType", "notes" } }`. `outcome`: `reached`, `no_answer`, `rescheduled`, `not_interested`, `done`. `next` is optional; when given, the next follow-up (and its reminder) is scheduled in the same transaction, exactly like `POST /leads/:id/follow-ups`. Returns `{ "followUp", "next" }` (`next` is `null` when not requested). The follow-up's `follow_up_due` notification is marked read.  
+**Cancel follow-up:** no body. The follow-up is soft-deleted and its notification marked read.  
+Closing a follow-up that is already completed or cancelled answers `422 FOLLOW_UP_CLOSED` (or `409 CONFLICT` if another request closed it at the same moment). A follow-up id from another lead answers `404`. Completing and cancelling work on closed leads too, so stale items can be cleared.  
 **Change status:** `{ "status": "not_now", "notes": null }` → `200 { "status", "vehicleSold" }`. Status history records who made the change.  
 **Status history:** `GET /leads/:id/status-history?limit=&offset=` → page of `{ "id", "leadId", "fromStatus", "toStatus", "changedBy", "changedByName", "notes", "changedAt" }`, newest first. `fromStatus` is `null` on the first (create) entry; `notes` is `null` when none were given. Same visibility as `GET /leads/:id`.  
 **Convert (close the sale):** `{ "status": "converted", "notes": null }` from `booking_confirmed`. This always sells the lead's vehicle (`vehicleSold: true`, vehicle `soldLeadId` = this lead) and moves every other active lead on that vehicle to `vehicle_unavailable` with its `vehicleId` cleared. The vehicle and the other leads are updated first; if the request fails part-way, repeat it and it completes.
@@ -695,9 +702,16 @@ converted / lost    → (terminal)
   "scheduledAt": "2026-10-10T10:00:00.000Z",
   "notes": null,
   "notificationId": "uuid",
-  "dueAt": "2026-10-10T10:00:00.000Z"
+  "dueAt": "2026-10-10T10:00:00.000Z",
+  "status": "open",
+  "outcome": null,
+  "completionNotes": null,
+  "completedAt": null,
+  "cancelledAt": null
 }
 ```
+
+Complete and cancel return the same shape with `status` `completed` / `cancelled` filled in. `notificationId` and `dueAt` are `null` for a follow-up stored without a due reminder (for example, imported or seeded data).
 
 ### Notifications — Admin or Salesperson
 
@@ -784,7 +798,7 @@ Each list holds at most 5 rows, oldest or most urgent first. `total` is the full
 
 - **Day and period boundaries** use the business timezone (`BUSINESS_TIMEZONE`, default `Asia/Kolkata`).
 - **Period KPIs are period to date.** `previous` covers the same elapsed span of the previous period, so Oct 1–5 is compared with Sep 1–5.
-- **Follow-ups are counted per active lead.** Each active lead is judged by its **latest** open follow-up, so scheduling a new follow-up replaces the old one. Follow-ups on closed leads are ignored.
+- **Follow-ups are counted per active lead.** Each active lead is judged by its **earliest** open follow-up (the same one `GET /leads/:id` returns as `nextFollowUp`). An overdue follow-up stays overdue until it is completed or cancelled. Follow-ups on closed leads are ignored.
 
 | Field | Meaning |
 |-------|---------|
@@ -814,7 +828,7 @@ Revenue, profit and average selling price arrive with finance (Stint 5).
 | Vehicle create | `GET /catalog/makes` → models → variants, then `POST /vehicles` |
 | Vehicle list / detail | `GET /vehicles`, `GET /vehicles/:id`, `PATCH /vehicles/:id`, `POST /vehicles/:id/status`, `GET /vehicles/:id/status-history` |
 | Vehicle photos / docs | signed upload then `POST /vehicles/:id/media` or `/documents` |
-| Lead pipeline | `GET /leads?status=&assignedTo=&search=`, `POST /leads`, `PATCH /leads/:id`, `PATCH`/`DELETE /leads/:id/vehicle`, `PUT /leads/:id/assignment`, `POST /leads/:id/status`, `GET /leads/:id/status-history`, `POST /leads/:id/follow-ups` |
+| Lead pipeline | `GET /leads?status=&assignedTo=&search=`, `POST /leads`, `PATCH /leads/:id`, `PATCH`/`DELETE /leads/:id/vehicle`, `PUT /leads/:id/assignment`, `POST /leads/:id/status`, `GET /leads/:id/status-history`, `GET`/`POST /leads/:id/follow-ups`, `POST /leads/:id/follow-ups/:followUpId/complete`, `POST /leads/:id/follow-ups/:followUpId/cancel` |
 | Inbox | `GET /notifications`, `PATCH /notifications/:id/read` |
 | Staff settings | `/users` (admin only) |
 

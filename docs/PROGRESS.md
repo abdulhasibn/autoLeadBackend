@@ -12,7 +12,7 @@
 | Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0012 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name + dealer handoff round 2 + lead match preferences) | All 17 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name + dealer handoff round 2 + lead match preferences + follow-up completion) | All 18 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
@@ -23,7 +23,7 @@
 | Vehicles (`src/features/vehicles`) | Staff create/list/get/update, catalog reads, signed media/document uploads (list/get carry a signed `frontImageUrl`; documents keep `fileName`; status history names the actor; list/get carry `linkedLeadCount`; list `search` + catalog / year / km / fuel / transmission filters via the `vehicle_list` view); statuses `open` / `linked` / `dropped` / `sold` (Admin drops/re-lists; `linked`/`sold` follow leads) and deletes |
 | Inventory (`src/features/inventory`) | Not started |
 | Marketplace (`src/features/marketplace`) | Not started |
-| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle (`linkedVehicle` summary on reads), structured preference (catalog make → model → variant plus colours / fuel / transmission / body type / year window / km ceiling / max owners; budget = price ceiling; set on create or `PUT /leads/:id/preference`), `GET /leads/vehicle-matches/:vehicleId` (weighted match % for linked leads + suggested open leads, ADR-0013), status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification; Admin assignment; salesperson sees assigned leads only; `PATCH /leads/:id` edit, `DELETE /leads/:id/vehicle` unlink, `GET /leads/:id/status-history`, `assignedToName`, list `search` + budget / source / link / timeline / finance / created-at filters |
+| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle (`linkedVehicle` summary on reads), structured preference (catalog make → model → variant plus colours / fuel / transmission / body type / year window / km ceiling / max owners; budget = price ceiling; set on create or `PUT /leads/:id/preference`), `GET /leads/vehicle-matches/:vehicleId` (weighted match % for linked leads + suggested open leads, ADR-0013), status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification, `GET /leads/:id/follow-ups` (open / closed / all), complete (outcome + notes, optional next follow-up in the same transaction) and cancel; Admin assignment; salesperson sees assigned leads only; `PATCH /leads/:id` edit, `DELETE /leads/:id/vehicle` unlink, `GET /leads/:id/status-history`, `assignedToName`, list `search` + budget / source / link / timeline / finance / created-at filters |
 | Sales (`src/features/sales`) | Not started |
 | Dashboard (`src/features/dashboard`) | `GET /dashboard` — KPIs, attention lists, today's follow-ups (ADR-0012); admin `scope: all`, salesperson `scope: mine` (own leads, no stock); money metrics after finance |
 | Finance (`src/features/finance`) | Not started |
@@ -44,7 +44,7 @@
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
 | Tables | 25 |
-| Migrations applied | 18 hosted rows (17 repo migrations + `lead_assignment_fix_user_id`) |
+| Migrations applied | 19 hosted rows (18 repo migrations + `lead_assignment_fix_user_id`) |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
@@ -55,6 +55,13 @@
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-10-11 — Follow-up completion, cancellation and listing
+
+- Migration `20261011120000_follow_up_completion.sql` (applied to hosted 2026-10-10 via Supabase MCP as `follow_up_completion`; the 30 seeded completed rows had free-text outcomes and no actor, so the migration backfills them to `outcome = done`, text kept in `completion_notes`, `completed_by` = assignee): `follow_ups.completed_by` / `cancelled_by` / `completion_notes`; `outcome` constrained to `reached | no_answer | rescheduled | not_interested | done` and set exactly when `completed_at` is; `complete_follow_up` (closes, marks the reminder read, optionally schedules the next follow-up via `private.schedule_follow_up`) and `cancel_follow_up` (soft delete) RPCs, both raising `55000` → `409` when the follow-up is no longer open; `dashboard_summary` now judges each active lead by its **earliest** open follow-up (ADR-0012 amended), matching `nextFollowUp`.
+- `FollowUp` entity gains a lifecycle (`open → completed | cancelled`, `422 FOLLOW_UP_CLOSED` on a second close) and `FollowUpOutcome` VO. New `IFollowUpQueries` read side; scheduling logic shared by schedule and complete (`build-scheduled-follow-up.ts`).
+- Stored follow-ups may have no due reminder (49 of 52 seeded rows were inserted without one), so a reconstituted `FollowUp` has nullable `notificationId` / `dueAt`; only `FollowUp.schedule()` (typed `ScheduledFollowUp`) guarantees a reminder. Security advisors unchanged; performance adds two INFO unindexed FKs (`completed_by`, `cancelled_by`), like the other actor columns.
+- Endpoints: `GET /leads/:id/follow-ups?status=`, `POST /leads/:id/follow-ups/:followUpId/complete`, `POST /leads/:id/follow-ups/:followUpId/cancel`. Follow-up responses now carry `status`, `outcome`, `completionNotes`, `completedAt`, `cancelledAt`.
 
 ### 2026-10-10 — Lead preference profile + vehicle match score
 
@@ -112,7 +119,7 @@ Closes five open items from the dealer app's `docs/BACKEND_HANDOFF.md` (vehicle 
 - Follow-ups are judged per active lead by its latest open follow-up
   (there is no completion endpoint yet).
 - Deferred: revenue/profit/average price (Stint 5), salesperson view and
-  team block, follow-up completion endpoint.
+  team block, follow-up completion endpoint (done 2026-10-11).
 
 ### 2026-10-05 — Vehicle and lead status lifecycle (ADR-0011)
 

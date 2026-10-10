@@ -388,12 +388,15 @@ Table follow_ups {
   task_type text [not null, note: 'call | whatsapp | meeting | test_drive | send_quotation | other']
   scheduled_at timestamptz [not null]
   completed_at timestamptz
+  completed_by uuid [ref: > users.id, note: 'set exactly when completed_at is']
   notes text
-  outcome text
+  outcome text [note: 'reached | no_answer | rescheduled | not_interested | done; set exactly when completed_at is']
+  completion_notes text
   created_by uuid [not null, ref: > users.id]
   created_at timestamptz [not null, default: `now()`]
-  updated_at timestamptz [not null, default: `now()`]
-  deleted_at timestamptz
+  updated_at timestamptz [not null, default: `now()`, note: 'stamped with the completion / cancellation time on close']
+  deleted_at timestamptz [note: 'cancelled when set']
+  cancelled_by uuid [ref: > users.id]
 
   indexes {
     (assigned_to, scheduled_at, completed_at) [name: 'follow_ups_assigned_schedule_idx']
