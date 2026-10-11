@@ -5,7 +5,7 @@
       "name": "autoLead-backend",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["run", "dev"],
-      "port": 3000,
+      "port": 4000,
       "autoPort": true
     }
   ]

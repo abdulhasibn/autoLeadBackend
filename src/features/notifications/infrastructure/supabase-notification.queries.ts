@@ -15,7 +15,7 @@ import type {
 import { toNotificationReadModel, type NotificationRow } from './notification.mapper';
 
 const COLUMNS =
-  'id, type, title, body, entity_type, entity_id, lead_id, is_read, due_at, created_at';
+  'id, type, title, body, entity_type, entity_id, lead_id, is_read, due_at, created_at, leads!lead_id(id, contacts!contact_id(full_name, phone))';
 
 export class SupabaseNotificationQueries implements INotificationQueries {
   constructor(private readonly db: SupabaseClient<Database>) {}

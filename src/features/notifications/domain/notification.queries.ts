@@ -10,6 +10,10 @@ export interface NotificationReadModel {
   readonly entityId: string | null;
   /** The lead this notification is about (follow-up or assignment); null otherwise. */
   readonly leadId: string | null;
+  /** Contact name from the associated lead, if any. */
+  readonly leadContactName: string | null;
+  /** Contact phone from the associated lead, if any. */
+  readonly leadContactPhone: string | null;
   readonly isRead: boolean;
   readonly dueAt: string | null;
   readonly createdAt: string;
