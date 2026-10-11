@@ -25,8 +25,25 @@ export interface VehicleMatchProfile {
   readonly listedPrice: number | null;
 }
 
+export interface VehicleMatchProfileCriteria {
+  readonly showroomId: string;
+  /** Left out of the result. */
+  readonly excludeVehicleId: VehicleId | null;
+  /** Cap on profiles read. */
+  readonly limit: number;
+}
+
+export interface VehicleMatchProfilePage {
+  /** Live vehicles still open to leads (`open` or `linked`), newest first. */
+  readonly vehicles: readonly VehicleMatchProfile[];
+  /** More vehicles existed than `limit`. */
+  readonly truncated: boolean;
+}
+
 /** Read side for features that score vehicles against buyer preferences (leads). */
 export interface IVehicleMatchProfiles {
   /** A live (not deleted) vehicle, or null. */
   findForMatching(vehicleId: VehicleId): Promise<VehicleMatchProfile | null>;
+  /** Linkable vehicles in a showroom, to score against one buyer. */
+  listMatchCandidates(criteria: VehicleMatchProfileCriteria): Promise<VehicleMatchProfilePage>;
 }

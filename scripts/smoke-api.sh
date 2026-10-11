@@ -46,9 +46,13 @@ check 'GET /health' 200 "$(call GET /health)"
 check 'GET /health body status=ok' ok "$(field .status)"
 check 'GET /does-not-exist' 404 "$(call GET /does-not-exist)"
 check 'POST /auth/login malformed body' 422 "$(call POST /auth/login '' '{"email":"nope"}')"
+check 'POST /auth/forgot-password malformed body' 422 \
+  "$(call POST /auth/forgot-password '' '{"email":"nope"}')"
+check 'POST /auth/reset-password malformed code' 422 \
+  "$(call POST /auth/reset-password '' '{"email":"a@b.co","code":"12","newPassword":"secret123"}')"
 
 PROTECTED=(
-  "GET /auth/me" "GET /users" "POST /users" "GET /users/$ID" "PATCH /users/$ID"
+  "GET /auth/me" "POST /auth/logout" "POST /auth/change-password" "GET /users" "POST /users" "GET /users/$ID" "PATCH /users/$ID"
   "PUT /users/$ID/roles" "DELETE /users/$ID" "GET /owners" "POST /owners"
   "GET /owners/$ID" "PATCH /owners/$ID" "DELETE /owners/$ID" "GET /catalog/makes"
   "GET /catalog/makes/$ID/models" "GET /catalog/models/$ID/variants" "GET /vehicles"
@@ -206,6 +210,16 @@ check 'salesperson cannot assign leads' 403 \
 check 'GET /vehicles/:id (salesperson)' 200 "$(call GET "/vehicles/$VEHICLE_ID" "$SALES")"
 check 'GET /catalog/makes (salesperson)' 200 "$(call GET '/catalog/makes?limit=1' "$SALES")"
 check 'POST /auth/refresh' 200 "$(call POST /auth/refresh '' "{\"refreshToken\":\"$SALES_REFRESH\"}")"
+
+# A second session for the same user, signed out on its own.
+call POST /auth/login '' "{\"email\":\"$SALES_EMAIL\",\"password\":\"$SALES_PASSWORD\"}" >/dev/null
+SECOND="$(field .accessToken)"
+SECOND_REFRESH="$(field .refreshToken)"
+check 'POST /auth/logout (second session)' 204 "$(call POST /auth/logout "$SECOND")"
+check 'signed-out access token is refused' 401 "$(call GET /auth/me "$SECOND")"
+check 'signed-out refresh token is refused' 401 \
+  "$(call POST /auth/refresh '' "{\"refreshToken\":\"$SECOND_REFRESH\"}")"
+check 'first session still signed in' 200 "$(call GET /auth/me "$SALES")"
 
 check 'POST /leads (salesperson, home showroom)' 201 "$(call POST /leads "$SALES" "{
   \"fullName\":\"ZZ Smoke Walkin $RUN\",\"phone\":\"+9174${SUFFIX}55\",\"email\":null,

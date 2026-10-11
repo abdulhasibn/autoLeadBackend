@@ -8,6 +8,8 @@ const ID = '11111111-1111-4111-8111-111111111111';
 
 const PROTECTED_ROUTES: ReadonlyArray<readonly [string, string]> = [
   ['get', '/auth/me'],
+  ['post', '/auth/logout'],
+  ['post', '/auth/change-password'],
   ['post', '/users'],
   ['get', '/users'],
   ['get', `/users/${ID}`],
@@ -40,6 +42,7 @@ const PROTECTED_ROUTES: ReadonlyArray<readonly [string, string]> = [
   ['get', '/leads'],
   ['get', `/leads/vehicle-matches/${ID}`],
   ['get', `/leads/${ID}`],
+  ['get', `/leads/${ID}/vehicle-matches`],
   ['patch', `/leads/${ID}/vehicle`],
   ['put', `/leads/${ID}/assignment`],
   ['post', `/leads/${ID}/status`],
@@ -83,5 +86,19 @@ describe('protected routes', () => {
     const response = await supertest(app).get('/leads').set('Authorization', 'Basic abc');
 
     expect(response.status).toBe(401);
+  });
+});
+
+describe('public password routes', () => {
+  const { app } = composeApp(testConfig());
+
+  it.each([
+    ['/auth/forgot-password', { email: 'nope' }],
+    ['/auth/reset-password', { email: 'ada@example.com', code: '12', newPassword: 'new-secret-1' }],
+  ])('POST %s answers 422 for a malformed body without a bearer token', async (path, body) => {
+    const response = await supertest(app).post(path).send(body);
+
+    expect(response.status).toBe(422);
+    expect(response.body).toMatchObject({ error: { code: 'VALIDATION_ERROR' } });
   });
 });

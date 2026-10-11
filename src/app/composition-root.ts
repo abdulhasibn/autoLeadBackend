@@ -47,7 +47,7 @@ export function composeApp(config: AppConfig): AppDependencies {
 
   // Feature compositions
   const clock = new SystemClock();
-  const auth = composeAuth(supabaseClient, authClient);
+  const auth = composeAuth(supabaseClient, authClient, logger);
   const users = composeUsers(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,
     clock,

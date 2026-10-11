@@ -23,6 +23,7 @@ import { ChangeLeadStatusUseCase } from './application/use-cases/change-lead-sta
 import { CreateLeadUseCase } from './application/use-cases/create-lead.use-case';
 import { GetLeadUseCase } from './application/use-cases/get-lead.use-case';
 import { ListLeadFollowUpsUseCase } from './application/use-cases/list-lead-follow-ups.use-case';
+import { ListLeadVehicleMatchesUseCase } from './application/use-cases/list-lead-vehicle-matches.use-case';
 import { ListLeadStatusHistoryUseCase } from './application/use-cases/list-lead-status-history.use-case';
 import { ListLeadsUseCase } from './application/use-cases/list-leads.use-case';
 import { ListVehicleLeadMatchesUseCase } from './application/use-cases/list-vehicle-lead-matches.use-case';
@@ -43,6 +44,7 @@ import { ChangeLeadStatusController } from './presentation/controllers/change-le
 import { CreateLeadController } from './presentation/controllers/create-lead.controller';
 import { GetLeadController } from './presentation/controllers/get-lead.controller';
 import { ListLeadFollowUpsController } from './presentation/controllers/list-lead-follow-ups.controller';
+import { ListLeadVehicleMatchesController } from './presentation/controllers/list-lead-vehicle-matches.controller';
 import { ListLeadStatusHistoryController } from './presentation/controllers/list-lead-status-history.controller';
 import { ListLeadsController } from './presentation/controllers/list-leads.controller';
 import { ListVehicleLeadMatchesController } from './presentation/controllers/list-vehicle-lead-matches.controller';
@@ -140,6 +142,11 @@ export function composeLeads(
     queries,
     deps.matchableVehicles,
   );
+  const listLeadVehicleMatchesUseCase = new ListLeadVehicleMatchesUseCase(
+    policy,
+    queries,
+    deps.matchableVehicles,
+  );
   const listLeadStatusHistoryUseCase = new ListLeadStatusHistoryUseCase(
     policy,
     queries,
@@ -166,6 +173,9 @@ export function composeLeads(
     ),
     listVehicleLeadMatchesController: new ListVehicleLeadMatchesController(
       listVehicleLeadMatchesUseCase,
+    ),
+    listLeadVehicleMatchesController: new ListLeadVehicleMatchesController(
+      listLeadVehicleMatchesUseCase,
     ),
   });
 

@@ -16,14 +16,14 @@
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
-| Auth feature (`src/features/auth`) | Done — email + password login/refresh, bearer, /auth/me (roles + home `showroomId`); roles from `user_roles` |
+| Auth feature (`src/features/auth`) | Done — email + password login/refresh, bearer, /auth/me (roles + home `showroomId`); roles from `user_roles`; logout (local / global), change password, forgot / reset password with a 6-digit email code (code done; Gmail SMTP + recovery template on hosted still to apply via `pnpm auth:configure-email`) |
 | Showrooms (`src/features/showrooms`) | Read-only `GET /showrooms` directory for staff pickers |
 | Users / roles (`src/features/users`) | Done — staff CRUD + email/password provision (Admin) |
 | Owners (`src/features/owners`) | Done — staff owner CRUD (Admin / Salesperson; deactivate Admin-only); list `search` |
 | Vehicles (`src/features/vehicles`) | Staff create/list/get/update, catalog reads, signed media/document uploads (list/get carry a signed `frontImageUrl`; documents keep `fileName`; status history names the actor; list/get carry `linkedLeadCount`; list `search` + catalog / year / km / fuel / transmission filters via the `vehicle_list` view); statuses `open` / `linked` / `dropped` / `sold` (Admin drops/re-lists; `linked`/`sold` follow leads) and deletes |
 | Inventory (`src/features/inventory`) | Not started |
 | Marketplace (`src/features/marketplace`) | Not started |
-| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle (`linkedVehicle` summary on reads), structured preference (catalog make → model → variant plus colours / fuel / transmission / body type / year window / km ceiling / max owners; budget = price ceiling; set on create or `PUT /leads/:id/preference`), `GET /leads/vehicle-matches/:vehicleId` (weighted match % for linked leads + suggested open leads, ADR-0013), status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification, `GET /leads/:id/follow-ups` (open / closed / all), complete (outcome + notes, optional next follow-up in the same transaction) and cancel; Admin assignment; salesperson sees assigned leads only; `PATCH /leads/:id` edit, `DELETE /leads/:id/vehicle` unlink, `GET /leads/:id/status-history`, `assignedToName`, list `search` + budget / source / link / timeline / finance / created-at filters |
+| Leads (`src/features/leads`) | Staff walk-in create, associate vehicle (`linkedVehicle` summary on reads), structured preference (catalog make → model → variant plus colours / fuel / transmission / body type / year window / km ceiling / max owners; budget = price ceiling; set on create or `PUT /leads/:id/preference`), `GET /leads/vehicle-matches/:vehicleId` (weighted match % for linked leads + suggested open leads, ADR-0013) and the reverse `GET /leads/:id/vehicle-matches` (linked car + suggested linkable cars for one lead), status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification, `GET /leads/:id/follow-ups` (open / closed / all), complete (outcome + notes, optional next follow-up in the same transaction) and cancel; Admin assignment; salesperson sees assigned leads only; `PATCH /leads/:id` edit, `DELETE /leads/:id/vehicle` unlink, `GET /leads/:id/status-history`, `assignedToName`, list `search` + budget / source / link / timeline / finance / created-at filters |
 | Sales (`src/features/sales`) | Not started |
 | Dashboard (`src/features/dashboard`) | `GET /dashboard` — KPIs, attention lists, today's follow-ups (ADR-0012); admin `scope: all`, salesperson `scope: mine` (own leads, no stock); money metrics after finance |
 | Finance (`src/features/finance`) | Not started |
@@ -55,6 +55,36 @@
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-10-10 — Sign out, change password, forgot / reset password
+
+- **Bug fix:** both shared Supabase clients now set `autoRefreshToken: false` (and `detectSessionInUrl: false`). Before this, in Node, the anon auth client ran auth-js's background refresh ticker on the session from the most recent sign-in or refresh. It could rotate that user's refresh token server-side, so their next `/auth/refresh` failed. A regression test pins the options.
+- Endpoints:
+  - `POST /auth/logout` (bearer; `scope` `local` | `global`, `204`)
+  - `POST /auth/change-password` (bearer; checks the current password, sets the new one, ends every other session, `204`)
+  - `POST /auth/forgot-password` (public; always `202`, so accounts can't be probed)
+  - `POST /auth/reset-password` (public; redeems the 6-digit recovery code, sets the password, ends every session, `204`)
+- New codes: `422 INVALID_CURRENT_PASSWORD` (deliberately not 401), `PASSWORD_UNCHANGED`, `WEAK_PASSWORD`, `INVALID_RESET_CODE`, and `429 RATE_LIMITED`. A failed refresh now says "Invalid or expired refresh token".
+- Design:
+  - `IAuthProvider.signOut` uses the stateless `auth.admin.signOut(jwt, scope)`.
+  - New `IPasswordCredentials` port, implemented by `SupabasePasswordCredentials` with the anon and service-role clients. The password check signs in and immediately revokes that throwaway session. Passwords are set by user id.
+  - `ResetCode` VO.
+  - The bearer middleware also exposes `req.accessToken` (`requireAccessToken`).
+  - `composeAuth` now takes the logger.
+- Ops: `scripts/configure-auth-email.mjs` (`pnpm auth:configure-email`, ported from gymBackend) PATCHes Supabase Auth config with:
+  - Gmail SMTP
+  - the recovery template showing `{{ .Token }}`
+  - OTP length 6, 15-minute expiry
+  - higher verify / token-refresh / email rate limits (all staff share the API's per-IP bucket)
+
+  **Not applied to hosted yet:** it needs `SUPABASE_ACCESS_TOKEN` and the Gmail App Password in `.env`.
+- Verification: 465 unit tests (use cases, schemas, bearer middleware, adapter error mapping, client options, route 401 / 422). Live token-free checks against hosted Supabase: 401 on logout / change-password without a token, `INVALID_RESET_CODE` from a real `verifyOtp`, a uniform 202 on forgot-password, and the new refresh message. Still to run with a test staff user: logout revokes the token and refresh, change-password ends other sessions, the full email reset. `scripts/smoke-api.sh` now covers logout.
+- Docs: `api.md` (auth table, bodies, error codes, client flow); local `postman/` Auth folder (+4 requests, `newPassword` / `resetCode` variables). The mirror repo and cloud are not synced yet.
+
+### 2026-10-11 — Lead → vehicle matches
+
+- `GET /leads/:id/vehicle-matches?minScore=&limit=` for the lead detail screen: the linked car's score plus suggested cars (live, `open` / `linked`, same showroom, not the lead's own car, ≥ 2 criteria, ≥ `minScore`), newest 1000 scored. Same scorer and preference mapping (`toMatchPreference`) as the car-side endpoint; new `IMatchableVehicleLookup.listMatchCandidates`, implemented by `SupabaseVehicleMatchProfiles`. No migration. ADR-0013 updated.
+- Verification: use-case unit tests (scope, exclusion, floor, limit, no-preference short-circuit). Not yet smoke-tested over HTTP against hosted data.
 
 ### 2026-10-11 — Follow-up completion, cancellation and listing
 

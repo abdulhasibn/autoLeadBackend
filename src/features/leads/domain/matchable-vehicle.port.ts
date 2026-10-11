@@ -25,8 +25,26 @@ export interface MatchableVehicle {
   readonly listedPrice: number | null;
 }
 
+export interface VehicleMatchCandidateCriteria {
+  /** Candidates come from this showroom only. */
+  readonly showroomId: string;
+  /** Left out of the candidates (the lead's own vehicle). */
+  readonly excludeVehicleId: VehicleId | null;
+  /** Cap on candidates read. */
+  readonly limit: number;
+}
+
+export interface VehicleMatchCandidates {
+  /** Live vehicles a lead can still be linked to, newest first. */
+  readonly vehicles: readonly MatchableVehicle[];
+  /** More candidates existed than `limit`. */
+  readonly truncated: boolean;
+}
+
 /** Read port the vehicles feature implements for lead matching. */
 export interface IMatchableVehicleLookup {
   /** A live (not deleted) vehicle, or null. */
   findForMatching(vehicleId: VehicleId): Promise<MatchableVehicle | null>;
+  /** Vehicles to score against one lead. */
+  listMatchCandidates(criteria: VehicleMatchCandidateCriteria): Promise<VehicleMatchCandidates>;
 }

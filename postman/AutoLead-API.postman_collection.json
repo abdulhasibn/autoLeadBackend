@@ -111,6 +111,14 @@
     {
       "key": "notificationId",
       "value": ""
+    },
+    {
+      "key": "newPassword",
+      "value": ""
+    },
+    {
+      "key": "resetCode",
+      "value": ""
     }
   ],
   "item": [
@@ -312,6 +320,163 @@
               "body": "{\n  \"error\": {\n    \"code\": \"DB_UNAVAILABLE\",\n    \"message\": \"Failed to fetch user roles: Could not embed because more than one relationship was found for 'user_roles' and 'users'\"\n  }\n}"
             }
           ]
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 204) {",
+                  "  ['accessToken', 'refreshToken'].forEach(function (key) {",
+                  "    pm.collectionVariables.unset(key);",
+                  "    pm.environment.unset(key);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scope\": \"local\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "POST /auth/logout — 204. Ends this session (`local`, default) or every session (`global`). Their refresh tokens stop working. Clears the stored tokens.\n\n**Auth:** Bearer token required."
+          }
+        },
+        {
+          "name": "Change password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/change-password",
+            "description": "POST /auth/change-password — 204. Other sessions end; this one stays signed in.\n\n**Auth:** Bearer token required.\n\n**422** `INVALID_CURRENT_PASSWORD`, `PASSWORD_UNCHANGED`, `WEAK_PASSWORD`, `VALIDATION_ERROR` (new password under 8 characters)."
+          }
+        },
+        {
+          "name": "Forgot password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 202', function () {",
+                  "  pm.response.to.have.status(202);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "description": "POST /auth/forgot-password — 202 `{ message }`, the same answer whether or not the account exists. Emails a 6-digit code valid for 15 minutes."
+          }
+        },
+        {
+          "name": "Reset password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"code\": \"{{resetCode}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/reset-password",
+            "description": "POST /auth/reset-password — 204. Every session ends; sign in again with the new password.\n\n**422** `INVALID_RESET_CODE` (wrong or expired code), `WEAK_PASSWORD`, `VALIDATION_ERROR`."
+          }
         }
       ]
     },
@@ -1031,6 +1196,16 @@
             "header": [],
             "url": "{{baseUrl}}/leads/vehicle-matches/{{vehicleId}}?minScore=60&limit=10",
             "description": "**Story:** On a car's detail screen, staff see how well each linked lead's preference fits the car, plus open leads worth calling about it.\n\nGET /leads/vehicle-matches/:vehicleId — Admin or Salesperson (a salesperson only gets leads assigned to them).\n\n- `minScore` (optional int 0–100, default 60): lowest score for a suggestion.\n- `limit` (optional int 1–50, default 10): most suggestions.\n\n200 `{ vehicle, linked, suggested, truncated }`:\n- `vehicle`: the car's matchable attributes (make/model/variant ids + names, year, kmDriven, colour, fuelType, transmission, bodyTypes, numPreviousOwners, listedPrice or null).\n- `linked`: every lead linked to the car, best match first; each is the lead object plus `match: { score, evaluatedCriteria, breakdown[] } | null` (null = no preference).\n- `suggested`: open (`new` / `not_now` / `vehicle_unavailable`), unlinked leads in the car's showroom scoring ≥ minScore on ≥ 2 criteria.\n- `truncated`: only the newest 1000 open leads were scored.\n- breakdown item: `criterion` (catalog|budget|year|km|fuelType|transmission|bodyType|previousOwners|colour), `weight`, `earned`, `outcome` (match|partial|miss|unknown).\n\nErrors: 404 unknown car; 422 VALIDATION_ERROR on bad query; 403 non-staff."
+          },
+          "response": []
+        },
+        {
+          "name": "Lead Vehicle Matches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/leads/{{leadId}}/vehicle-matches?minScore=60&limit=10",
+            "description": "**Story:** On a lead's detail screen, staff see how well the linked car fits the buyer, plus cars in stock worth showing them.\n\nGET /leads/:id/vehicle-matches — Admin or Salesperson (a salesperson only for leads assigned to them; others → 404).\n\n- `minScore` (optional int 0–100, default 60): lowest score for a suggestion.\n- `limit` (optional int 1–50, default 10): most suggestions.\n\n200 `{ linked, suggested, truncated }`:\n- `linked`: `{ vehicle, match }` for the car linked to the lead, or null. `match` is null when the lead has no preference.\n- `suggested`: `{ vehicle, match }[]` — live cars in the lead's showroom with status `open` or `linked` (not the lead's own car), scoring ≥ minScore on ≥ 2 criteria, best first. Empty when the lead has no preference.\n- `truncated`: only the newest 1000 cars were scored.\n- `vehicle` and `match` have the same shape as in Vehicle Lead Matches.\n\nErrors: 404 unknown lead; 422 VALIDATION_ERROR on bad query; 403 non-staff."
           },
           "response": []
         },

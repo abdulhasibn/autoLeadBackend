@@ -24,6 +24,10 @@ class FakeAuthProvider implements IAuthProvider {
   async refresh(): Promise<never> {
     throw new Error('Not expected in this test');
   }
+
+  async signOut(): Promise<never> {
+    throw new Error('Not expected in this test');
+  }
 }
 
 describe('LoginUseCase', () => {

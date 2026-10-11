@@ -48,6 +48,8 @@ Call `GET /auth/me` after login. **Roles live on the user row, not in the JWT.**
 
 When a request returns `401 AUTHENTICATION_FAILED`, call `POST /auth/refresh` with the refresh token. On success, replace both tokens. If refresh fails, send the user to login.
 
+**Sign out:** call `POST /auth/logout`, then clear both tokens locally, even if the call fails. **Change password:** after `204`, keep the current tokens; every other device is signed out. **Forgot password:** `POST /auth/forgot-password` emails a 6-digit code, then `POST /auth/reset-password` sets the new password. After `204`, send the user to login: every session was ended.
+
 ### 3. Build the admin screens in this order
 
 This matches the APIs that exist and the intended first-phase flow.
@@ -135,6 +137,11 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 |--------|------|------|
 | 401 | `AUTHENTICATION_FAILED` | Missing/invalid/expired bearer |
 | 401 | `INVALID_CREDENTIALS` | Bad email/password or refresh token |
+| 422 | `INVALID_CURRENT_PASSWORD` | `POST /auth/change-password` with the wrong current password (deliberately not 401, so it doesn't trigger a refresh) |
+| 422 | `PASSWORD_UNCHANGED` | New password equals the current one |
+| 422 | `WEAK_PASSWORD` | Supabase rejected the new password as too weak |
+| 422 | `INVALID_RESET_CODE` | Wrong or expired reset code (codes last 15 minutes and work once) |
+| 429 | `RATE_LIMITED` | Supabase Auth throttled the request; wait a minute |
 | 403 | `FORBIDDEN` | Authenticated but wrong role |
 | 404 | `NOT_FOUND` | Unknown or deactivated id |
 | 409 | `CONFLICT` / `UNIQUE_VIOLATION` | Duplicate live phone, email, or registration |
@@ -174,6 +181,10 @@ Use this as the frontend “API is up” check.
 | `POST` | `/auth/login` | Public | `200` `{ accessToken, refreshToken }` |
 | `POST` | `/auth/refresh` | Public | `200` `{ accessToken, refreshToken }` (old refresh token is rotated) |
 | `GET` | `/auth/me` | Bearer | `200` profile |
+| `POST` | `/auth/logout` | Bearer | `204`. Ends this session (`scope: "local"`, the default) or every session (`"global"`); their refresh tokens stop working |
+| `POST` | `/auth/change-password` | Bearer | `204`. Other sessions end; this one stays signed in |
+| `POST` | `/auth/forgot-password` | Public | `202` `{ message }`. Same answer whether or not the account exists |
+| `POST` | `/auth/reset-password` | Public | `204`. Every session ends; sign in again |
 
 **Login / refresh body**
 
@@ -183,6 +194,28 @@ Use this as the frontend “API is up” check.
 
 ```json
 { "refreshToken": "<refreshToken>" }
+```
+
+**Logout body** (optional; an empty body signs out this device only)
+
+```json
+{ "scope": "local" }
+```
+
+**Change password body.** `newPassword` needs at least 8 characters and must differ from the current password.
+
+```json
+{ "currentPassword": "secret12", "newPassword": "new-secret-34" }
+```
+
+**Forgot / reset password bodies.** The email carries a 6-digit `code` that is valid for 15 minutes. Requesting a new code replaces the old one, and the same address can request at most one code per minute.
+
+```json
+{ "email": "admin@example.com" }
+```
+
+```json
+{ "email": "admin@example.com", "code": "123456", "newPassword": "new-secret-34" }
 ```
 
 **Me**
@@ -510,6 +543,7 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 | `PUT` | `/leads/:id/assignment` | `200` `{ "id", "assignedTo" }` (Admin) |
 | `PUT` | `/leads/:id/preference` | `200` the whole preference (`preferredMakeId` … `preferredMaxOwners`) |
 | `GET` | `/leads/vehicle-matches/:vehicleId` | `200` `{ vehicle, linked, suggested, truncated }`: match % per lead |
+| `GET` | `/leads/:id/vehicle-matches` | `200` `{ linked, suggested, truncated }`: match % per car |
 | `GET` | `/leads/:id/follow-ups` | `200` page of follow-ups (`?status=open\|closed\|all`) |
 | `POST` | `/leads/:id/follow-ups` | `201` follow-up |
 | `POST` | `/leads/:id/follow-ups/:followUpId/complete` | `200` `{ "followUp", "next" }` |
@@ -590,6 +624,23 @@ Each lead is the usual lead object plus `match`:
     ]
   } }],
   "suggested": [],
+  "truncated": false
+}
+```
+
+**Lead vehicle matches:** `GET /leads/:id/vehicle-matches?minScore=60&limit=10` is the same score the other way round: cars for one lead. Use it on the lead detail screen.
+- `linked`: `{ vehicle, match }` for the lead's own car, or `null` when it has none.
+- `suggested`: `{ vehicle, match }[]`. These are live cars in the lead's showroom with status `open` or `linked` (a car can carry several leads), not counting the lead's own car. Each scores at least `minScore` on at least two criteria. Best first, at most `limit`. Link one with `PATCH /leads/:id/vehicle`.
+- A lead with no preference and no budget gets `match: null` on `linked` and an empty `suggested`.
+- A salesperson can only ask about leads assigned to them; anyone else's lead, or an unknown one, answers `404`.
+- `truncated: true` means only the newest 1000 cars were scored.
+
+`vehicle` and `match` have the shapes shown above:
+
+```json
+{
+  "linked": null,
+  "suggested": [{ "vehicle": { "id": "uuid", "makeName": "Hyundai", "modelName": "i20", "…": "…", "listedPrice": 620000 }, "match": { "score": 87, "evaluatedCriteria": 4, "breakdown": ["…"] } }],
   "truncated": false
 }
 ```

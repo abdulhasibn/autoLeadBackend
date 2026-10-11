@@ -7,7 +7,8 @@ const TERMINAL: readonly VehicleStatusValue[] = ['sold'];
 // `linked` and `sold` follow the vehicle's leads; an admin only drops or re-lists.
 const ADMIN_SETTABLE: readonly VehicleStatusValue[] = ['open', 'dropped'];
 
-const LINKABLE: readonly VehicleStatusValue[] = ['open', 'linked'];
+/** Statuses a lead can still be linked to. */
+export const LINKABLE_VEHICLE_STATUSES: readonly VehicleStatusValue[] = ['open', 'linked'];
 
 const ALLOWED: Readonly<Record<VehicleStatusValue, readonly VehicleStatusValue[]>> = {
   open: ['linked', 'dropped'],
@@ -53,7 +54,7 @@ export class VehicleStatus {
 
   /** Whether a lead may be attached to a vehicle in this status. */
   isLinkable(): boolean {
-    return LINKABLE.includes(this.value);
+    return LINKABLE_VEHICLE_STATUSES.includes(this.value);
   }
 
   canTransitionTo(next: VehicleStatus): boolean {

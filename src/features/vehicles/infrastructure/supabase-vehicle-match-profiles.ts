@@ -7,7 +7,10 @@ import type { Database } from '../../../infrastructure/supabase/database.types';
 import type {
   IVehicleMatchProfiles,
   VehicleMatchProfile,
+  VehicleMatchProfileCriteria,
+  VehicleMatchProfilePage,
 } from '../domain/vehicle-match-profile.queries';
+import { LINKABLE_VEHICLE_STATUSES } from '../domain/vehicle-status.value-object';
 
 const MATCH_PROFILE_COLUMNS = [
   'id, showroom_id, status, variant_id, year, registration_number, km_driven, colour',
@@ -63,6 +66,35 @@ export class SupabaseVehicleMatchProfiles implements IVehicleMatchProfiles {
       return null;
     }
     return toMatchProfile(data as unknown as MatchProfileRow);
+  }
+
+  async listMatchCandidates(
+    criteria: VehicleMatchProfileCriteria,
+  ): Promise<VehicleMatchProfilePage> {
+    let query = this.db
+      .from('vehicles')
+      .select(MATCH_PROFILE_COLUMNS)
+      .eq('showroom_id', criteria.showroomId)
+      .in('status', [...LINKABLE_VEHICLE_STATUSES])
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(criteria.limit + 1);
+    if (criteria.excludeVehicleId !== null) {
+      query = query.neq('id', criteria.excludeVehicleId);
+    }
+
+    const { data, error } = await query;
+    if (error !== null) {
+      throw new DatabaseUnavailableError(
+        `Failed to load vehicle match candidates: ${error.message}`,
+      );
+    }
+
+    const rows = (data ?? []) as unknown as MatchProfileRow[];
+    return {
+      vehicles: rows.slice(0, criteria.limit).map(toMatchProfile),
+      truncated: rows.length > criteria.limit,
+    };
   }
 }
 
