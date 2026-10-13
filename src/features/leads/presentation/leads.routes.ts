@@ -13,6 +13,7 @@ import type { ListLeadStatusHistoryController } from './controllers/list-lead-st
 import type { ListLeadsController } from './controllers/list-leads.controller';
 import type { ListVehicleLeadMatchesController } from './controllers/list-vehicle-lead-matches.controller';
 import type { RemoveLeadVehicleController } from './controllers/remove-lead-vehicle.controller';
+import type { SuggestVehiclesController } from './controllers/suggest-vehicles.controller';
 import type { ScheduleFollowUpController } from './controllers/schedule-follow-up.controller';
 import type { SetLeadPreferenceController } from './controllers/set-lead-preference.controller';
 import type { UpdateLeadController } from './controllers/update-lead.controller';
@@ -35,6 +36,7 @@ export interface LeadsRouterDeps {
   readonly listLeadStatusHistoryController: ListLeadStatusHistoryController;
   readonly listVehicleLeadMatchesController: ListVehicleLeadMatchesController;
   readonly listLeadVehicleMatchesController: ListLeadVehicleMatchesController;
+  readonly suggestVehiclesController: SuggestVehiclesController;
 }
 
 export function createLeadsRouter(deps: LeadsRouterDeps): Router {
@@ -44,7 +46,8 @@ export function createLeadsRouter(deps: LeadsRouterDeps): Router {
 
   router.post('/', deps.createLeadController.handle());
   router.get('/', deps.listLeadsController.handle());
-  // Before '/:id' so 'vehicle-matches' is not read as a lead id.
+  // Before '/:id' so these static segments are not read as a lead id.
+  router.post('/vehicle-suggestions', deps.suggestVehiclesController.handle());
   router.get('/vehicle-matches/:vehicleId', deps.listVehicleLeadMatchesController.handle());
   router.get('/:id', deps.getLeadController.handle());
   router.patch('/:id', deps.updateLeadController.handle());
