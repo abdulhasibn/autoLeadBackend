@@ -30,6 +30,7 @@ import { ListVehicleLeadMatchesUseCase } from './application/use-cases/list-vehi
 import { RemoveLeadVehicleUseCase } from './application/use-cases/remove-lead-vehicle.use-case';
 import { ScheduleFollowUpUseCase } from './application/use-cases/schedule-follow-up.use-case';
 import { SetLeadPreferenceUseCase } from './application/use-cases/set-lead-preference.use-case';
+import { SuggestVehiclesUseCase } from './application/use-cases/suggest-vehicles.use-case';
 import { UpdateLeadUseCase } from './application/use-cases/update-lead.use-case';
 import { SupabaseAssignableStaffLookup } from './infrastructure/supabase-assignable-staff.lookup';
 import { SupabaseFollowUpQueries } from './infrastructure/supabase-follow-up.queries';
@@ -51,6 +52,7 @@ import { ListVehicleLeadMatchesController } from './presentation/controllers/lis
 import { RemoveLeadVehicleController } from './presentation/controllers/remove-lead-vehicle.controller';
 import { ScheduleFollowUpController } from './presentation/controllers/schedule-follow-up.controller';
 import { SetLeadPreferenceController } from './presentation/controllers/set-lead-preference.controller';
+import { SuggestVehiclesController } from './presentation/controllers/suggest-vehicles.controller';
 import { UpdateLeadController } from './presentation/controllers/update-lead.controller';
 import { createLeadsRouter } from './presentation/leads.routes';
 
@@ -147,6 +149,7 @@ export function composeLeads(
     queries,
     deps.matchableVehicles,
   );
+  const suggestVehiclesUseCase = new SuggestVehiclesUseCase(policy, deps.matchableVehicles);
   const listLeadStatusHistoryUseCase = new ListLeadStatusHistoryUseCase(
     policy,
     queries,
@@ -177,6 +180,7 @@ export function composeLeads(
     listLeadVehicleMatchesController: new ListLeadVehicleMatchesController(
       listLeadVehicleMatchesUseCase,
     ),
+    suggestVehiclesController: new SuggestVehiclesController(suggestVehiclesUseCase),
   });
 
   const errorMapper: ErrorMapper = (err) => {
