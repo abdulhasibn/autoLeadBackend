@@ -18,9 +18,12 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json",
     "prepare": "husky",
-    "auth:configure-email": "node --env-file=.env scripts/configure-auth-email.mjs"
+    "auth:configure-email": "tsx --env-file=.env scripts/configure-auth-email.ts",
+    "catalog:import": "tsx --env-file=.env scripts/import-vehicle-catalog.ts",
+    "seed:demo-vehicles": "tsx --env-file=.env scripts/seed-demo-vehicles.ts",
+    "seed:test-data": "tsx --env-file=.env scripts/seed-test-data.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",

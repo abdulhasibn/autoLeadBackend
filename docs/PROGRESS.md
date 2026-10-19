@@ -12,7 +12,7 @@
 | Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0012 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name + dealer handoff round 2 + lead match preferences + follow-up completion) | All 18 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name + dealer handoff round 2 + lead match preferences + follow-up completion + replace vehicle catalog) | All 19 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
@@ -55,6 +55,20 @@
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-10-17 — Architecture audit; operator scripts moved to TypeScript
+
+- Audit of every `src/features/*` against `.cursor/rules/architecture.mdc` (H1–H12): no hard rejects. Every feature has all four layers; no cross-feature imports; Supabase only in infrastructure; no command use case takes a query port. One soft drift fixed: follow-up status (completion wins over cancellation) was re-derived in `supabase-follow-up.queries.ts`; now one domain function, `followUpStatusOf`, used by the entity and the read model.
+- `scripts/*.mjs` → TypeScript, typed against `database.types.ts` (typing caught `source_id` being an integer, not a string, in the catalog import). Shared `scripts/lib/supabase.ts` (client, `check`, `run`) and `scripts/lib/random.ts` (seeded PRNG + sampling).
+- New commands: `pnpm seed:test-data [--dry-run]`, `pnpm seed:demo-vehicles [--cleanup]`, `pnpm catalog:import <dir>`; `pnpm auth:configure-email` now runs the `.ts`. `pnpm typecheck` also checks `scripts/` (`tsconfig.scripts.json`), so CI covers them.
+- Behaviour unchanged: both seeders were run old-vs-new against a stubbed Supabase with a frozen clock and UUIDs; recorded writes are byte-identical (the demo seeder needs file-read timing pinned too, since its parallel workers made even the old script non-deterministic).
+
+### 2026-10-13 — Catalog replaced with master data; hosted DB wiped
+
+- Hosted DB wiped: every `public` table except `roles` and `showrooms`, all `auth.users`, and the `vehicle-media` / `vehicle-documents` buckets.
+- Re-seeded with `scripts/seed-test-data.mjs`: six months of simulated showroom activity (staff incl. a deactivated salesperson and an admin who also sells, owners, ~330 vehicles in every status with photos / documents / financials, ~720 leads across all sources and statuses incl. revived `vehicle_unavailable`, reassignments + audit log, follow-ups in every state and outcome, notifications, buyers with saved / viewed cars, expenses and income). Direct inserts with backdated timestamps; the script keeps the ADR-0011 link / sale invariants itself. `--dry-run` prints the simulated distributions. Every seeded login uses `secret12` (admin: `admin@example.com`).
+- Migration `20261013120000_replace_vehicle_catalog`: `source_id` (+ `logo_url`) on makes / models / variants, `body_type` / `segment_type` on models, `launch_year` / `discontinued_year` on variants, fuel `lpg` / `lpg_petrol` allowed; `(make_id, name)` and `(model_id, name)` no longer unique (the export repeats names across launch windows).
+- `scripts/import-vehicle-catalog.mjs <export-dir>` loads brands / models / variants JSON (upsert on `source_id`): 67 makes, 725 models, 22,620 variants. Old spec columns (`ex_showroom_price`, dimensions, power…) are null for this data.
 
 ### 2026-10-10 — Sign out, change password, forgot / reset password
 

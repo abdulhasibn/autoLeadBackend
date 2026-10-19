@@ -11,15 +11,16 @@
 // finds them.
 //
 // Usage:
-//   node --env-file=.env scripts/seed-demo-vehicles.mjs
-//   node --env-file=.env scripts/seed-demo-vehicles.mjs --cleanup
+//   pnpm seed:demo-vehicles
+//   pnpm seed:demo-vehicles --cleanup
 
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
-import { createClient } from '@supabase/supabase-js';
+import type { TablesInsert } from '../src/infrastructure/supabase/database.types';
+import { createRandom, roundTo } from './lib/random';
+import { check, type Db, run, serviceRoleClient } from './lib/supabase';
 
 const SHOWROOM_ID = 'b0000000-0000-4000-8000-000000000001';
 const PHONE_PREFIX = '+91984600';
@@ -27,40 +28,54 @@ const BUCKET = 'vehicle-media';
 const VEHICLES_PER_MODEL = 5;
 const USER_AGENT = 'AutoLeadDemoSeed/1.0 (local demo data loader)';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const root = join(__dirname, '..');
 const cacheDir = join(root, '.scratch', 'demo-vehicle-photos');
-const manifest = JSON.parse(
-  await readFile(join(root, 'scripts', 'demo-vehicle-photos.json'), 'utf8'),
-);
 
-const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
+/** One model in demo-vehicle-photos.json; each list holds photo names. */
+interface ManifestModel {
+  readonly make: string;
+  readonly model: string;
+  readonly years: readonly [number, number];
+  readonly front: readonly string[];
+  readonly rear: readonly string[];
+  readonly side: readonly string[];
+  readonly interior: readonly string[];
+  readonly dashboard: readonly string[];
+  readonly engine: readonly string[];
+  readonly tyres: readonly string[];
+}
+
+interface Manifest {
+  readonly models: readonly ManifestModel[];
+  readonly photos: Readonly<Record<string, { readonly url: string }>>;
+}
+
+interface CatalogVariant {
+  readonly id: string;
+  readonly name: string;
+  readonly fuel_type: string | null;
+  readonly transmission: string | null;
+  readonly ex_showroom_price: number | null;
+}
+
+interface SeedJob {
+  readonly actorId: string;
+  readonly model: ManifestModel;
+  readonly variant: CatalogVariant;
+  readonly index: number;
+  readonly ownerName: string;
+  readonly used: Set<string>;
+  readonly dropped: boolean;
+}
 
 // Seeded PRNG so runs produce similar-looking data.
-let seed = 20261010;
-function rand() {
-  seed = (seed + 0x6d2b79f5) | 0;
-  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-}
-const pick = (list) => list[Math.floor(rand() * list.length)];
-const between = (min, max) => min + Math.floor(rand() * (max - min + 1));
-const roundTo = (value, step) => Math.round(value / step) * step;
-
-function check(result, what) {
-  if (result.error) {
-    throw new Error(`${what}: ${result.error.message}`);
-  }
-  return result.data;
-}
+const { rand, pick, between } = createRandom(20261010);
 
 // ---------------------------------------------------------------------------
 // Cleanup
 // ---------------------------------------------------------------------------
 
-async function cleanup() {
+async function cleanup(db: Db): Promise<void> {
   const owners = check(
     await db.from('owners').select('id').like('phone', `${PHONE_PREFIX}%`),
     'list demo owners',
@@ -97,13 +112,13 @@ async function cleanup() {
 // Photos
 // ---------------------------------------------------------------------------
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-function cacheFile(name) {
+function cacheFile(name: string): string {
   return join(cacheDir, name.replace(/[^\w.()-]+/g, '_'));
 }
 
-async function exists(path) {
+async function exists(path: string): Promise<boolean> {
   try {
     return (await stat(path)).size > 0;
   } catch {
@@ -111,14 +126,17 @@ async function exists(path) {
   }
 }
 
-async function download(name) {
+async function download(manifest: Manifest, name: string): Promise<void> {
   const file = cacheFile(name);
   if (await exists(file)) {
     return;
   }
-  const { url } = manifest.photos[name];
+  const photo = manifest.photos[name];
+  if (photo === undefined) {
+    throw new Error(`Photo ${name} is not in the manifest`);
+  }
   for (let attempt = 1; attempt <= 5; attempt++) {
-    const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
+    const res = await fetch(photo.url, { headers: { 'User-Agent': USER_AGENT } });
     if (res.ok) {
       await writeFile(file, Buffer.from(await res.arrayBuffer()));
       await sleep(250);
@@ -132,12 +150,12 @@ async function download(name) {
   throw new Error(`Download ${name} failed after retries`);
 }
 
-async function downloadAll() {
+async function downloadAll(manifest: Manifest): Promise<void> {
   await mkdir(cacheDir, { recursive: true });
   const names = Object.keys(manifest.photos);
   let done = 0;
   for (const name of names) {
-    await download(name);
+    await download(manifest, name);
     done++;
     if (done % 25 === 0 || done === names.length) {
       console.log(`  photos ${done}/${names.length}`);
@@ -247,18 +265,21 @@ const HIGHLIGHTS = [
 ];
 const DROP_REASONS = ['Owner sold privately', 'Owner withdrew the listing'];
 
-function variantFuel(fuel) {
+function variantFuel(fuel: string | null): string {
   if (fuel === 'cng_petrol') return 'cng';
-  return ['petrol', 'diesel', 'cng', 'electric', 'hybrid'].includes(fuel) ? fuel : 'petrol';
+  return fuel !== null && ['petrol', 'diesel', 'cng', 'electric', 'hybrid'].includes(fuel)
+    ? fuel
+    : 'petrol';
 }
 
-function variantTransmission(transmission) {
-  return ['manual', 'automatic', 'amt', 'cvt', 'dct'].includes(transmission)
+function variantTransmission(transmission: string | null): string {
+  return transmission !== null &&
+    ['manual', 'automatic', 'amt', 'cvt', 'dct'].includes(transmission)
     ? transmission
     : 'manual';
 }
 
-function registrationNumber(used) {
+function registrationNumber(used: Set<string>): string {
   for (;;) {
     const rto = String(between(1, 53)).padStart(2, '0');
     const series = String.fromCharCode(65 + between(0, 25), 65 + between(0, 25));
@@ -270,8 +291,14 @@ function registrationNumber(used) {
   }
 }
 
-function photosFor(model, index) {
-  const at = (list, offset = 0) => list[(index + offset) % list.length];
+function photosFor(model: ManifestModel, index: number): [category: string, name: string][] {
+  const at = (list: readonly string[], offset = 0): string => {
+    const name = list[(index + offset) % list.length];
+    if (name === undefined) {
+      throw new Error(`${model.make} ${model.model} has an empty photo list`);
+    }
+    return name;
+  };
   const side = model.side;
   return [
     ['front', at(model.front)],
@@ -285,7 +312,7 @@ function photosFor(model, index) {
   ];
 }
 
-async function loadVariants(make, model) {
+async function loadVariants(db: Db, make: string, model: string): Promise<CatalogVariant[]> {
   const rows = check(
     await db
       .from('variants')
@@ -304,7 +331,10 @@ async function loadVariants(make, model) {
   return rows;
 }
 
-async function seedVehicle({ actorId, model, variant, index, ownerName, used, dropped }) {
+async function seedVehicle(
+  db: Db,
+  { actorId, model, variant, index, ownerName, used, dropped }: SeedJob,
+): Promise<void> {
   const now = new Date();
   const createdAt = new Date(
     now.getTime() - between(1, 75) * 86_400_000 - between(0, 86_399) * 1000,
@@ -321,7 +351,7 @@ async function seedVehicle({ actorId, model, variant, index, ownerName, used, dr
   const loanActive = rand() < 0.15;
 
   const ownerId = randomUUID();
-  const first = ownerName.split(' ')[0].toLowerCase();
+  const first = (ownerName.split(' ')[0] ?? ownerName).toLowerCase();
   check(
     await db.from('owners').insert({
       id: ownerId,
@@ -405,7 +435,7 @@ async function seedVehicle({ actorId, model, variant, index, ownerName, used, dr
     'backdate status history',
   );
 
-  const media = [];
+  const media: TablesInsert<'vehicle_media'>[] = [];
   for (const [sortOrder, [category, name]] of photosFor(model, index).entries()) {
     const storagePath = `${vehicleId}/${randomUUID()}.jpg`;
     const body = await readFile(cacheFile(name));
@@ -425,7 +455,7 @@ async function seedVehicle({ actorId, model, variant, index, ownerName, used, dr
   check(await db.from('vehicle_media').insert(media), 'insert media');
 }
 
-async function seedAll() {
+async function seedAll(db: Db, manifest: Manifest): Promise<void> {
   const existing = check(
     await db
       .from('owners')
@@ -456,20 +486,24 @@ async function seedAll() {
   );
 
   console.log('Downloading photos…');
-  await downloadAll();
+  await downloadAll(manifest);
 
   console.log('Seeding vehicles…');
-  const jobs = [];
+  const jobs: SeedJob[] = [];
   let index = 0;
   for (const model of manifest.models) {
-    const variants = await loadVariants(model.make, model.model);
+    const variants = await loadVariants(db, model.make, model.model);
     for (let i = 0; i < VEHICLES_PER_MODEL; i++) {
+      const ownerName = OWNER_NAMES[index];
+      if (ownerName === undefined) {
+        throw new Error(`Add more OWNER_NAMES: vehicle ${index + 1} has none`);
+      }
       jobs.push({
         actorId: actor.id,
         model,
         variant: pick(variants),
         index,
-        ownerName: OWNER_NAMES[index],
+        ownerName,
         used,
         // Every eleventh vehicle is dropped so that filter has something too.
         dropped: index % 11 === 10,
@@ -483,7 +517,7 @@ async function seedAll() {
   await Promise.all(
     Array.from({ length: 4 }, async () => {
       for (let job = queue.shift(); job; job = queue.shift()) {
-        await seedVehicle(job);
+        await seedVehicle(db, job);
         done++;
         console.log(
           `  ${done}/${jobs.length} ${job.model.make} ${job.model.model} (${job.variant.name})`,
@@ -494,8 +528,16 @@ async function seedAll() {
   console.log(`Seeded ${jobs.length} vehicles with ${jobs.length * 8} photos.`);
 }
 
-if (process.argv.includes('--cleanup')) {
-  await cleanup();
-} else {
-  await seedAll();
+async function main(): Promise<void> {
+  const manifest = JSON.parse(
+    await readFile(join(root, 'scripts', 'demo-vehicle-photos.json'), 'utf8'),
+  ) as Manifest;
+  const db = serviceRoleClient();
+  if (process.argv.includes('--cleanup')) {
+    await cleanup(db);
+  } else {
+    await seedAll(db, manifest);
+  }
 }
+
+run(main);

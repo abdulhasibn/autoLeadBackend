@@ -635,38 +635,56 @@ export type Database = {
         Row: {
           deleted_at: string | null;
           id: string;
+          logo_url: string | null;
           name: string;
+          source_id: number | null;
         };
         Insert: {
           deleted_at?: string | null;
           id?: string;
+          logo_url?: string | null;
           name: string;
+          source_id?: number | null;
         };
         Update: {
           deleted_at?: string | null;
           id?: string;
+          logo_url?: string | null;
           name?: string;
+          source_id?: number | null;
         };
         Relationships: [];
       };
       models: {
         Row: {
+          body_type: string | null;
           deleted_at: string | null;
           id: string;
+          logo_url: string | null;
           make_id: string;
           name: string;
+          segment_type: string | null;
+          source_id: number | null;
         };
         Insert: {
+          body_type?: string | null;
           deleted_at?: string | null;
           id?: string;
+          logo_url?: string | null;
           make_id: string;
           name: string;
+          segment_type?: string | null;
+          source_id?: number | null;
         };
         Update: {
+          body_type?: string | null;
           deleted_at?: string | null;
           id?: string;
+          logo_url?: string | null;
           make_id?: string;
           name?: string;
+          segment_type?: string | null;
+          source_id?: number | null;
         };
         Relationships: [
           {
@@ -1045,17 +1063,20 @@ export type Database = {
           body_type: string | null;
           cylinders: number | null;
           deleted_at: string | null;
+          discontinued_year: number | null;
           displacement_cc: number | null;
           ex_showroom_price: number | null;
           fuel_tank_capacity_l: number | null;
           fuel_type: string | null;
           height_mm: number | null;
           id: string;
+          launch_year: number | null;
           length_mm: number | null;
           model_id: string;
           name: string;
           power: number | null;
           seating_capacity: number | null;
+          source_id: number | null;
           torque: number | null;
           transmission: string | null;
           width_mm: number | null;
@@ -1064,17 +1085,20 @@ export type Database = {
           body_type?: string | null;
           cylinders?: number | null;
           deleted_at?: string | null;
+          discontinued_year?: number | null;
           displacement_cc?: number | null;
           ex_showroom_price?: number | null;
           fuel_tank_capacity_l?: number | null;
           fuel_type?: string | null;
           height_mm?: number | null;
           id?: string;
+          launch_year?: number | null;
           length_mm?: number | null;
           model_id: string;
           name: string;
           power?: number | null;
           seating_capacity?: number | null;
+          source_id?: number | null;
           torque?: number | null;
           transmission?: string | null;
           width_mm?: number | null;
@@ -1083,17 +1107,20 @@ export type Database = {
           body_type?: string | null;
           cylinders?: number | null;
           deleted_at?: string | null;
+          discontinued_year?: number | null;
           displacement_cc?: number | null;
           ex_showroom_price?: number | null;
           fuel_tank_capacity_l?: number | null;
           fuel_type?: string | null;
           height_mm?: number | null;
           id?: string;
+          launch_year?: number | null;
           length_mm?: number | null;
           model_id?: string;
           name?: string;
           power?: number | null;
           seating_capacity?: number | null;
+          source_id?: number | null;
           torque?: number | null;
           transmission?: string | null;
           width_mm?: number | null;

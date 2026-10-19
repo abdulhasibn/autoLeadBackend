@@ -24,7 +24,7 @@ Use JSON only. Send `Content-Type: application/json` on bodies.
 
 ### 2. Sign in as the bootstrap admin
 
-The hosted project is seeded with:
+The hosted project is seeded by `scripts/seed-test-data.ts` (`pnpm seed:test-data`) with:
 
 | Field | Value |
 |-------|-------|
@@ -32,6 +32,8 @@ The hosted project is seeded with:
 | Password | `secret12` |
 | Role | `admin` |
 | Seeded showroom | `b0000000-0000-4000-8000-000000000001` |
+
+Other seeded logins (all with password `secret12`): `kavita.iyer@example.com` (admin + salesperson), `rohan.verma@example.com`, `sneha.kulkarni@example.com`, `priya.raman@example.com`, `deepa.hegde@example.com`, `vikram.joshi@example.com` (salespeople). `imran.shaikh@example.com` is a deactivated salesperson.
 
 ```http
 POST /auth/login

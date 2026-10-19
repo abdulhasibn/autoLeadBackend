@@ -75,6 +75,8 @@ Table user_roles {
 Table makes {
   id uuid [pk, default: `gen_random_uuid()`]
   name text [not null]
+  source_id integer [unique, note: 'master data export brand id; import upserts on it']
+  logo_url text
   deleted_at timestamptz
 
   indexes {
@@ -86,10 +88,14 @@ Table models {
   id uuid [pk, default: `gen_random_uuid()`]
   make_id uuid [not null, ref: > makes.id]
   name text [not null]
+  source_id integer [unique, note: 'master data export model id']
+  body_type text
+  segment_type text [note: 'entry | mid | premium']
+  logo_url text
   deleted_at timestamptz
 
   indexes {
-    (make_id, name) [unique, name: 'models_make_name_active_uidx', note: 'WHERE deleted_at IS NULL']
+    (make_id, name) [name: 'models_make_name_idx', note: 'not unique: the export repeats names; WHERE deleted_at IS NULL']
   }
 }
 
@@ -101,7 +107,7 @@ Table variants {
   displacement_cc integer
   cylinders smallint
   fuel_tank_capacity_l numeric(6,1)
-  fuel_type text [note: 'petrol | diesel | cng | electric | hybrid | cng_petrol']
+  fuel_type text [note: 'petrol | diesel | cng | electric | hybrid | cng_petrol | lpg | lpg_petrol']
   height_mm integer
   length_mm integer
   width_mm integer
@@ -110,10 +116,13 @@ Table variants {
   transmission text [note: 'manual | automatic | amt | cvt | dct']
   power numeric(8,2) [note: 'source Power; mostly bhp']
   torque numeric(8,2) [note: 'source Torque; mostly Nm']
+  source_id integer [unique, note: 'master data export variant id']
+  launch_year smallint
+  discontinued_year smallint
   deleted_at timestamptz
 
   indexes {
-    (model_id, name) [unique, name: 'variants_model_name_active_uidx', note: 'WHERE deleted_at IS NULL']
+    (model_id, name) [name: 'variants_model_name_idx', note: 'not unique: one row per launch window; WHERE deleted_at IS NULL']
   }
 }
 

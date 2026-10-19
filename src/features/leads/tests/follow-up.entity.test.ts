@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import { toNotificationId } from '../../../domain/shared/notification-id';
 import { toUserId } from '../../../domain/shared/user-id';
-import { FollowUp, type FollowUpScheduleProps } from '../domain/follow-up.entity';
+import { FollowUp, type FollowUpScheduleProps, followUpStatusOf } from '../domain/follow-up.entity';
 import { toFollowUpId } from '../domain/follow-up-id';
 import { FollowUpOutcome } from '../domain/follow-up-outcome.value-object';
 import { FollowUpTaskType } from '../domain/follow-up-task-type.value-object';
@@ -81,5 +81,12 @@ describe('FollowUpOutcome', () => {
   it('rejects unknown outcomes', () => {
     expect(() => FollowUpOutcome.create('maybe')).toThrow('Follow-up outcome must be');
     expect(FollowUpOutcome.create(' no_answer ').value).toBe('no_answer');
+  });
+
+  it('derives status with completion winning over cancellation', () => {
+    expect(followUpStatusOf(false, false)).toBe('open');
+    expect(followUpStatusOf(false, true)).toBe('cancelled');
+    expect(followUpStatusOf(true, false)).toBe('completed');
+    expect(followUpStatusOf(true, true)).toBe('completed');
   });
 });

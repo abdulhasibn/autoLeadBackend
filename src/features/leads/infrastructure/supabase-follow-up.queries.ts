@@ -6,7 +6,7 @@ import type { Database } from '../../../infrastructure/supabase/database.types';
 import { emptyPageIfPastEnd } from '../../../infrastructure/supabase/range-not-satisfiable';
 import type { Page, Pagination } from '../../../shared/pagination/pagination';
 import { toPage } from '../../../shared/pagination/pagination';
-import type { FollowUpStatus } from '../domain/follow-up.entity';
+import { followUpStatusOf } from '../domain/follow-up.entity';
 import type {
   FollowUpListScope,
   FollowUpReadModel,
@@ -90,8 +90,7 @@ export class SupabaseFollowUpQueries implements IFollowUpQueries {
 }
 
 function toReadModel(row: FollowUpListRow): FollowUpReadModel {
-  const status: FollowUpStatus =
-    row.completed_at !== null ? 'completed' : row.deleted_at !== null ? 'cancelled' : 'open';
+  const status = followUpStatusOf(row.completed_at !== null, row.deleted_at !== null);
   return {
     id: row.id,
     leadId: row.lead_id,
