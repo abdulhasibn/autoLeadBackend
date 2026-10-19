@@ -33,6 +33,8 @@ The hosted project is seeded with:
 | Role | `admin` |
 | Seeded showroom | `b0000000-0000-4000-8000-000000000001` |
 
+Other seeded logins (all with password `secret12`): `kavita.iyer@example.com` (admin + salesperson), `rohan.verma@example.com`, `sneha.kulkarni@example.com`, `priya.raman@example.com`, `deepa.hegde@example.com`, `vikram.joshi@example.com` (salespeople). `imran.shaikh@example.com` is a deactivated salesperson.
+
 ```http
 POST /auth/login
 { "email": "admin@example.com", "password": "secret12" }
