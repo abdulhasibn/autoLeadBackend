@@ -8,6 +8,14 @@ import type { LeadId } from '../../../domain/shared/lead-id';
 
 export type FollowUpStatus = 'open' | 'completed' | 'cancelled';
 
+/** Completion wins over cancellation: a completed follow-up is never reported as cancelled. */
+export function followUpStatusOf(isCompleted: boolean, isCancelled: boolean): FollowUpStatus {
+  if (isCompleted) {
+    return 'completed';
+  }
+  return isCancelled ? 'cancelled' : 'open';
+}
+
 export interface FollowUpScheduleProps {
   readonly id: FollowUpId;
   readonly leadId: LeadId;
@@ -110,10 +118,7 @@ export class FollowUp {
   }
 
   get status(): FollowUpStatus {
-    if (this.completionState !== null) {
-      return 'completed';
-    }
-    return this.cancellationState === null ? 'open' : 'cancelled';
+    return followUpStatusOf(this.completionState !== null, this.cancellationState !== null);
   }
 
   get completion(): FollowUpCompletion | null {
