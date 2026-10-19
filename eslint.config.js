@@ -19,6 +19,13 @@ module.exports = tseslint.config(
     },
   },
   {
+    // Operator scripts report progress on stdout.
+    files: ['scripts/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     files: ['**/*.test.ts', '**/tests/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',

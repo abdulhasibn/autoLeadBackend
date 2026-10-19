@@ -56,6 +56,13 @@
 
 ## Log
 
+### 2026-10-17 — Architecture audit; operator scripts moved to TypeScript
+
+- Audit of every `src/features/*` against `.cursor/rules/architecture.mdc` (H1–H12): no hard rejects. Every feature has all four layers; no cross-feature imports; Supabase only in infrastructure; no command use case takes a query port. One soft drift fixed: follow-up status (completion wins over cancellation) was re-derived in `supabase-follow-up.queries.ts`; now one domain function, `followUpStatusOf`, used by the entity and the read model.
+- `scripts/*.mjs` → TypeScript, typed against `database.types.ts` (typing caught `source_id` being an integer, not a string, in the catalog import). Shared `scripts/lib/supabase.ts` (client, `check`, `run`) and `scripts/lib/random.ts` (seeded PRNG + sampling).
+- New commands: `pnpm seed:test-data [--dry-run]`, `pnpm seed:demo-vehicles [--cleanup]`, `pnpm catalog:import <dir>`; `pnpm auth:configure-email` now runs the `.ts`. `pnpm typecheck` also checks `scripts/` (`tsconfig.scripts.json`), so CI covers them.
+- Behaviour unchanged: both seeders were run old-vs-new against a stubbed Supabase with a frozen clock and UUIDs; recorded writes are byte-identical (the demo seeder needs file-read timing pinned too, since its parallel workers made even the old script non-deterministic).
+
 ### 2026-10-13 — Catalog replaced with master data; hosted DB wiped
 
 - Hosted DB wiped: every `public` table except `roles` and `showrooms`, all `auth.users`, and the `vehicle-media` / `vehicle-documents` buckets.

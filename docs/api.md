@@ -24,7 +24,7 @@ Use JSON only. Send `Content-Type: application/json` on bodies.
 
 ### 2. Sign in as the bootstrap admin
 
-The hosted project is seeded with:
+The hosted project is seeded by `scripts/seed-test-data.ts` (`pnpm seed:test-data`) with:
 
 | Field | Value |
 |-------|-------|
