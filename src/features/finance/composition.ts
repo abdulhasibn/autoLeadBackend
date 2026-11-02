@@ -9,11 +9,23 @@ import { FinanceAlreadyInitializedError } from './application/errors/finance-alr
 import { FinanceLockedError } from './application/errors/finance-locked.error';
 import { FinanceNotInitializedError } from './application/errors/finance-not-initialized.error';
 import { FinanceUnlockBlockedError } from './application/errors/finance-unlock-blocked.error';
+import { FinanceTagNameTakenError } from './application/errors/finance-tag-name-taken.error';
 import { FinanceVaultNotConfirmedError } from './application/errors/finance-vault-not-confirmed.error';
 import { InvalidFinanceKeyError } from './application/errors/invalid-finance-key.error';
 import { FinancePolicy } from './application/policies/finance.policy';
+import { DefaultTagSeeder } from './application/services/default-tag-seeder';
+import { EntrySealer } from './application/services/entry.sealer';
 import { FinanceSessionService } from './application/services/finance-session.service';
+import { TagSealer } from './application/services/tag.sealer';
 import { VaultKeyring } from './application/services/vault-keyring';
+import { CreateFinanceEntryUseCase } from './application/use-cases/create-finance-entry.use-case';
+import { CreateFinanceTagUseCase } from './application/use-cases/create-finance-tag.use-case';
+import { DeleteFinanceEntryUseCase } from './application/use-cases/delete-finance-entry.use-case';
+import { GetFinanceEntryUseCase } from './application/use-cases/get-finance-entry.use-case';
+import { ListFinanceEntriesUseCase } from './application/use-cases/list-finance-entries.use-case';
+import { ListFinanceTagsUseCase } from './application/use-cases/list-finance-tags.use-case';
+import { UpdateFinanceEntryUseCase } from './application/use-cases/update-finance-entry.use-case';
+import { UpdateFinanceTagUseCase } from './application/use-cases/update-finance-tag.use-case';
 import { ChangeFinanceKeyUseCase } from './application/use-cases/change-finance-key.use-case';
 import { ConfirmVaultUseCase } from './application/use-cases/confirm-vault.use-case';
 import { GetVaultStatusUseCase } from './application/use-cases/get-vault-status.use-case';
@@ -24,10 +36,23 @@ import { UnlockVaultUseCase } from './application/use-cases/unlock-vault.use-cas
 import type { KdfParams } from './domain/finance-crypto.port';
 import { DEFAULT_KDF_PARAMS } from './domain/finance.constants';
 import { NodeFinanceCrypto } from './infrastructure/node-finance-crypto';
+import { SupabaseFinanceEntryQueries } from './infrastructure/supabase-finance-entry.queries';
+import { SupabaseFinanceEntryRepository } from './infrastructure/supabase-finance-entry.repository';
+import { SupabaseFinanceTagQueries } from './infrastructure/supabase-finance-tag.queries';
+import { SupabaseFinanceTagRepository } from './infrastructure/supabase-finance-tag.repository';
+import { SupabaseFinanceVehicleLookup } from './infrastructure/supabase-finance-vehicle.lookup';
 import { SupabaseFinanceAuditLog } from './infrastructure/supabase-finance-audit-log';
 import { SupabaseFinanceVaultQueries } from './infrastructure/supabase-finance-vault.queries';
 import { SupabaseFinanceSessionRepository } from './infrastructure/supabase-finance-session.repository';
 import { SupabaseFinanceVaultRepository } from './infrastructure/supabase-finance-vault.repository';
+import { CreateFinanceEntryController } from './presentation/controllers/create-finance-entry.controller';
+import { CreateFinanceTagController } from './presentation/controllers/create-finance-tag.controller';
+import { DeleteFinanceEntryController } from './presentation/controllers/delete-finance-entry.controller';
+import { GetFinanceEntryController } from './presentation/controllers/get-finance-entry.controller';
+import { ListFinanceEntriesController } from './presentation/controllers/list-finance-entries.controller';
+import { ListFinanceTagsController } from './presentation/controllers/list-finance-tags.controller';
+import { UpdateFinanceEntryController } from './presentation/controllers/update-finance-entry.controller';
+import { UpdateFinanceTagController } from './presentation/controllers/update-finance-tag.controller';
 import { ChangeFinanceKeyController } from './presentation/controllers/change-finance-key.controller';
 import { ConfirmVaultController } from './presentation/controllers/confirm-vault.controller';
 import { GetVaultStatusController } from './presentation/controllers/get-vault-status.controller';
@@ -68,6 +93,15 @@ export function composeFinance(
   const keyring = new VaultKeyring(vaults, crypto, deps.clock, audit);
   const sessionService = new FinanceSessionService(sessions, crypto, deps.clock, ids);
 
+  const entries = new SupabaseFinanceEntryRepository(infraClient);
+  const entryQueries = new SupabaseFinanceEntryQueries(infraClient);
+  const tags = new SupabaseFinanceTagRepository(infraClient);
+  const tagQueries = new SupabaseFinanceTagQueries(infraClient);
+  const vehicles = new SupabaseFinanceVehicleLookup(infraClient);
+  const entrySealer = new EntrySealer();
+  const tagSealer = new TagSealer();
+  const tagSeeder = new DefaultTagSeeder(tags, tagSealer, deps.clock, ids);
+
   const router = createFinanceRouter({
     bearerMiddleware: deps.bearerMiddleware,
     getVaultStatusController: new GetVaultStatusController(
@@ -89,7 +123,7 @@ export function composeFinance(
       new ConfirmVaultUseCase(policy, vaults, keyring, audit, deps.clock),
     ),
     unlockVaultController: new UnlockVaultController(
-      new UnlockVaultUseCase(policy, vaults, keyring, sessionService, audit, deps.clock),
+      new UnlockVaultUseCase(policy, vaults, keyring, sessionService, audit, deps.clock, tagSeeder),
     ),
     lockVaultController: new LockVaultController(
       new LockVaultUseCase(policy, vaults, sessionService, audit, deps.clock),
@@ -109,6 +143,65 @@ export function composeFinance(
     recoverVaultController: new RecoverVaultController(
       new RecoverVaultUseCase(policy, vaults, keyring, sessions, crypto, audit, deps.clock),
     ),
+    listFinanceTagsController: new ListFinanceTagsController(
+      new ListFinanceTagsUseCase(policy, sessionService, tagQueries, tagSealer),
+    ),
+    createFinanceTagController: new CreateFinanceTagController(
+      new CreateFinanceTagUseCase(policy, sessionService, tags, tagSealer, deps.clock, ids),
+    ),
+    updateFinanceTagController: new UpdateFinanceTagController(
+      new UpdateFinanceTagUseCase(policy, sessionService, tags, tagSealer, deps.clock),
+    ),
+    listFinanceEntriesController: new ListFinanceEntriesController(
+      new ListFinanceEntriesUseCase(
+        policy,
+        sessionService,
+        entryQueries,
+        tagQueries,
+        vehicles,
+        entrySealer,
+        tagSealer,
+      ),
+    ),
+    createFinanceEntryController: new CreateFinanceEntryController(
+      new CreateFinanceEntryUseCase(
+        policy,
+        sessionService,
+        entries,
+        tags,
+        vehicles,
+        entrySealer,
+        tagSealer,
+        deps.clock,
+        ids,
+      ),
+    ),
+    getFinanceEntryController: new GetFinanceEntryController(
+      new GetFinanceEntryUseCase(
+        policy,
+        sessionService,
+        entryQueries,
+        tagQueries,
+        vehicles,
+        entrySealer,
+        tagSealer,
+      ),
+    ),
+    updateFinanceEntryController: new UpdateFinanceEntryController(
+      new UpdateFinanceEntryUseCase(
+        policy,
+        sessionService,
+        entries,
+        tags,
+        vehicles,
+        entrySealer,
+        tagSealer,
+        deps.clock,
+      ),
+    ),
+    deleteFinanceEntryController: new DeleteFinanceEntryController(
+      new DeleteFinanceEntryUseCase(policy, sessionService, entries, entrySealer, deps.clock),
+    ),
   });
 
   const errorMapper: ErrorMapper = (err) => {
@@ -116,6 +209,7 @@ export function composeFinance(
       return { status: 423, code: err.code, message: err.message };
     }
     if (
+      err instanceof FinanceTagNameTakenError ||
       err instanceof FinanceNotInitializedError ||
       err instanceof FinanceAlreadyInitializedError ||
       err instanceof FinanceVaultNotConfirmedError

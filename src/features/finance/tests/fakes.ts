@@ -3,7 +3,10 @@ import { toUserId } from '../../../domain/shared/user-id';
 import type { Clock } from '../../../shared/clock/clock';
 import type { IdGenerator } from '../../../shared/ids/id-generator';
 import { FinancePolicy } from '../application/policies/finance.policy';
+import { DefaultTagSeeder } from '../application/services/default-tag-seeder';
+import { EntrySealer } from '../application/services/entry.sealer';
 import { FinanceSessionService } from '../application/services/finance-session.service';
+import { TagSealer } from '../application/services/tag.sealer';
 import { VaultKeyring } from '../application/services/vault-keyring';
 import type { FinanceAuditAction, IFinanceAuditLog } from '../domain/finance-audit-log.port';
 import type { KdfParams } from '../domain/finance-crypto.port';
@@ -17,7 +20,24 @@ import type {
   IFinanceVaultQueries,
 } from '../domain/finance-vault.queries';
 import type { IFinanceVaultRepository } from '../domain/finance-vault.repository';
+import type { FinanceEntryId } from '../domain/finance-entry-id';
+import type {
+  FinanceEntryCriteria,
+  IFinanceEntryQueries,
+  SealedEntryPage,
+} from '../domain/finance-entry.queries';
+import type { IFinanceEntryRepository } from '../domain/finance-entry.repository';
+import type { FinanceTagId } from '../domain/finance-tag-id';
+import type { IFinanceTagQueries } from '../domain/finance-tag.queries';
+import type { IFinanceTagRepository } from '../domain/finance-tag.repository';
+import type {
+  FinanceVehicleFacts,
+  IFinanceVehicleLookup,
+} from '../domain/finance-vehicle-lookup.port';
+import type { SealedFinanceEntry, SealedFinanceTag } from '../domain/sealed-finance-records';
 import { NodeFinanceCrypto } from '../infrastructure/node-finance-crypto';
+import { toShowroomId } from '../../../domain/shared/showroom-id';
+import { toVehicleId, type VehicleId } from '../../../domain/shared/vehicle-id';
 
 /** Cheap scrypt cost so tests run fast; production uses DEFAULT_KDF_PARAMS. */
 export const TEST_KDF: KdfParams = { algorithm: 'scrypt', n: 2 ** 10, r: 8, p: 1, keyLength: 32 };
@@ -135,6 +155,112 @@ export class FakeFinanceAuditLog implements IFinanceAuditLog {
   }
 }
 
+/** Sealed entries; the repository and queries read the same store, like one table. */
+export class InMemoryFinanceEntryStore implements IFinanceEntryRepository, IFinanceEntryQueries {
+  readonly rows = new Map<string, SealedFinanceEntry>();
+
+  async findById(id: FinanceEntryId): Promise<SealedFinanceEntry | null> {
+    const row = this.rows.get(id);
+    return row === undefined || row.deletedAt !== null ? null : row;
+  }
+
+  async save(entry: SealedFinanceEntry): Promise<void> {
+    this.rows.set(entry.id, entry);
+  }
+
+  async list(criteria: FinanceEntryCriteria): Promise<SealedEntryPage> {
+    const matched = [...this.rows.values()]
+      .filter((row) => row.deletedAt === null)
+      .filter((row) => criteria.from === undefined || row.entryDate >= criteria.from)
+      .filter((row) => criteria.to === undefined || row.entryDate <= criteria.to)
+      .filter((row) => criteria.kind === undefined || row.kind === criteria.kind)
+      .filter((row) => criteria.showroomId === undefined || row.showroomId === criteria.showroomId)
+      .filter((row) =>
+        criteria.vehicleId !== undefined
+          ? row.vehicleId === criteria.vehicleId
+          : criteria.unlinked === true
+            ? row.vehicleId === null
+            : true,
+      );
+    return {
+      rows: matched.slice(0, criteria.maxRows),
+      truncated: matched.length > criteria.maxRows,
+    };
+  }
+}
+
+export class InMemoryFinanceTagStore implements IFinanceTagRepository, IFinanceTagQueries {
+  readonly rows = new Map<string, SealedFinanceTag>();
+
+  async findAll(): Promise<readonly SealedFinanceTag[]> {
+    return [...this.rows.values()];
+  }
+
+  async listAll(): Promise<readonly SealedFinanceTag[]> {
+    return [...this.rows.values()];
+  }
+
+  async findById(id: FinanceTagId): Promise<SealedFinanceTag | null> {
+    return this.rows.get(id) ?? null;
+  }
+
+  async findByIds(ids: readonly FinanceTagId[]): Promise<readonly SealedFinanceTag[]> {
+    return ids.flatMap((id) => {
+      const row = this.rows.get(id);
+      return row === undefined ? [] : [row];
+    });
+  }
+
+  async save(tag: SealedFinanceTag): Promise<void> {
+    this.rows.set(tag.id, tag);
+  }
+
+  async saveMany(tags: readonly SealedFinanceTag[]): Promise<void> {
+    for (const tag of tags) {
+      this.rows.set(tag.id, tag);
+    }
+  }
+
+  async count(): Promise<number> {
+    return this.rows.size;
+  }
+}
+
+export const SHOWROOM_A = toShowroomId('b0000000-0000-4000-8000-000000000001');
+export const SHOWROOM_B = toShowroomId('b0000000-0000-4000-8000-000000000002');
+export const SWIFT = toVehicleId('dddddddd-0000-4000-8000-000000000001');
+export const CRETA = toVehicleId('dddddddd-0000-4000-8000-000000000002');
+export const DELETED_CAR = toVehicleId('dddddddd-0000-4000-8000-000000000003');
+
+export class FakeFinanceVehicleLookup implements IFinanceVehicleLookup {
+  readonly cars = new Map<string, FinanceVehicleFacts & { deleted: boolean }>([
+    [
+      SWIFT,
+      { id: SWIFT, showroomId: SHOWROOM_A, label: 'Maruti Swift · KA01AB1234', deleted: false },
+    ],
+    [
+      CRETA,
+      { id: CRETA, showroomId: SHOWROOM_B, label: 'Hyundai Creta · KA05CD5678', deleted: false },
+    ],
+    [
+      DELETED_CAR,
+      { id: DELETED_CAR, showroomId: SHOWROOM_A, label: 'Honda City · KA02EF0001', deleted: true },
+    ],
+  ]);
+
+  async findLinkable(id: VehicleId): Promise<FinanceVehicleFacts | null> {
+    const car = this.cars.get(id);
+    return car === undefined || car.deleted ? null : car;
+  }
+
+  async findMany(ids: readonly VehicleId[]): Promise<readonly FinanceVehicleFacts[]> {
+    return ids.flatMap((id) => {
+      const car = this.cars.get(id);
+      return car === undefined ? [] : [car];
+    });
+  }
+}
+
 export interface FinanceTestKit {
   readonly clock: FakeClock;
   readonly ids: SequentialIdGenerator;
@@ -146,6 +272,12 @@ export interface FinanceTestKit {
   readonly policy: FinancePolicy;
   readonly keyring: VaultKeyring;
   readonly sessionService: FinanceSessionService;
+  readonly entries: InMemoryFinanceEntryStore;
+  readonly tags: InMemoryFinanceTagStore;
+  readonly vehicles: FakeFinanceVehicleLookup;
+  readonly entrySealer: EntrySealer;
+  readonly tagSealer: TagSealer;
+  readonly tagSeeder: DefaultTagSeeder;
 }
 
 export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z')): FinanceTestKit {
@@ -155,6 +287,8 @@ export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z'))
   const vaults = new InMemoryFinanceVaultRepository();
   const sessions = new InMemoryFinanceSessionRepository();
   const audit = new FakeFinanceAuditLog();
+  const tags = new InMemoryFinanceTagStore();
+  const tagSealer = new TagSealer();
   return {
     clock,
     ids,
@@ -166,6 +300,12 @@ export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z'))
     policy: new FinancePolicy(),
     keyring: new VaultKeyring(vaults, crypto, clock, audit),
     sessionService: new FinanceSessionService(sessions, crypto, clock, ids),
+    entries: new InMemoryFinanceEntryStore(),
+    tags,
+    vehicles: new FakeFinanceVehicleLookup(),
+    entrySealer: new EntrySealer(),
+    tagSealer,
+    tagSeeder: new DefaultTagSeeder(tags, tagSealer, clock, ids),
   };
 }
 

@@ -137,6 +137,8 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 
 | Status | Code | When |
 |--------|------|------|
+| 400 | `INVALID_JSON` | Body is not valid JSON (the body is never logged) |
+| 413 | `PAYLOAD_TOO_LARGE` | Body over 1 MB |
 | 401 | `AUTHENTICATION_FAILED` | Missing/invalid/expired bearer |
 | 401 | `INVALID_CREDENTIALS` | Bad email/password or refresh token |
 | 422 | `INVALID_CURRENT_PASSWORD` | `POST /auth/change-password` with the wrong current password (deliberately not 401, so it doesn't trigger a refresh) |
@@ -166,13 +168,19 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | 422 | `INVALID_FINANCE_KEY` | Well-formed finance or recovery key that doesn't open the vault (counts toward the lockout) |
 | 423 | `FINANCE_LOCKED` | Finance route without a valid `X-Finance-Session` (missing, expired, locked, or another user's): show the unlock screen |
 | 429 | `FINANCE_UNLOCK_BLOCKED` | Five wrong keys within 15 minutes; key entry is paused for 15 minutes |
+| 409 | `FINANCE_TAG_NAME_TAKEN` | Another tag (archived or not) already has that name, ignoring case |
+| 422 | `FINANCE_TAG_NOT_FOUND` / `FINANCE_TAG_ARCHIVED` | An entry names an unknown tag, or adds an archived one (`error.details.tagId`) |
+| 422 | `INVALID_ENTRY_PURPOSE` | Purpose doesn't fit the entry (see Finance › Entries) |
+| 422 | `ENTRY_SHOWROOM_FOLLOWS_VEHICLE` | A car-linked entry given a showroom other than the car's |
+| 422 | `INVALID_AMOUNT` / `TOO_MANY_TAGS` / `TEXT_TOO_LONG` | Amount not above zero; more than 10 tags; party over 120 or note over 1000 characters |
+| 422 | `DATE_RANGE_REQUIRED` / `DATE_RANGE_TOO_LONG` / `INVALID_DATE_RANGE` | `GET /finance/entries` without `from`+`to` (and no `vehicleId`), over 366 days, or `to` before `from` |
 | 503 | `DB_UNAVAILABLE` / `DB_TRANSIENT` | Database down or retryable |
 
 ---
 
 ## Endpoint catalogue
 
-**54 routes** are mounted (including `/health`).
+**62 routes** are mounted (including `/health`).
 
 ### Health — public
 
@@ -876,7 +884,7 @@ Revenue, profit and average selling price arrive with finance (Stint 5).
 
 ### Finance — Admin only, encrypted (ADR-0014)
 
-Finance data is encrypted with a key only the admin holds. Phase 1 ships the **vault**: setting up the keys, unlocking, locking, changing the key and recovering. Ledger, car money and reports follow (`docs/plans/finance-module.md`).
+Finance data is encrypted with a key only the admin holds. Shipped: the **vault** (setting up the keys, unlocking, locking, changing the key, recovering) and the **ledger** (tags and income/expense entries). Car deal, profit and reports follow (`docs/plans/finance-module.md`).
 
 Every finance response sends `Cache-Control: no-store`. Salespeople get `403`.
 
@@ -915,6 +923,68 @@ Every finance response sends `Cache-Control: no-store`. Salespeople get `403`.
 
 **Recover.** For a lost finance key. `POST /finance/vault/recover` with the recovery key returns a **new finance key and a new recovery key** (the used one stops working). Every session ends.
 
+#### Finance › Tags and Entries
+
+Every request below needs `X-Finance-Session` (else `423 FINANCE_LOCKED`).
+
+| Method | Path | Body / query | Success |
+|--------|------|--------------|---------|
+| GET | `/finance/tags` | `?includeArchived=true` | `200` `FinanceTag[]` sorted by name |
+| POST | `/finance/tags` | `{ name, color? }` | `201` `FinanceTag` |
+| PATCH | `/finance/tags/:id` | `{ name?, color?, archived? }` | `200` `FinanceTag` |
+| GET | `/finance/entries` | filters below | `200` entry page |
+| POST | `/finance/entries` | entry body | `201` `FinanceEntry` |
+| GET | `/finance/entries/:id` | — | `200` `FinanceEntry` |
+| PATCH | `/finance/entries/:id` | any entry field | `200` `FinanceEntry` |
+| DELETE | `/finance/entries/:id` | — | `204` (soft delete) |
+
+**Tags** are the admin's own labels (`FinanceTag` = `{ id, name, color, archived, createdAt, updatedAt }`). The first unlock creates the client's defaults: Purchase, Mediator commission, Painting, Service, Rubbing polish, Insurance, Tyres, Travel, Food, Fuel, Other. Names are 1–40 characters and unique ignoring case; `color` is `#RRGGBB` or `null`. Tags are archived, never deleted: an archived tag drops out of pickers and can't be added to entries, but entries that have it keep it.
+
+**Entries.** Every rupee in or out is one entry:
+
+```json
+{
+  "kind": "expense",
+  "amount": 5000,
+  "entryDate": "2026-10-20",
+  "tagIds": ["<Painting tag id>"],
+  "vehicleId": "<car id or null>",
+  "purpose": null,
+  "party": "Ace Paints",
+  "note": "Bonnet and bumper",
+  "showroomId": null
+}
+```
+
+- `kind`: `income` (money received) or `expense` (money paid). Fixed once created.
+- `amount`: rupees, above zero, up to two decimals.
+- `tagIds`: up to 10. `party` ≤ 120 characters, `note` ≤ 1000; blank means none.
+- **Car link.** Send `vehicleId` to tie the entry to a car (from the car's screen, prefill it). The entry then belongs to the car's showroom. `PATCH` with another `vehicleId` moves it; `vehicleId: null` unlinks it. Without a car it's a business expense or receipt, filed under `showroomId` or the admin's home showroom.
+- **Purpose** says what a car-linked entry does to that car's numbers:
+  - expense: `purchase` (a payment to the seller towards the purchase rate) or `cost` (default: painting, service, mediator…);
+  - income: `sale` (default: a payment from the buyer) or `other`;
+  - no car: always `general`.
+  Linking, moving or unlinking resets the purpose to the default unless the same request sends one. Suggested UI: preselect `purchase` when the admin picks the "Purchase" tag.
+
+`FinanceEntry` = `{ id, kind, amount, entryDate, purpose, tags: FinanceTag[], vehicle: { id, label } | null, party, note, showroomId, recordedBy, createdAt, updatedAt }`. `label` reads like `Maruti Swift · KA01AB1234`.
+
+**Listing** `GET /finance/entries`:
+
+| Query | Meaning |
+|-------|---------|
+| `from`, `to` | `YYYY-MM-DD`, inclusive. **Required** (max 366 days) unless `vehicleId` is set |
+| `vehicleId` / `unlinked=true` | One car's entries (any dates) / business entries only |
+| `kind` | `income` or `expense` |
+| `showroomId` | One showroom |
+| `tagId` | Comma-separated; entries with any of them |
+| `purpose` | Comma-separated purposes |
+| `minAmount`, `maxAmount` | Rupees |
+| `search` | Matches party, note and tag names |
+| `sort` | `date` (newest first, default), `-date`, `amount` (largest first), `-amount` |
+| `limit`, `offset` | Paging as elsewhere |
+
+Response: `{ items, total, limit, offset, truncated, totals: { income, expense, net } }`. `totals` cover every matching entry, not just the page, so a car screen can show money in and out from the same call (`?vehicleId=…`). `truncated: true` means more than 5,000 entries matched the date/car filters; narrow the range.
+
 ---
 
 ## Suggested admin UI map
@@ -939,7 +1009,7 @@ For `salesperson`, show owners, catalog, vehicles, leads, the inbox and their ow
 ## Not shipped yet — do not design screens against these
 
 - Owner self-registration / portal (`owners.userId` linking)
-- Finance beyond the vault (ADR-0015): income/expense entries with tags and car links, car deal/sale/quotes, profit, dues and reports. The planned contract is in `docs/plans/finance-module.md` §8; build those screens once they appear here and in Postman. The vault screens (setup, confirm, unlock) can be built now.
+- Finance car deal, sale, quotes, profit, dues and reports (ADR-0015). The planned contract is in `docs/plans/finance-module.md` §8; build those screens once they appear here and in Postman. Vault, tags and the ledger are shipped.
 - Marketplace / buyer browse and buyer inquiries (registered-buyer leads)
 - Automatic lead assignment
 - Password reset or change-own-password

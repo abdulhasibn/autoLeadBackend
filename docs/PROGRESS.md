@@ -12,7 +12,7 @@
 | Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0015 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name + dealer handoff round 2 + lead match preferences + follow-up completion + replace vehicle catalog + finance vault) | All 20 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name + dealer handoff round 2 + lead match preferences + follow-up completion + replace vehicle catalog + finance vault + finance ledger) | All 21 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
@@ -26,10 +26,10 @@
 | Leads (`src/features/leads`) | Staff walk-in create, associate vehicle (`linkedVehicle` summary on reads), structured preference (catalog make → model → variant plus colours / fuel / transmission / body type / year window / km ceiling / max owners; budget = price ceiling; set on create or `PUT /leads/:id/preference`), `GET /leads/vehicle-matches/:vehicleId` (weighted match % for linked leads + suggested open leads, ADR-0013) and the reverse `GET /leads/:id/vehicle-matches` (linked car + suggested linkable cars for one lead), status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification, `GET /leads/:id/follow-ups` (open / closed / all), complete (outcome + notes, optional next follow-up in the same transaction) and cancel; Admin assignment; salesperson sees assigned leads only; `PATCH /leads/:id` edit, `DELETE /leads/:id/vehicle` unlink, `GET /leads/:id/status-history`, `assignedToName`, list `search` + budget / source / link / timeline / finance / created-at filters |
 | Sales (`src/features/sales`) | Not started |
 | Dashboard (`src/features/dashboard`) | `GET /dashboard` — KPIs, attention lists, today's follow-ups (ADR-0012); admin `scope: all`, salesperson `scope: mine` (own leads, no stock); money metrics after finance |
-| Finance (`src/features/finance`) | Phase 1 of 5 — encrypted vault (ADR-0014): setup with finance + recovery keys, recovery-key confirmation, unlock sessions (`X-Finance-Session`, 30 min idle / 8 h), lock, change key, recover, 5-failure lockout, value-free audit, log redaction. Ledger, car money and reports next (ADR-0015, `docs/plans/finance-module.md`) |
+| Finance (`src/features/finance`) | Phases 1–2 of 5 — encrypted ledger (ADR-0015): income/expense entries with configurable tags (defaults seeded on first unlock), optional car link from either side, purpose (`purchase`/`cost`/`sale`/`other`/`general`), list with in-memory filters + totals. Encrypted vault (ADR-0014): setup with finance + recovery keys, recovery-key confirmation, unlock sessions (`X-Finance-Session`, 30 min idle / 8 h), lock, change key, recover, 5-failure lockout, value-free audit, log redaction. Car deal, profit, dues and reports next (`docs/plans/finance-module.md`) |
 | Notifications (`src/features/notifications`) | Staff inbox (`due_at` filter, `isRead` filter, `unreadCount`) + mark read; `follow_up_due`, `lead_assigned`; items carry `leadId` |
 | Audit trail (cross-cutting) | Partial — status history tables; lead assignment and finance vault actions in `audit_logs` |
-| Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications, Dashboard, Showrooms, Finance › Vault) | Done — local `postman/`, GitHub repo, cloud My Workspace |
+| Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications, Dashboard, Showrooms, Finance › Vault / Tags / Entries) | Done — local `postman/`, GitHub repo, cloud My Workspace |
 | Frontend API guide (`docs/api.md`) | Done — current endpoints + how to start |
 | HTTP integration tests (local Docker Supabase) | Not started |
 | Vercel production host | Done — `autolead-backend` (`bom1`), `https://autolead-backend-lyart.vercel.app` |
@@ -44,17 +44,25 @@
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
 | Tables | 27 |
-| Migrations applied | 20 hosted rows (19 repo migrations + `lead_assignment_fix_user_id`) |
+| Migrations applied | 21 hosted rows (20 repo migrations + `lead_assignment_fix_user_id`) |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
 
 1. Merge `feat/dealer-handoff-round-2` (its migration is already on hosted), deploy, then run `scripts/smoke-api.sh` with admin credentials and ask the dealer team to move handoff items 2–13 to Resolved.
 2. Run the live `scripts/smoke-api.sh` flow against production (needs `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
-3. Finance phase 2: tags + income/expense ledger (`docs/plans/finance-module.md`); phase 3 absorbs acquisition prices (Stint 2.3).
+3. Finance phase 3: car deal, sale, quotes, profit and dues (`docs/plans/finance-module.md`); absorbs acquisition prices (Stint 2.3).
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-11-02 — Finance phase 2: tags and the income/expense ledger
+
+- Migration `20261102130000_finance_ledger`: drops the plaintext `expenses` / `income` seed tables; adds `finance_entries` (plaintext kind / car / date / showroom for filtering, everything else in the sealed payload) and `finance_tags` (sealed name + colour, archived never deleted). The seeder no longer writes finance rows (encrypted seeding is phase 5).
+- Entries: income or expense, amount, date, up to 10 tags, optional car link (car's showroom), purpose rules per ADR-0015, party, note; link / move / unlink resets purpose unless sent. Tags: unique names ignoring case, colour, archive / restore; archived tags stay on entries but can't be added. Default tags are created on first unlock (names are encrypted, so no SQL seed).
+- `GET /finance/entries`: SQL narrows by date (required, ≤ 366 days, unless one car), kind, car / unlinked, showroom; tags, purpose, amount, search, sort and paging run after decryption; `totals` over the filtered set; `truncated` past 5,000 rows.
+- The client's worked example is a test: one car's entries total income ₹5,60,000, expense ₹5,45,000, costs ₹45,000. Verified end to end against hosted (test vault deleted afterwards).
+- **Fix (all routes):** a body that isn't valid JSON returned 500 and the error log carried the raw body (in `err.body` and `err.message`), which could leak finance keys or amounts. It now returns `400 INVALID_JSON` (`413 PAYLOAD_TOO_LARGE` for oversized bodies) and logs only path and method.
 
 ### 2026-11-02 — Finance phase 1: encrypted vault
 

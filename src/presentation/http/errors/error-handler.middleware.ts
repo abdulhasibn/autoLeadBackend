@@ -30,6 +30,20 @@ export function createErrorHandlerMiddleware(
 ): ErrorRequestHandler {
   return (err, req, res, _next) => {
     const log: Logger = req.log ?? logger;
+
+    // A body the JSON parser rejected: its error carries the raw request text
+    // (`body` and inside `message`), which may hold finance keys or amounts,
+    // so log only where it happened (ADR-0014).
+    const bodyError = bodyParserError(err);
+    if (bodyError !== null) {
+      log.warn(
+        { code: bodyError.body.error.code, path: req.path, method: req.method },
+        'Request rejected',
+      );
+      res.status(bodyError.status).json(bodyError.body);
+      return;
+    }
+
     const { status, body } = mapError(err, featureErrorMappers);
 
     if (status >= 500) {
@@ -39,6 +53,33 @@ export function createErrorHandlerMiddleware(
     }
 
     res.status(status).json(body);
+  };
+}
+
+/** express.json() (body-parser) errors: a `type` and a 4xx `status`. */
+function bodyParserError(err: unknown): { status: number; body: ErrorResponseBody } | null {
+  if (typeof err !== 'object' || err === null) {
+    return null;
+  }
+  const { type, status } = err as { type?: unknown; status?: unknown };
+  if (typeof type !== 'string' || typeof status !== 'number' || status < 400 || status >= 500) {
+    return null;
+  }
+  if (type === 'entity.parse.failed') {
+    return {
+      status: 400,
+      body: { error: { code: 'INVALID_JSON', message: 'Request body is not valid JSON' } },
+    };
+  }
+  if (type === 'entity.too.large') {
+    return {
+      status: 413,
+      body: { error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body is too large' } },
+    };
+  }
+  return {
+    status,
+    body: { error: { code: 'INVALID_REQUEST_BODY', message: 'Request body could not be read' } },
   };
 }
 

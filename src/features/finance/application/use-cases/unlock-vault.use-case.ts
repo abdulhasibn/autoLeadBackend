@@ -8,10 +8,14 @@ import type { UnlockVaultCommand } from '../dtos/unlock-vault-command';
 import { FinanceNotInitializedError } from '../errors/finance-not-initialized.error';
 import { FinanceVaultNotConfirmedError } from '../errors/finance-vault-not-confirmed.error';
 import type { FinancePolicy } from '../policies/finance.policy';
+import type { DefaultTagSeeder } from '../services/default-tag-seeder';
 import type { FinanceSessionService } from '../services/finance-session.service';
 import type { VaultKeyring } from '../services/vault-keyring';
 
-/** Opens the data key with the finance key and starts an unlock session. */
+/**
+ * Opens the data key with the finance key and starts an unlock session. The
+ * first unlock also creates the default tags.
+ */
 export class UnlockVaultUseCase {
   constructor(
     private readonly policy: FinancePolicy,
@@ -20,6 +24,7 @@ export class UnlockVaultUseCase {
     private readonly sessions: FinanceSessionService,
     private readonly audit: IFinanceAuditLog,
     private readonly clock: Clock,
+    private readonly tagSeeder: DefaultTagSeeder,
   ) {}
 
   async execute(
@@ -43,6 +48,9 @@ export class UnlockVaultUseCase {
     );
     const started = await this.sessions.start(ctx, dataKey);
     dataKey.fill(0);
+
+    const { cipher } = await this.sessions.open(ctx, started.sessionToken);
+    await this.tagSeeder.seedIfEmpty(cipher);
 
     await this.audit.record({
       action: 'finance.unlock',

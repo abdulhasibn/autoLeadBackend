@@ -181,73 +181,70 @@ export type Database = {
           },
         ];
       };
-      expenses: {
+      finance_entries: {
         Row: {
-          amount: number;
-          category: string;
           created_at: string;
           deleted_at: string | null;
-          description: string | null;
+          entry_date: string;
           id: string;
-          incurred_on: string;
+          key_version: number;
+          kind: string;
+          payload: string;
           recorded_by: string;
           showroom_id: string;
-          type: string;
           updated_at: string;
           vehicle_id: string | null;
         };
         Insert: {
-          amount: number;
-          category: string;
           created_at?: string;
           deleted_at?: string | null;
-          description?: string | null;
-          id?: string;
-          incurred_on: string;
+          entry_date: string;
+          id: string;
+          key_version: number;
+          kind: string;
+          payload: string;
           recorded_by: string;
           showroom_id: string;
-          type: string;
           updated_at?: string;
           vehicle_id?: string | null;
         };
         Update: {
-          amount?: number;
-          category?: string;
           created_at?: string;
           deleted_at?: string | null;
-          description?: string | null;
+          entry_date?: string;
           id?: string;
-          incurred_on?: string;
+          key_version?: number;
+          kind?: string;
+          payload?: string;
           recorded_by?: string;
           showroom_id?: string;
-          type?: string;
           updated_at?: string;
           vehicle_id?: string | null;
         };
         Relationships: [
           {
-            foreignKeyName: 'expenses_recorded_by_fkey';
+            foreignKeyName: 'finance_entries_recorded_by_fkey';
             columns: ['recorded_by'];
             isOneToOne: false;
             referencedRelation: 'users';
             referencedColumns: ['id'];
           },
           {
-            foreignKeyName: 'expenses_showroom_id_fkey';
+            foreignKeyName: 'finance_entries_showroom_id_fkey';
             columns: ['showroom_id'];
             isOneToOne: false;
             referencedRelation: 'showrooms';
             referencedColumns: ['id'];
           },
           {
-            foreignKeyName: 'expenses_vehicle_id_fkey';
+            foreignKeyName: 'finance_entries_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
             referencedRelation: 'vehicle_list';
             referencedColumns: ['id'];
           },
           {
-            foreignKeyName: 'expenses_vehicle_id_fkey';
+            foreignKeyName: 'finance_entries_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
             referencedRelation: 'vehicles';
@@ -292,6 +289,33 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
+      };
+      finance_tags: {
+        Row: {
+          archived_at: string | null;
+          created_at: string;
+          id: string;
+          key_version: number;
+          payload: string;
+          updated_at: string;
+        };
+        Insert: {
+          archived_at?: string | null;
+          created_at?: string;
+          id: string;
+          key_version: number;
+          payload: string;
+          updated_at?: string;
+        };
+        Update: {
+          archived_at?: string | null;
+          created_at?: string;
+          id?: string;
+          key_version?: number;
+          payload?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       finance_vault: {
         Row: {
@@ -444,77 +468,6 @@ export type Database = {
             columns: ['lead_id'];
             isOneToOne: false;
             referencedRelation: 'leads';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      income: {
-        Row: {
-          amount: number;
-          category: string;
-          created_at: string;
-          deleted_at: string | null;
-          description: string | null;
-          id: string;
-          received_on: string;
-          recorded_by: string;
-          showroom_id: string;
-          updated_at: string;
-          vehicle_id: string | null;
-        };
-        Insert: {
-          amount: number;
-          category: string;
-          created_at?: string;
-          deleted_at?: string | null;
-          description?: string | null;
-          id?: string;
-          received_on: string;
-          recorded_by: string;
-          showroom_id: string;
-          updated_at?: string;
-          vehicle_id?: string | null;
-        };
-        Update: {
-          amount?: number;
-          category?: string;
-          created_at?: string;
-          deleted_at?: string | null;
-          description?: string | null;
-          id?: string;
-          received_on?: string;
-          recorded_by?: string;
-          showroom_id?: string;
-          updated_at?: string;
-          vehicle_id?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'income_recorded_by_fkey';
-            columns: ['recorded_by'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'income_showroom_id_fkey';
-            columns: ['showroom_id'];
-            isOneToOne: false;
-            referencedRelation: 'showrooms';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'income_vehicle_id_fkey';
-            columns: ['vehicle_id'];
-            isOneToOne: false;
-            referencedRelation: 'vehicle_list';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'income_vehicle_id_fkey';
-            columns: ['vehicle_id'];
-            isOneToOne: false;
-            referencedRelation: 'vehicles';
             referencedColumns: ['id'];
           },
         ];

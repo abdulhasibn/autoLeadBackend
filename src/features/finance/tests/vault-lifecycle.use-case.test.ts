@@ -58,7 +58,15 @@ describe('finance vault lifecycle', () => {
     } = kit;
     setup = new SetupVaultUseCase(policy, vaults, keyring, crypto, audit, clock, ids, TEST_KDF);
     confirm = new ConfirmVaultUseCase(policy, vaults, keyring, audit, clock);
-    unlock = new UnlockVaultUseCase(policy, vaults, keyring, sessionService, audit, clock);
+    unlock = new UnlockVaultUseCase(
+      policy,
+      vaults,
+      keyring,
+      sessionService,
+      audit,
+      clock,
+      kit.tagSeeder,
+    );
     lock = new LockVaultUseCase(policy, vaults, sessionService, audit, clock);
     status = new GetVaultStatusUseCase(policy, vaultQueries, sessionService);
     changeKey = new ChangeFinanceKeyUseCase(

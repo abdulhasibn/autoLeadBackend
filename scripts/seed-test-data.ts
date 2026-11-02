@@ -186,7 +186,6 @@ interface SimVehicle {
   linkable: boolean;
   readonly row: VehicleRow;
   readonly listed: number;
-  expenses: number;
   financials: FinancialsRow | null;
   updated?: number;
   soldAt?: number;
@@ -265,21 +264,6 @@ interface FollowUpRow {
   cancelled_by: string | null;
   completion_notes: string | null;
 }
-
-interface MoneyRow {
-  showroom_id: string;
-  vehicle_id: string | null;
-  category: string;
-  amount: number;
-  description: string;
-  recorded_by: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-}
-
-type ExpenseRow = MoneyRow & { type: 'vehicle' | 'business'; incurred_on: string };
-type IncomeRow = MoneyRow & { received_on: string };
 
 type SimEvent =
   | { t: number; kind: 'vehicle_create' }
@@ -811,15 +795,6 @@ const CURRENT_VEHICLES = [
   'Toyota Etios 2016',
   'Mahindra Bolero 2012',
 ];
-const VEHICLE_EXPENSES: readonly (readonly [string, number, number])[] = [
-  ['refurbishment', 8_000, 45_000],
-  ['repair', 3_000, 30_000],
-  ['detailing', 1_500, 6_000],
-  ['transport', 1_000, 5_000],
-  ['inspection', 800, 2_500],
-  ['documentation', 1_000, 4_500],
-];
-
 // ---------------------------------------------------------------------------
 // Identity generators
 // ---------------------------------------------------------------------------
@@ -890,8 +865,6 @@ const rows = {
   notifications: [] as TablesInsert<'notifications'>[],
   saved_vehicles: [] as TablesInsert<'saved_vehicles'>[],
   recently_viewed: [] as TablesInsert<'recently_viewed'>[],
-  expenses: [] as ExpenseRow[],
-  income: [] as IncomeRow[],
 };
 
 // ---------------------------------------------------------------------------
@@ -1249,7 +1222,6 @@ function createVehicle(t: number): SimVehicle {
       deleted_at: null,
     },
     listed: priceVehicle(model, year, km),
-    expenses: 0,
     financials: null,
   };
   vehicles.push(vehicle);
@@ -2110,173 +2082,8 @@ function seedFollowUps(): void {
 }
 
 // ---------------------------------------------------------------------------
-// Finance, buyer activity
+// Buyer activity (encrypted finance seeding arrives with finance phase 5)
 // ---------------------------------------------------------------------------
-
-function seedFinance(): void {
-  const admin = adminId();
-  for (const vehicle of vehicles) {
-    if (vehicle.deleted) continue;
-    const count =
-      vehicle.row.acquisition_type === 'dealership_purchase' ? between(1, 3) : between(0, 1);
-    let total = 0;
-    for (const [category, min, max] of sample(VEHICLE_EXPENSES, count)) {
-      const at = Math.min(vehicle.created + between(1, 20) * DAY, NOW - HOUR);
-      const amount = roundTo(between(min, max), 100);
-      total += amount;
-      rows.expenses.push({
-        showroom_id: SHOWROOM_ID,
-        type: 'vehicle',
-        vehicle_id: vehicle.id,
-        category,
-        amount,
-        description: `${category.charAt(0).toUpperCase()}${category.slice(1)} for ${vehicle.row.registration_number}`,
-        incurred_on: dateOnly(at),
-        recorded_by: admin,
-        created_at: iso(at),
-        updated_at: iso(at),
-        deleted_at: null,
-      });
-    }
-    if (vehicle.financials && vehicle.row.acquisition_type === 'dealership_purchase' && total > 0) {
-      vehicle.financials.other_costs = total;
-    }
-
-    if (vehicle.status === 'sold') {
-      const { soldAt, soldLead } = vehicle;
-      if (soldAt === undefined || soldLead === undefined) {
-        throw new Error(`Sold vehicle ${vehicle.id} has no sale recorded`);
-      }
-      const f = vehicle.financials;
-      const price = f?.actual_selling_price ?? vehicle.listed;
-      const day = dateOnly(soldAt);
-      const at = iso(soldAt);
-      if (vehicle.row.acquisition_type === 'dealership_purchase') {
-        rows.income.push({
-          showroom_id: SHOWROOM_ID,
-          category: 'vehicle_sale',
-          vehicle_id: vehicle.id,
-          amount: price,
-          description: `Sale of ${vehicle.row.registration_number}`,
-          received_on: day,
-          recorded_by: admin,
-          created_at: at,
-          updated_at: at,
-          deleted_at: null,
-        });
-      } else {
-        const commission =
-          f?.commission_amount ?? roundTo(price * ((f?.commission_percent ?? 2) / 100), 100);
-        rows.income.push({
-          showroom_id: SHOWROOM_ID,
-          category: 'commission',
-          vehicle_id: vehicle.id,
-          amount: commission,
-          description: `Commission on ${vehicle.row.registration_number}`,
-          received_on: day,
-          recorded_by: admin,
-          created_at: at,
-          updated_at: at,
-          deleted_at: null,
-        });
-      }
-      // Lenders pay out about a week after delivery.
-      if (soldLead.row.finance_required && soldAt + 7 * DAY < NOW) {
-        rows.income.push({
-          showroom_id: SHOWROOM_ID,
-          category: 'finance_commission',
-          vehicle_id: vehicle.id,
-          amount: roundTo(between(8_000, 25_000), 500),
-          description: pick([
-            'HDFC auto loan payout',
-            'ICICI auto loan payout',
-            'Bajaj Finance payout',
-          ]),
-          received_on: dateOnly(soldAt + 7 * DAY),
-          recorded_by: admin,
-          created_at: at,
-          updated_at: at,
-          deleted_at: null,
-        });
-      }
-      if (chance(0.4)) {
-        rows.income.push({
-          showroom_id: SHOWROOM_ID,
-          category: 'insurance_commission',
-          vehicle_id: vehicle.id,
-          amount: roundTo(between(2_500, 9_000), 100),
-          description: 'Insurance renewal commission',
-          received_on: day,
-          recorded_by: admin,
-          created_at: at,
-          updated_at: at,
-          deleted_at: null,
-        });
-      }
-    }
-  }
-
-  for (let month = 0; month <= 6; month++) {
-    const first = Date.parse(`${dateOnly(START + month * 31 * DAY).slice(0, 7)}-01T04:30:00Z`);
-    const entries: [category: string, amount: number, description: string, day: number][] = [
-      ['rent', 85_000, 'Showroom rent', 1],
-      ['electricity', between(9_000, 16_000), 'BESCOM electricity bill', 6],
-      ['internet', 2_499, 'Broadband', 6],
-      [
-        'marketing',
-        roundTo(between(15_000, 45_000), 500),
-        pick(['Facebook and Instagram ads', 'OLX and CarDekho listings', 'Newspaper classifieds']),
-        10,
-      ],
-      ['salaries', 30_000 * salesAt(first + 27 * DAY).length + 60_000, 'Staff salaries', 28],
-      [
-        'maintenance',
-        roundTo(between(2_000, 12_000), 100),
-        pick(['Showroom cleaning', 'Washing bay repairs', 'Stationery and printing']),
-        15,
-      ],
-    ];
-    for (const [category, amount, description, day] of entries) {
-      const at = first + (day - 1) * DAY;
-      if (at > NOW || at < START) continue;
-      rows.expenses.push({
-        showroom_id: SHOWROOM_ID,
-        type: 'business',
-        vehicle_id: null,
-        category,
-        amount,
-        description,
-        incurred_on: dateOnly(at),
-        recorded_by: adminId(),
-        created_at: iso(at),
-        updated_at: iso(at),
-        deleted_at: null,
-      });
-    }
-    const other = first + between(5, 25) * DAY;
-    if (other < NOW && other > START) {
-      rows.income.push({
-        showroom_id: SHOWROOM_ID,
-        category: 'other',
-        vehicle_id: null,
-        amount: roundTo(between(3_000, 20_000), 100),
-        description: pick(['Accessories sale', 'RC transfer service fee', 'Detailing service']),
-        received_on: dateOnly(other),
-        recorded_by: adminId(),
-        created_at: iso(other),
-        updated_at: iso(other),
-        deleted_at: null,
-      });
-    }
-  }
-  // Two duplicate entries that were deleted.
-  for (const original of sample(
-    rows.expenses.filter((e) => e.type === 'business'),
-    2,
-  )) {
-    rows.expenses.push({ ...original, deleted_at: original.created_at });
-  }
-}
 
 function seedBuyerActivity(): void {
   for (const buyer of buyers) {
@@ -2546,7 +2353,6 @@ function printSummary(): void {
   console.log(
     `  notifications: ${tally(rows.notifications, (n) => `${n.type}:${n.is_read ? 'read' : 'unread'}`)}`,
   );
-  console.log(`  income: ${tally(rows.income, 'category')}`);
 }
 
 async function main(): Promise<void> {
@@ -2565,7 +2371,6 @@ async function main(): Promise<void> {
   await linkOwnerLogins();
   softDeletes();
   seedFollowUps();
-  seedFinance();
   seedBuyerActivity();
   finaliseRows();
   printSummary();
@@ -2605,8 +2410,6 @@ async function main(): Promise<void> {
   await insert('recently_viewed', rows.recently_viewed, (b) =>
     db.from('recently_viewed').insert(b),
   );
-  await insert('expenses', rows.expenses, (b) => db.from('expenses').insert(b));
-  await insert('income', rows.income, (b) => db.from('income').insert(b));
 
   console.log('Uploading photos and documents…');
   await runUploads(planMedia(), photos);

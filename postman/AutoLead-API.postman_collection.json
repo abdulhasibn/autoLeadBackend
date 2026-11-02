@@ -131,6 +131,14 @@
     {
       "key": "financeSessionToken",
       "value": ""
+    },
+    {
+      "key": "financeTagId",
+      "value": ""
+    },
+    {
+      "key": "financeEntryId",
+      "value": ""
     }
   ],
   "item": [
@@ -1551,7 +1559,7 @@
     },
     {
       "name": "Finance",
-      "description": "Admin-only, encrypted finance (ADR-0014). Phase 1: the vault. Run Setup → Confirm → Unlock; the scripts carry keys and the session token in collection variables.",
+      "description": "Admin-only, encrypted finance (ADR-0014/0015). Run Vault › Setup → Confirm → Unlock first; the scripts carry keys, the session token and created ids in collection variables.",
       "item": [
         {
           "name": "Vault",
@@ -2230,6 +2238,1028 @@
                     }
                   ],
                   "body": "{\n  \"error\": {\n    \"code\": \"INVALID_FINANCE_KEY\",\n    \"message\": \"The key is not correct\"\n  }\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Tags",
+          "item": [
+            {
+              "name": "List Tags",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "const tags = pm.response.json();",
+                      "if (Array.isArray(tags) && tags.length > 0) {",
+                      "  pm.collectionVariables.set('financeTagId', tags[0].id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/finance/tags?",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["finance", "tags"],
+                  "query": [
+                    {
+                      "key": "includeArchived",
+                      "value": "false",
+                      "description": "true to include archived tags",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "**Story:** The admin opens a tag picker while recording money, or manages their labels in settings.\n\nGET /finance/tags — every tag, sorted by name.\n\n**Auth:** Bearer, Admin only.\n\n- Query `includeArchived` (optional, `true`/`false`, default false): include archived tags (settings screen).\n- `200` array of `{ id, name, color, archived, createdAt, updatedAt }`. The first unlock creates the defaults (Purchase, Mediator commission, Painting, Service, Rubbing polish, Insurance, Tyres, Travel, Food, Fuel, Other).\n- The test script stores the first tag id as `financeTagId`.\n\n- Needs `X-Finance-Session` from Finance › Vault › Unlock; without a live one → `423 FINANCE_LOCKED`.\n- Admin only (`403` otherwise). See docs/api.md#finance--tags-and-entries."
+              },
+              "response": [
+                {
+                  "id": "080b5b9a-42c5-41e4-b71a-dbae3ddbd3d0",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/tags?",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "tags"],
+                      "query": [
+                        {
+                          "key": "includeArchived",
+                          "value": "false",
+                          "description": "true to include archived tags",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "[\n  {\n    \"id\": \"8d2f3b0c-5e4a-4f9b-8c2d-3e4f5a6b7c8d\",\n    \"name\": \"Mediator commission\",\n    \"color\": null,\n    \"archived\": false,\n    \"createdAt\": \"2026-11-02T10:00:00.000Z\",\n    \"updatedAt\": \"2026-11-02T10:00:00.000Z\"\n  },\n  {\n    \"id\": \"7c1e2a9b-4d3f-4e8a-9b1c-2d3e4f5a6b7c\",\n    \"name\": \"Painting\",\n    \"color\": \"#E53935\",\n    \"archived\": false,\n    \"createdAt\": \"2026-11-02T10:00:00.000Z\",\n    \"updatedAt\": \"2026-11-02T10:00:00.000Z\"\n  }\n]"
+                },
+                {
+                  "id": "1bff0b22-de4e-4b5b-b824-c3dc2c168508",
+                  "name": "423 — FINANCE_LOCKED",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/tags?",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "tags"],
+                      "query": [
+                        {
+                          "key": "includeArchived",
+                          "value": "false",
+                          "description": "true to include archived tags",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Locked",
+                  "code": 423,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_LOCKED\",\n    \"message\": \"Finance is locked. Enter the finance key to unlock it.\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Create Tag",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                      "if (pm.response.code === 201) {",
+                      "  pm.collectionVariables.set('financeTagId', pm.response.json().id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/tags",
+                "description": "**Story:** The admin adds a label that fits how they track money, such as RTO transfer.\n\nPOST /finance/tags — creates a tag.\n\n**Auth:** Bearer, Admin only.\n\n- Body `name` (string, required): 1–40 characters, spaces tidied; unique ignoring case, including archived tags.\n- Body `color` (string, optional): `#RRGGBB`, or null.\n- `201` the tag. `409 FINANCE_TAG_NAME_TAKEN` duplicate name; `422 VALIDATION_ERROR` bad name or colour.\n- The test script stores the id as `financeTagId`.\n\n- Needs `X-Finance-Session` from Finance › Vault › Unlock; without a live one → `423 FINANCE_LOCKED`.\n- Admin only (`403` otherwise). See docs/api.md#finance--tags-and-entries.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"RTO transfer\",\n  \"color\": \"#43A047\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "87261653-01f1-4d00-9ac2-15375b05a4d9",
+                  "name": "201 Created",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/tags",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"RTO transfer\",\n  \"color\": \"#43A047\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"7c1e2a9b-4d3f-4e8a-9b1c-2d3e4f5a6b7c\",\n  \"name\": \"RTO transfer\",\n  \"color\": \"#43A047\",\n  \"archived\": false,\n  \"createdAt\": \"2026-11-02T10:00:00.000Z\",\n  \"updatedAt\": \"2026-11-02T10:00:00.000Z\"\n}"
+                },
+                {
+                  "id": "9c628a1f-92fe-4fea-9ed7-291f8556af34",
+                  "name": "409 — FINANCE_TAG_NAME_TAKEN",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/tags",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"RTO transfer\",\n  \"color\": \"#43A047\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_TAG_NAME_TAKEN\",\n    \"message\": \"A tag named \\\"RTO transfer\\\" already exists\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Tag",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/tags/{{financeTagId}}",
+                "description": "**Story:** The admin renames, recolours, archives or restores a label; entries keep their labels either way.\n\nPATCH /finance/tags/:id — changes a tag.\n\n**Auth:** Bearer, Admin only.\n\n- Path `id` (uuid): the tag.\n- Body (at least one): `name` (string, unique ignoring case), `color` (`#RRGGBB` or null to clear), `archived` (boolean: true archives, false restores).\n- An archived tag leaves pickers and can't be added to entries; entries that already have it keep it.\n- `200` the tag. `404 NOT_FOUND`; `409 FINANCE_TAG_NAME_TAKEN`.\n\n- Needs `X-Finance-Session` from Finance › Vault › Unlock; without a live one → `423 FINANCE_LOCKED`.\n- Admin only (`403` otherwise). See docs/api.md#finance--tags-and-entries.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"RC transfer\",\n  \"archived\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "f52c6ebb-e483-4523-9af9-ecccebbc895b",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/tags/{{financeTagId}}",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"RC transfer\",\n  \"archived\": false\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"7c1e2a9b-4d3f-4e8a-9b1c-2d3e4f5a6b7c\",\n  \"name\": \"RC transfer\",\n  \"color\": \"#E53935\",\n  \"archived\": false,\n  \"createdAt\": \"2026-11-02T10:00:00.000Z\",\n  \"updatedAt\": \"2026-11-02T10:00:00.000Z\"\n}"
+                },
+                {
+                  "id": "9b5df43d-f55c-4db4-8672-3c3993ecb19a",
+                  "name": "409 — FINANCE_TAG_NAME_TAKEN",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/tags/{{financeTagId}}",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"name\": \"RC transfer\",\n  \"archived\": false\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_TAG_NAME_TAKEN\",\n    \"message\": \"A tag named \\\"Painting\\\" already exists\"\n  }\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Entries",
+          "item": [
+            {
+              "name": "List Entries",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('has totals', () => pm.expect(pm.response.json()).to.include.keys('items', 'total', 'totals', 'truncated'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/finance/entries?from=2026-10-01&to=2026-10-31",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["finance", "entries"],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-10-01",
+                      "description": "YYYY-MM-DD; required unless vehicleId"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-10-31",
+                      "description": "YYYY-MM-DD; at most 366 days after from"
+                    },
+                    {
+                      "key": "vehicleId",
+                      "value": "{{vehicleId}}",
+                      "description": "One car; dates optional",
+                      "disabled": true
+                    },
+                    {
+                      "key": "unlinked",
+                      "value": "true",
+                      "description": "Business entries only",
+                      "disabled": true
+                    },
+                    {
+                      "key": "kind",
+                      "value": "expense",
+                      "description": "income | expense",
+                      "disabled": true
+                    },
+                    {
+                      "key": "tagId",
+                      "value": "{{financeTagId}}",
+                      "description": "Comma-separated tag ids",
+                      "disabled": true
+                    },
+                    {
+                      "key": "purpose",
+                      "value": "purchase,cost",
+                      "description": "Comma-separated purposes",
+                      "disabled": true
+                    },
+                    {
+                      "key": "minAmount",
+                      "value": "1000",
+                      "description": "Rupees",
+                      "disabled": true
+                    },
+                    {
+                      "key": "maxAmount",
+                      "value": "50000",
+                      "description": "Rupees",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "paint",
+                      "description": "Party, note, tag names",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "date",
+                      "description": "date | -date | amount | -amount",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20",
+                      "description": "1–100",
+                      "disabled": true
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0",
+                      "description": "",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "**Story:** The admin reviews money in and out for a month, a car, or a tag, with totals at the top.\n\nGET /finance/entries — the ledger, filtered, sorted and paged after decryption.\n\n**Auth:** Bearer, Admin only.\n\n- `from`, `to` (YYYY-MM-DD, inclusive): required, at most 366 days apart, unless `vehicleId` is set.\n- `vehicleId` (uuid): one car's entries, any dates. `unlinked=true`: business entries only.\n- `kind`: `income` | `expense`. `showroomId` (uuid).\n- `tagId`: comma-separated tag ids (any of). `purpose`: comma-separated `purchase`, `cost`, `sale`, `other`, `general`.\n- `minAmount`, `maxAmount`: rupees. `search`: party, note and tag names.\n- `sort`: `date` (newest first, default), `-date`, `amount` (largest first), `-amount`. `limit` (1–100, default 20), `offset`.\n- `200` `{ items, total, limit, offset, truncated, totals: { income, expense, net } }`; totals cover every match. `truncated` means over 5,000 rows matched.\n- `422 DATE_RANGE_REQUIRED` / `DATE_RANGE_TOO_LONG` / `INVALID_DATE_RANGE`.\n\n- Needs `X-Finance-Session` from Finance › Vault › Unlock; without a live one → `423 FINANCE_LOCKED`.\n- Admin only (`403` otherwise). See docs/api.md#finance--tags-and-entries."
+              },
+              "response": [
+                {
+                  "id": "73bc9047-c991-4d8a-aa0a-31ec3a88c0ba",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/entries?from=2026-10-01&to=2026-10-31",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "entries"],
+                      "query": [
+                        {
+                          "key": "from",
+                          "value": "2026-10-01",
+                          "description": "YYYY-MM-DD; required unless vehicleId"
+                        },
+                        {
+                          "key": "to",
+                          "value": "2026-10-31",
+                          "description": "YYYY-MM-DD; at most 366 days after from"
+                        },
+                        {
+                          "key": "vehicleId",
+                          "value": "{{vehicleId}}",
+                          "description": "One car; dates optional",
+                          "disabled": true
+                        },
+                        {
+                          "key": "unlinked",
+                          "value": "true",
+                          "description": "Business entries only",
+                          "disabled": true
+                        },
+                        {
+                          "key": "kind",
+                          "value": "expense",
+                          "description": "income | expense",
+                          "disabled": true
+                        },
+                        {
+                          "key": "tagId",
+                          "value": "{{financeTagId}}",
+                          "description": "Comma-separated tag ids",
+                          "disabled": true
+                        },
+                        {
+                          "key": "purpose",
+                          "value": "purchase,cost",
+                          "description": "Comma-separated purposes",
+                          "disabled": true
+                        },
+                        {
+                          "key": "minAmount",
+                          "value": "1000",
+                          "description": "Rupees",
+                          "disabled": true
+                        },
+                        {
+                          "key": "maxAmount",
+                          "value": "50000",
+                          "description": "Rupees",
+                          "disabled": true
+                        },
+                        {
+                          "key": "search",
+                          "value": "paint",
+                          "description": "Party, note, tag names",
+                          "disabled": true
+                        },
+                        {
+                          "key": "sort",
+                          "value": "date",
+                          "description": "date | -date | amount | -amount",
+                          "disabled": true
+                        },
+                        {
+                          "key": "limit",
+                          "value": "20",
+                          "description": "1–100",
+                          "disabled": true
+                        },
+                        {
+                          "key": "offset",
+                          "value": "0",
+                          "description": "",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"items\": [\n    {\n      \"id\": \"3a4b5c6d-7e8f-4a9b-8c0d-1e2f3a4b5c6d\",\n      \"kind\": \"expense\",\n      \"amount\": 5000,\n      \"entryDate\": \"2026-10-20\",\n      \"purpose\": \"cost\",\n      \"tags\": [\n        {\n          \"id\": \"7c1e2a9b-4d3f-4e8a-9b1c-2d3e4f5a6b7c\",\n          \"name\": \"Painting\",\n          \"color\": \"#E53935\",\n          \"archived\": false,\n          \"createdAt\": \"2026-11-02T10:00:00.000Z\",\n          \"updatedAt\": \"2026-11-02T10:00:00.000Z\"\n        }\n      ],\n      \"vehicle\": {\n        \"id\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n        \"label\": \"Maruti Swift \\u00b7 KA01AB1234\"\n      },\n      \"party\": \"Ace Paints\",\n      \"note\": \"Bonnet and bumper\",\n      \"showroomId\": \"b0000000-0000-4000-8000-000000000001\",\n      \"recordedBy\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\n      \"createdAt\": \"2026-11-02T10:05:00.000Z\",\n      \"updatedAt\": \"2026-11-02T10:05:00.000Z\"\n    }\n  ],\n  \"total\": 1,\n  \"limit\": 20,\n  \"offset\": 0,\n  \"truncated\": false,\n  \"totals\": {\n    \"income\": 0,\n    \"expense\": 5000,\n    \"net\": -5000\n  }\n}"
+                },
+                {
+                  "id": "fe12a411-b990-4843-9983-c21815697cc6",
+                  "name": "422 — DATE_RANGE_REQUIRED",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/entries?from=2026-10-01&to=2026-10-31",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "entries"],
+                      "query": [
+                        {
+                          "key": "from",
+                          "value": "2026-10-01",
+                          "description": "YYYY-MM-DD; required unless vehicleId"
+                        },
+                        {
+                          "key": "to",
+                          "value": "2026-10-31",
+                          "description": "YYYY-MM-DD; at most 366 days after from"
+                        },
+                        {
+                          "key": "vehicleId",
+                          "value": "{{vehicleId}}",
+                          "description": "One car; dates optional",
+                          "disabled": true
+                        },
+                        {
+                          "key": "unlinked",
+                          "value": "true",
+                          "description": "Business entries only",
+                          "disabled": true
+                        },
+                        {
+                          "key": "kind",
+                          "value": "expense",
+                          "description": "income | expense",
+                          "disabled": true
+                        },
+                        {
+                          "key": "tagId",
+                          "value": "{{financeTagId}}",
+                          "description": "Comma-separated tag ids",
+                          "disabled": true
+                        },
+                        {
+                          "key": "purpose",
+                          "value": "purchase,cost",
+                          "description": "Comma-separated purposes",
+                          "disabled": true
+                        },
+                        {
+                          "key": "minAmount",
+                          "value": "1000",
+                          "description": "Rupees",
+                          "disabled": true
+                        },
+                        {
+                          "key": "maxAmount",
+                          "value": "50000",
+                          "description": "Rupees",
+                          "disabled": true
+                        },
+                        {
+                          "key": "search",
+                          "value": "paint",
+                          "description": "Party, note, tag names",
+                          "disabled": true
+                        },
+                        {
+                          "key": "sort",
+                          "value": "date",
+                          "description": "date | -date | amount | -amount",
+                          "disabled": true
+                        },
+                        {
+                          "key": "limit",
+                          "value": "20",
+                          "description": "1–100",
+                          "disabled": true
+                        },
+                        {
+                          "key": "offset",
+                          "value": "0",
+                          "description": "",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"DATE_RANGE_REQUIRED\",\n    \"message\": \"from and to are required unless the list is for one vehicle\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Create Entry",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                      "if (pm.response.code === 201) {",
+                      "  pm.collectionVariables.set('financeEntryId', pm.response.json().id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/entries",
+                "description": "**Story:** The admin records money paid or received, from the ledger or straight from a car's screen.\n\nPOST /finance/entries — records one entry.\n\n**Auth:** Bearer, Admin only.\n\n- `kind` (required): `income` (received) or `expense` (paid); fixed after creation.\n- `amount` (number, required): rupees above zero, two decimals at most.\n- `entryDate` (YYYY-MM-DD, required).\n- `tagIds` (uuid[], optional, ≤ 10): existing, non-archived tags.\n- `vehicleId` (uuid or null): link to a car; the entry takes the car's showroom.\n- `purpose` (optional): car-linked expense `purchase` | `cost` (default); car-linked income `sale` (default) | `other`; no car → `general`.\n- `party` (≤ 120), `note` (≤ 1000): optional.\n- `showroomId` (uuid, optional): business entries only; defaults to your home showroom.\n- `201` the entry. `404` unknown car; `422 FINANCE_TAG_NOT_FOUND`, `FINANCE_TAG_ARCHIVED`, `INVALID_ENTRY_PURPOSE`, `ENTRY_SHOWROOM_FOLLOWS_VEHICLE`, `SHOWROOM_REQUIRED`.\n- The test script stores the id as `financeEntryId`.\n\n- Needs `X-Finance-Session` from Finance › Vault › Unlock; without a live one → `423 FINANCE_LOCKED`.\n- Admin only (`403` otherwise). See docs/api.md#finance--tags-and-entries.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"kind\": \"expense\",\n  \"amount\": 5000,\n  \"entryDate\": \"2026-10-20\",\n  \"tagIds\": [\n    \"{{financeTagId}}\"\n  ],\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"purpose\": null,\n  \"party\": \"Ace Paints\",\n  \"note\": \"Bonnet and bumper\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "6fb655ef-d9b9-49c5-ae56-66bef56dbef6",
+                  "name": "201 Created — car cost",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/entries",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"kind\": \"expense\",\n  \"amount\": 5000,\n  \"entryDate\": \"2026-10-20\",\n  \"tagIds\": [\n    \"{{financeTagId}}\"\n  ],\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"purpose\": null,\n  \"party\": \"Ace Paints\",\n  \"note\": \"Bonnet and bumper\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"3a4b5c6d-7e8f-4a9b-8c0d-1e2f3a4b5c6d\",\n  \"kind\": \"expense\",\n  \"amount\": 5000,\n  \"entryDate\": \"2026-10-20\",\n  \"purpose\": \"cost\",\n  \"tags\": [\n    {\n      \"id\": \"7c1e2a9b-4d3f-4e8a-9b1c-2d3e4f5a6b7c\",\n      \"name\": \"Painting\",\n      \"color\": \"#E53935\",\n      \"archived\": false,\n      \"createdAt\": \"2026-11-02T10:00:00.000Z\",\n      \"updatedAt\": \"2026-11-02T10:00:00.000Z\"\n    }\n  ],\n  \"vehicle\": {\n    \"id\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"label\": \"Maruti Swift \\u00b7 KA01AB1234\"\n  },\n  \"party\": \"Ace Paints\",\n  \"note\": \"Bonnet and bumper\",\n  \"showroomId\": \"b0000000-0000-4000-8000-000000000001\",\n  \"recordedBy\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\n  \"createdAt\": \"2026-11-02T10:05:00.000Z\",\n  \"updatedAt\": \"2026-11-02T10:05:00.000Z\"\n}"
+                },
+                {
+                  "id": "42d120b9-bd1d-4c32-947a-3b622adcb960",
+                  "name": "422 — INVALID_ENTRY_PURPOSE",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/entries",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"kind\": \"expense\",\n  \"amount\": 5000,\n  \"entryDate\": \"2026-10-20\",\n  \"tagIds\": [\n    \"{{financeTagId}}\"\n  ],\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"purpose\": null,\n  \"party\": \"Ace Paints\",\n  \"note\": \"Bonnet and bumper\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"INVALID_ENTRY_PURPOSE\",\n    \"message\": \"A car-linked expense can only have purpose purchase or cost\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Entry",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/entries/{{financeEntryId}}",
+                "description": "**Story:** The admin opens one entry to check or edit it.\n\nGET /finance/entries/:id — one live entry.\n\n**Auth:** Bearer, Admin only.\n\n- Path `id` (uuid).\n- `200` `{ id, kind, amount, entryDate, purpose, tags, vehicle: { id, label } | null, party, note, showroomId, recordedBy, createdAt, updatedAt }`.\n- `404 NOT_FOUND` unknown or deleted.\n\n- Needs `X-Finance-Session` from Finance › Vault › Unlock; without a live one → `423 FINANCE_LOCKED`.\n- Admin only (`403` otherwise). See docs/api.md#finance--tags-and-entries."
+              },
+              "response": [
+                {
+                  "id": "7d3a91c5-cc80-499f-8004-6702bce794c7",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/entries/{{financeEntryId}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"3a4b5c6d-7e8f-4a9b-8c0d-1e2f3a4b5c6d\",\n  \"kind\": \"expense\",\n  \"amount\": 5000,\n  \"entryDate\": \"2026-10-20\",\n  \"purpose\": \"cost\",\n  \"tags\": [\n    {\n      \"id\": \"7c1e2a9b-4d3f-4e8a-9b1c-2d3e4f5a6b7c\",\n      \"name\": \"Painting\",\n      \"color\": \"#E53935\",\n      \"archived\": false,\n      \"createdAt\": \"2026-11-02T10:00:00.000Z\",\n      \"updatedAt\": \"2026-11-02T10:00:00.000Z\"\n    }\n  ],\n  \"vehicle\": {\n    \"id\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"label\": \"Maruti Swift \\u00b7 KA01AB1234\"\n  },\n  \"party\": \"Ace Paints\",\n  \"note\": \"Bonnet and bumper\",\n  \"showroomId\": \"b0000000-0000-4000-8000-000000000001\",\n  \"recordedBy\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\n  \"createdAt\": \"2026-11-02T10:05:00.000Z\",\n  \"updatedAt\": \"2026-11-02T10:05:00.000Z\"\n}"
+                },
+                {
+                  "id": "e9a196d4-baad-47c9-a07f-787f2e081292",
+                  "name": "404 — NOT_FOUND",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/entries/{{financeEntryId}}"
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Finance entry not found for id 3a4b5c6d-7e8f-4a9b-8c0d-1e2f3a4b5c6d\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Entry",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/entries/{{financeEntryId}}",
+                "description": "**Story:** The admin fixes an entry or moves it to the right car, for example marking a payment as a purchase instalment.\n\nPATCH /finance/entries/:id — changes any of: `amount`, `entryDate`, `tagIds`, `vehicleId`, `purpose`, `party`, `note`, `showroomId`.\n\n**Auth:** Bearer, Admin only.\n\n- `vehicleId`: a car id links or moves the entry (takes that car's showroom); `null` unlinks it (keeps the showroom unless `showroomId` is sent).\n- Linking, moving or unlinking resets `purpose` to the default unless `purpose` is in the same request.\n- `tagIds` replaces the list; archived tags already on the entry may stay.\n- `showroomId` only for business entries.\n- `200` the entry. `404`; `422 INVALID_ENTRY_PURPOSE`, `ENTRY_SHOWROOM_FOLLOWS_VEHICLE`, `FINANCE_TAG_ARCHIVED`.\n\n- Needs `X-Finance-Session` from Finance › Vault › Unlock; without a live one → `423 FINANCE_LOCKED`.\n- Admin only (`403` otherwise). See docs/api.md#finance--tags-and-entries.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"purpose\": \"purchase\",\n  \"amount\": 200000\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "d6d5cfb2-2709-4664-b5c6-89176e8540d6",
+                  "name": "200 OK — moved to a car as a purchase payment",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/entries/{{financeEntryId}}",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"purpose\": \"purchase\",\n  \"amount\": 200000\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"3a4b5c6d-7e8f-4a9b-8c0d-1e2f3a4b5c6d\",\n  \"kind\": \"expense\",\n  \"amount\": 200000,\n  \"entryDate\": \"2026-10-20\",\n  \"purpose\": \"purchase\",\n  \"tags\": [],\n  \"vehicle\": {\n    \"id\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"label\": \"Maruti Swift \\u00b7 KA01AB1234\"\n  },\n  \"party\": null,\n  \"note\": null,\n  \"showroomId\": \"b0000000-0000-4000-8000-000000000001\",\n  \"recordedBy\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\n  \"createdAt\": \"2026-11-02T10:05:00.000Z\",\n  \"updatedAt\": \"2026-11-02T10:05:00.000Z\"\n}"
+                },
+                {
+                  "id": "4b05b66f-f84a-4a2f-92ac-d2aa00bb02e5",
+                  "name": "422 — ENTRY_SHOWROOM_FOLLOWS_VEHICLE",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/entries/{{financeEntryId}}",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"purpose\": \"purchase\",\n  \"amount\": 200000\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"ENTRY_SHOWROOM_FOLLOWS_VEHICLE\",\n    \"message\": \"A car-linked entry belongs to the car's showroom\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Delete Entry",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/entries/{{financeEntryId}}",
+                "description": "**Story:** The admin removes an entry recorded by mistake.\n\nDELETE /finance/entries/:id — soft delete; the entry leaves lists and totals.\n\n**Auth:** Bearer, Admin only.\n\n- Path `id` (uuid).\n- `204`. `404 NOT_FOUND` unknown or already deleted.\n\n- Needs `X-Finance-Session` from Finance › Vault › Unlock; without a live one → `423 FINANCE_LOCKED`.\n- Admin only (`403` otherwise). See docs/api.md#finance--tags-and-entries."
+              },
+              "response": [
+                {
+                  "id": "4dad8ada-8ad1-412a-9522-e5ec2a40c53e",
+                  "name": "204 No Content",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/entries/{{financeEntryId}}"
+                  },
+                  "status": "No Content",
+                  "code": 204,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "body": ""
                 }
               ]
             }

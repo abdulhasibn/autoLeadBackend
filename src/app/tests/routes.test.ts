@@ -60,6 +60,14 @@ const PROTECTED_ROUTES: ReadonlyArray<readonly [string, string]> = [
   ['post', '/finance/vault/recover'],
   ['post', '/finance/unlock'],
   ['post', '/finance/lock'],
+  ['get', '/finance/tags'],
+  ['post', '/finance/tags'],
+  ['patch', `/finance/tags/${ID}`],
+  ['get', '/finance/entries'],
+  ['post', '/finance/entries'],
+  ['get', `/finance/entries/${ID}`],
+  ['patch', `/finance/entries/${ID}`],
+  ['delete', `/finance/entries/${ID}`],
 ];
 
 function testConfig(): AppConfig {
