@@ -51,7 +51,7 @@ Foundation (shipped)
 |---|-----------|-------|-----|--------|
 | 2.1 | Owner CRUD + Owner portal profile | `src/features/owners/` | §7, §8 | Partial — staff CRUD done; portal Todo |
 | 2.2 | Vehicle submission, details, media, documents | `src/features/vehicles/` | §9, §10 | Done (staff) |
-| 2.3 | Acquisition type + commercial details | `vehicles` | §9.2, §9.3 | Partial — acquisition type done; prices Todo |
+| 2.3 | Acquisition type + commercial details | `vehicles` | §9.2, §9.3 | Done — acquisition type in vehicles; prices moved to finance car money (5.2, encrypted) |
 
 **Exit criteria:** Salesperson registers owner → submits vehicle → vehicle moves through initial lifecycle states.
 
@@ -96,7 +96,7 @@ Foundation (shipped)
 |---|-----------|-------|-----|--------|
 | 5.0 | Finance vault: finance key, recovery key, unlock sessions | `src/features/finance/` | — | Done |
 | 5.1 | Ledger: income/expense entries, tags, car links | `finance` | §27, §28, §29 | Done |
-| 5.2 | Car deal, sale, quotes, profit and dues (single formula) | `finance` | §27.3 | Todo |
+| 5.2 | Car deal, sale, quotes, profit and dues (single formula) | `finance` | §27.3 | Done (absorbs Stint 2.3 acquisition prices) |
 | 5.3 | Reports: P&L, cash flow, per-car profit, dues, stock, summary | `finance` | §30 | Todo |
 | 5.4 | Seeder, Postman, API docs | `scripts/`, `postman/`, `docs/` | — | Todo |
 

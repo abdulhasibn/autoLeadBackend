@@ -139,6 +139,10 @@
     {
       "key": "financeEntryId",
       "value": ""
+    },
+    {
+      "key": "financeQuoteId",
+      "value": ""
     }
   ],
   "item": [
@@ -3260,6 +3264,768 @@
                   "_postman_previewlanguage": "json",
                   "header": [],
                   "body": ""
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Car money",
+          "item": [
+            {
+              "name": "Get Car Money",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('has money fields', () => pm.expect(pm.response.json()).to.include.keys('landingCost', 'profit', 'owedToSeller', 'owedByBuyer', 'flags'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}",
+                "description": "**Story:** The admin opens a car's money tab to see what it cost, what it sold for, the profit, and what is still owed.\n\nGET /finance/vehicles/:vehicleId — the car's deal, sale, quotes and computed numbers.\n\n**Auth:** Bearer, Admin only.\n\n- Path `vehicleId` (uuid).\n- `200` `{ vehicleId, vehicle: { id, label }, deal, sale, listedPrice, quotes, currentQuote, landingCost, costs, costBreakdown, paidToSeller, receivedFromBuyer, profit, owedToSeller, owedByBuyer, flags }`.\n- `landingCost` = purchase rate + cost entries; `profit` = finalised − landing cost (null until both known).\n- `owedToSeller` = purchase rate − purchase payments (negative = overpaid); `owedByBuyer` = finalised − sale payments.\n- `costBreakdown` groups cost entries by first tag; `tag: null` = untagged.\n- `404` unknown car.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money."
+              },
+              "response": [
+                {
+                  "id": "2d7bba03-cc3f-425c-a7ea-3687e43a8a5b",
+                  "name": "200 OK — the client's worked example",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n  \"deal\": {\n    \"purchaseRate\": 500000,\n    \"purchasedOn\": \"2026-10-01\",\n    \"ownerExpectedPrice\": 520000,\n    \"minimumSellingPrice\": 550000,\n    \"note\": \"Bought from Mr Rao\"\n  },\n  \"sale\": {\n    \"finalisedPrice\": 560000,\n    \"soldOn\": \"2026-10-25\",\n    \"soldBy\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\"\n  },\n  \"listedPrice\": 585000,\n  \"vehicle\": {\n    \"id\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"label\": \"Maruti Swift \\u00b7 KA01AB1234\"\n  },\n  \"quotes\": [\n    {\n      \"id\": \"33333333-3333-4333-8333-000000000001\",\n      \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n      \"amount\": 585000,\n      \"quotedOn\": \"2026-10-18\",\n      \"leadId\": null,\n      \"quotedTo\": \"Anil Kumar\",\n      \"note\": null,\n      \"createdAt\": \"2026-10-18T09:00:00.000Z\"\n    }\n  ],\n  \"currentQuote\": {\n    \"id\": \"33333333-3333-4333-8333-000000000001\",\n    \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"amount\": 585000,\n    \"quotedOn\": \"2026-10-18\",\n    \"leadId\": null,\n    \"quotedTo\": \"Anil Kumar\",\n    \"note\": null,\n    \"createdAt\": \"2026-10-18T09:00:00.000Z\"\n  },\n  \"landingCost\": 545000,\n  \"costs\": 45000,\n  \"costBreakdown\": [\n    {\n      \"tag\": {\n        \"id\": \"7c1e2a9b-4d3f-4e8a-9b1c-2d3e4f5a6b7c\",\n        \"name\": \"Insurance\"\n      },\n      \"amount\": 15000,\n      \"count\": 1\n    },\n    {\n      \"tag\": null,\n      \"amount\": 5000,\n      \"count\": 1\n    }\n  ],\n  \"paidToSeller\": 500000,\n  \"receivedFromBuyer\": 560000,\n  \"profit\": 15000,\n  \"owedToSeller\": 0,\n  \"owedByBuyer\": 0,\n  \"flags\": {\n    \"purchaseRateMissing\": false,\n    \"saleRecorded\": true\n  }\n}"
+                },
+                {
+                  "id": "c83693c9-af1b-448d-a3fd-21aa2789ac59",
+                  "name": "404 — NOT_FOUND",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}"
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Vehicle not found for id 9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Set Deal",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}",
+                "description": "**Story:** After agreeing a price with the seller, the admin records the purchase rate (and optionally the public asking price).\n\nPUT /finance/vehicles/:vehicleId — sets the deal fields. Never touches the sale.\n\n**Auth:** Bearer, Admin only.\n\n- `purchaseRate` (number, required): rupees agreed with the seller.\n- `purchasedOn` (YYYY-MM-DD), `ownerExpectedPrice`, `minimumSellingPrice` (rupees), `note` (≤ 1000): optional; omitted means cleared (full replace).\n- `listedPrice` (rupees or null): public asking price, plaintext, used by lead matching. Omit to keep, null to clear.\n- `200` `{ vehicleId, deal, sale, listedPrice }`. `404` unknown or deleted car; `422 VALIDATION_ERROR` / `INVALID_AMOUNT`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"purchaseRate\": 500000,\n  \"purchasedOn\": \"2026-10-01\",\n  \"ownerExpectedPrice\": 520000,\n  \"minimumSellingPrice\": 550000,\n  \"note\": \"Bought from Mr Rao\",\n  \"listedPrice\": 585000\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "2cd61919-83c6-4e53-8bf7-9eb612961191",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"purchaseRate\": 500000,\n  \"purchasedOn\": \"2026-10-01\",\n  \"ownerExpectedPrice\": 520000,\n  \"minimumSellingPrice\": 550000,\n  \"note\": \"Bought from Mr Rao\",\n  \"listedPrice\": 585000\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n  \"deal\": {\n    \"purchaseRate\": 500000,\n    \"purchasedOn\": \"2026-10-01\",\n    \"ownerExpectedPrice\": 520000,\n    \"minimumSellingPrice\": 550000,\n    \"note\": \"Bought from Mr Rao\"\n  },\n  \"sale\": null,\n  \"listedPrice\": 585000\n}"
+                },
+                {
+                  "id": "c58230b7-1e4d-458e-b283-eb63e148e7b4",
+                  "name": "422 — VALIDATION_ERROR",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"purchaseRate\": 500000,\n  \"purchasedOn\": \"2026-10-01\",\n  \"ownerExpectedPrice\": 520000,\n  \"minimumSellingPrice\": 550000,\n  \"note\": \"Bought from Mr Rao\",\n  \"listedPrice\": 585000\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Request validation failed\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Record Sale",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/sale",
+                "description": "**Story:** When the deal with the buyer is final, the admin records the finalised price, usually right after converting the lead.\n\nPOST /finance/vehicles/:vehicleId/sale — records or replaces the sale.\n\n**Auth:** Bearer, Admin only.\n\n- `finalisedPrice` (rupees, required), `soldOn` (YYYY-MM-DD, required).\n- Doesn't change the car's status (leads do that); may be recorded before the deal.\n- `200` `{ vehicleId, deal, sale, listedPrice }`. `404` unknown or deleted car.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"finalisedPrice\": 560000,\n  \"soldOn\": \"2026-10-25\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "ff831726-96a7-4934-a9e4-1f6ebdb64b12",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/sale",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"finalisedPrice\": 560000,\n  \"soldOn\": \"2026-10-25\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n  \"deal\": {\n    \"purchaseRate\": 500000,\n    \"purchasedOn\": \"2026-10-01\",\n    \"ownerExpectedPrice\": 520000,\n    \"minimumSellingPrice\": 550000,\n    \"note\": \"Bought from Mr Rao\"\n  },\n  \"sale\": {\n    \"finalisedPrice\": 560000,\n    \"soldOn\": \"2026-10-25\",\n    \"soldBy\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\"\n  },\n  \"listedPrice\": 585000\n}"
+                },
+                {
+                  "id": "eaa2b7f3-628a-401a-a008-0c2655c4db94",
+                  "name": "404 — NOT_FOUND",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/sale",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"finalisedPrice\": 560000,\n  \"soldOn\": \"2026-10-25\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Vehicle not found for id 9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Clear Sale",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/sale",
+                "description": "**Story:** The admin recorded a sale on the wrong car and removes it.\n\nDELETE /finance/vehicles/:vehicleId/sale — removes the recorded sale; the car shows up in Awaiting Sale Price again if it is sold.\n\n**Auth:** Bearer, Admin only.\n\n- Path `vehicleId` (uuid).\n- Always `204` (idempotent).\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money."
+              },
+              "response": [
+                {
+                  "id": "6f897f5a-464b-4438-954f-ecb694b9649b",
+                  "name": "204 No Content",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/sale"
+                  },
+                  "status": "No Content",
+                  "code": 204,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "body": ""
+                }
+              ]
+            },
+            {
+              "name": "List Quotes",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes",
+                "description": "**Story:** During negotiation the admin checks what prices were offered to whom.\n\nGET /finance/vehicles/:vehicleId/quotes — live quotes, newest first (by quote date, then time recorded). The first is the current quote.\n\n**Auth:** Bearer, Admin only.\n\n- `200` array of `{ id, vehicleId, amount, quotedOn, leadId, quotedTo, note, createdAt }`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money."
+              },
+              "response": [
+                {
+                  "id": "0d7aac66-c94a-4966-a91b-2d627a52870e",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "[\n  {\n    \"id\": \"33333333-3333-4333-8333-000000000001\",\n    \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"amount\": 585000,\n    \"quotedOn\": \"2026-10-18\",\n    \"leadId\": null,\n    \"quotedTo\": \"Anil Kumar\",\n    \"note\": null,\n    \"createdAt\": \"2026-10-18T09:00:00.000Z\"\n  }\n]"
+                },
+                {
+                  "id": "cc8a8fa8-528f-4c6b-a5d7-340d09fe7247",
+                  "name": "423 — FINANCE_LOCKED",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes"
+                  },
+                  "status": "Locked",
+                  "code": 423,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_LOCKED\",\n    \"message\": \"Finance is locked. Enter the finance key to unlock it.\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Add Quote",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                      "if (pm.response.code === 201) {",
+                      "  pm.collectionVariables.set('financeQuoteId', pm.response.json().id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes",
+                "description": "**Story:** The admin notes the price just offered to a buyer.\n\nPOST /finance/vehicles/:vehicleId/quotes — records a quote.\n\n**Auth:** Bearer, Admin only.\n\n- `amount` (rupees, required), `quotedOn` (YYYY-MM-DD, required).\n- `leadId` (uuid or null): the lead quoted, if any. `quotedTo` (≤ 120), `note` (≤ 1000): optional.\n- `201` the quote. `404` unknown car or lead.\n- The test script stores the id as `financeQuoteId`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": null,\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "6cb37f2c-e6e2-471f-805b-f58545f7f035",
+                  "name": "201 Created",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": null,\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"33333333-3333-4333-8333-000000000001\",\n  \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": null,\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null,\n  \"createdAt\": \"2026-10-18T09:00:00.000Z\"\n}"
+                },
+                {
+                  "id": "c1a95f51-3d42-4f4c-a6f8-6a28e49f0665",
+                  "name": "404 — NOT_FOUND",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": null,\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Vehicle not found for id 9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Delete Quote",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('204 No Content', () => pm.response.to.have.status(204));"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes/{{financeQuoteId}}",
+                "description": "**Story:** The admin removes a quote entered by mistake.\n\nDELETE /finance/vehicles/:vehicleId/quotes/:quoteId — soft delete.\n\n**Auth:** Bearer, Admin only.\n\n- `204`. `404 NOT_FOUND` when the quote doesn't exist or belongs to another car.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money."
+              },
+              "response": [
+                {
+                  "id": "f1cd072e-57f6-4be4-9bda-da1fc6e5fcec",
+                  "name": "204 No Content",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes/{{financeQuoteId}}"
+                  },
+                  "status": "No Content",
+                  "code": 204,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "body": ""
+                }
+              ]
+            },
+            {
+              "name": "Car Money Summaries",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/finance/vehicles?vehicleIds={{vehicleId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["finance", "vehicles"],
+                  "query": [
+                    {
+                      "key": "vehicleIds",
+                      "value": "{{vehicleId}}",
+                      "description": "Comma-separated car ids (max 100)"
+                    }
+                  ]
+                },
+                "description": "**Story:** The car list shows purchase rate, landing cost and profit columns next to each car.\n\nGET /finance/vehicles?vehicleIds=… — summaries for up to 100 cars, in the order asked.\n\n**Auth:** Bearer, Admin only.\n\n- Query `vehicleIds` (required): comma-separated car ids, at most 100.\n- `200` array of `{ vehicleId, purchaseRate, landingCost, currentQuote, finalisedPrice, profit, owedToSeller, owedByBuyer }`; cars with no finance data come back with zeros and nulls.\n- `422 VALIDATION_ERROR` missing or too many ids.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money."
+              },
+              "response": [
+                {
+                  "id": "8c23060e-3fe8-4225-a55b-4a4825123075",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/vehicles?vehicleIds={{vehicleId}}",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "vehicles"],
+                      "query": [
+                        {
+                          "key": "vehicleIds",
+                          "value": "{{vehicleId}}",
+                          "description": "Comma-separated car ids (max 100)"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "[\n  {\n    \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"purchaseRate\": 500000,\n    \"landingCost\": 545000,\n    \"currentQuote\": 585000,\n    \"finalisedPrice\": 560000,\n    \"profit\": 15000,\n    \"owedToSeller\": 0,\n    \"owedByBuyer\": 0\n  }\n]"
+                },
+                {
+                  "id": "4c004431-550d-439c-8517-eada3bf0b209",
+                  "name": "422 — VALIDATION_ERROR",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/vehicles?vehicleIds={{vehicleId}}",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "vehicles"],
+                      "query": [
+                        {
+                          "key": "vehicleIds",
+                          "value": "{{vehicleId}}",
+                          "description": "Comma-separated car ids (max 100)"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Request validation failed\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Awaiting Sale Price",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vehicles/awaiting-sale-price",
+                "description": "**Story:** After converting leads, the admin sees which sold cars still need their finalised price entered.\n\nGET /finance/vehicles/awaiting-sale-price — cars with status `sold` and no recorded sale.\n\n**Auth:** Bearer, Admin only.\n\n- `200` array of `{ vehicleId, label, soldLeadId }`, most recently updated first.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money."
+              },
+              "response": [
+                {
+                  "id": "a9428406-9919-4468-b599-950912047ec3",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/awaiting-sale-price"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "[\n  {\n    \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"label\": \"Maruti Swift \\u00b7 KA01AB1234\",\n    \"soldLeadId\": \"4b5c6d7e-8f9a-4b0c-9d1e-2f3a4b5c6d7e\"\n  }\n]"
+                },
+                {
+                  "id": "d5fd8810-1011-4c6b-8b7c-0eb2e9f90f23",
+                  "name": "423 — FINANCE_LOCKED",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/awaiting-sale-price"
+                  },
+                  "status": "Locked",
+                  "code": 423,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_LOCKED\",\n    \"message\": \"Finance is locked. Enter the finance key to unlock it.\"\n  }\n}"
                 }
               ]
             }

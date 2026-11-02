@@ -36,6 +36,8 @@ export class SupabaseFinanceEntryQueries implements IFinanceEntryQueries {
       if (criteria.showroomId !== undefined) query = query.eq('showroom_id', criteria.showroomId);
       if (criteria.vehicleId !== undefined) {
         query = query.eq('vehicle_id', criteria.vehicleId);
+      } else if (criteria.vehicleIds !== undefined) {
+        query = query.in('vehicle_id', [...criteria.vehicleIds]);
       } else if (criteria.unlinked === true) {
         query = query.is('vehicle_id', null);
       }

@@ -68,6 +68,15 @@ const PROTECTED_ROUTES: ReadonlyArray<readonly [string, string]> = [
   ['get', `/finance/entries/${ID}`],
   ['patch', `/finance/entries/${ID}`],
   ['delete', `/finance/entries/${ID}`],
+  ['get', '/finance/vehicles'],
+  ['get', '/finance/vehicles/awaiting-sale-price'],
+  ['get', `/finance/vehicles/${ID}`],
+  ['put', `/finance/vehicles/${ID}`],
+  ['post', `/finance/vehicles/${ID}/sale`],
+  ['delete', `/finance/vehicles/${ID}/sale`],
+  ['get', `/finance/vehicles/${ID}/quotes`],
+  ['post', `/finance/vehicles/${ID}/quotes`],
+  ['delete', `/finance/vehicles/${ID}/quotes/${ID}`],
 ];
 
 function testConfig(): AppConfig {

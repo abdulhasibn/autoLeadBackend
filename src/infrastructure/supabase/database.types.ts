@@ -1248,50 +1248,32 @@ export type Database = {
       };
       vehicle_financials: {
         Row: {
-          actual_selling_price: number | null;
-          commission_amount: number | null;
-          commission_percent: number | null;
-          company_purchase_price: number | null;
-          expected_selling_price: number | null;
           id: string;
+          key_version: number | null;
           listed_price: number | null;
-          minimum_selling_price: number | null;
-          other_costs: number | null;
-          owner_expected_price: number | null;
-          sold_at: string | null;
+          payload: string | null;
           sold_by: string | null;
+          sold_on: string | null;
           updated_at: string;
           vehicle_id: string;
         };
         Insert: {
-          actual_selling_price?: number | null;
-          commission_amount?: number | null;
-          commission_percent?: number | null;
-          company_purchase_price?: number | null;
-          expected_selling_price?: number | null;
           id?: string;
+          key_version?: number | null;
           listed_price?: number | null;
-          minimum_selling_price?: number | null;
-          other_costs?: number | null;
-          owner_expected_price?: number | null;
-          sold_at?: string | null;
+          payload?: string | null;
           sold_by?: string | null;
+          sold_on?: string | null;
           updated_at?: string;
           vehicle_id: string;
         };
         Update: {
-          actual_selling_price?: number | null;
-          commission_amount?: number | null;
-          commission_percent?: number | null;
-          company_purchase_price?: number | null;
-          expected_selling_price?: number | null;
           id?: string;
+          key_version?: number | null;
           listed_price?: number | null;
-          minimum_selling_price?: number | null;
-          other_costs?: number | null;
-          owner_expected_price?: number | null;
-          sold_at?: string | null;
+          payload?: string | null;
           sold_by?: string | null;
+          sold_on?: string | null;
           updated_at?: string;
           vehicle_id?: string;
         };
@@ -1364,6 +1346,71 @@ export type Database = {
           },
           {
             foreignKeyName: 'vehicle_media_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      vehicle_quotes: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          deleted_at: string | null;
+          id: string;
+          key_version: number;
+          lead_id: string | null;
+          payload: string;
+          quoted_on: string;
+          vehicle_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by: string;
+          deleted_at?: string | null;
+          id: string;
+          key_version: number;
+          lead_id?: string | null;
+          payload: string;
+          quoted_on: string;
+          vehicle_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          deleted_at?: string | null;
+          id?: string;
+          key_version?: number;
+          lead_id?: string | null;
+          payload?: string;
+          quoted_on?: string;
+          vehicle_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'vehicle_quotes_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_quotes_lead_id_fkey';
+            columns: ['lead_id'];
+            isOneToOne: false;
+            referencedRelation: 'leads';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_quotes_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_quotes_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
             referencedRelation: 'vehicles';

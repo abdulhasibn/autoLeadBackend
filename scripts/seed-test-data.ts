@@ -159,19 +159,10 @@ interface VehicleRow {
   deleted_at: string | null;
 }
 
+/** Plaintext car pricing only; sealed deal data is seeded by finance phase 5. */
 interface FinancialsRow {
   vehicle_id: string;
-  owner_expected_price: number | null;
-  company_purchase_price: number | null;
-  expected_selling_price: number | null;
-  minimum_selling_price: number | null;
   listed_price: number | null;
-  commission_amount: number | null;
-  commission_percent: number | null;
-  other_costs: number | null;
-  actual_selling_price: number | null;
-  sold_at: string | null;
-  sold_by: string | null;
   updated_at: string;
 }
 
@@ -1268,31 +1259,9 @@ function buildFinancials(vehicle: SimVehicle): void {
   const listed = vehicle.listed;
   const f: FinancialsRow = {
     vehicle_id: vehicle.id,
-    owner_expected_price: roundTo(listed * (0.85 + rand() * 0.2), 5_000),
-    company_purchase_price: null,
-    expected_selling_price: null,
-    minimum_selling_price: null,
-    listed_price: null,
-    commission_amount: null,
-    commission_percent: null,
-    other_costs: null,
-    actual_selling_price: null,
-    sold_at: null,
-    sold_by: null,
+    listed_price: shape === 'full' ? listed : null,
     updated_at: vehicle.row.created_at,
   };
-  if (shape === 'full') {
-    f.expected_selling_price = roundTo(listed * 1.02, 5_000);
-    f.minimum_selling_price = roundTo(listed * 0.92, 5_000);
-    f.listed_price = listed;
-    if (vehicle.row.acquisition_type === 'dealership_purchase') {
-      f.company_purchase_price = roundTo(listed * (0.8 + rand() * 0.08), 5_000);
-    } else if (chance(0.5)) {
-      f.commission_percent = pick([1.5, 2, 2.5, 3]);
-    } else {
-      f.commission_amount = roundTo(listed * 0.02, 1_000);
-    }
-  }
   vehicle.financials = f;
   rows.vehicle_financials.push(f);
 }
@@ -1705,11 +1674,7 @@ function sellVehicle(vehicle: SimVehicle, lead: SimLead, t: number, actor: strin
   }
   const f = vehicle.financials;
   if (f !== null) {
-    const listed = f.listed_price ?? vehicle.listed;
-    f.listed_price ??= listed;
-    f.actual_selling_price = roundTo(listed * (0.93 + rand() * 0.07), 5_000);
-    f.sold_at = iso(t);
-    f.sold_by = actor;
+    f.listed_price ??= vehicle.listed;
     f.updated_at = iso(t);
   }
 }

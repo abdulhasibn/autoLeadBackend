@@ -180,7 +180,7 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 
 ## Endpoint catalogue
 
-**62 routes** are mounted (including `/health`).
+**71 routes** are mounted (including `/health`).
 
 ### Health — public
 
@@ -884,7 +884,7 @@ Revenue, profit and average selling price arrive with finance (Stint 5).
 
 ### Finance — Admin only, encrypted (ADR-0014)
 
-Finance data is encrypted with a key only the admin holds. Shipped: the **vault** (setting up the keys, unlocking, locking, changing the key, recovering) and the **ledger** (tags and income/expense entries). Car deal, profit and reports follow (`docs/plans/finance-module.md`).
+Finance data is encrypted with a key only the admin holds. Shipped: the **vault** (setting up the keys, unlocking, locking, changing the key, recovering), the **ledger** (tags and income/expense entries) and **car money** (purchase rate, sale, quotes, landing cost, profit, dues). Reports follow (`docs/plans/finance-module.md`).
 
 Every finance response sends `Cache-Control: no-store`. Salespeople get `403`.
 
@@ -985,6 +985,53 @@ Every request below needs `X-Finance-Session` (else `423 FINANCE_LOCKED`).
 
 Response: `{ items, total, limit, offset, truncated, totals: { income, expense, net } }`. `totals` cover every matching entry, not just the page, so a car screen can show money in and out from the same call (`?vehicleId=…`). `truncated: true` means more than 5,000 entries matched the date/car filters; narrow the range.
 
+#### Finance › Car money
+
+One car's buy-and-sell numbers (ADR-0015). Every request needs `X-Finance-Session`.
+
+| Method | Path | Body / query | Success |
+|--------|------|--------------|---------|
+| GET | `/finance/vehicles/:vehicleId` | — | `200` car money (below) |
+| PUT | `/finance/vehicles/:vehicleId` | `{ purchaseRate, purchasedOn?, ownerExpectedPrice?, minimumSellingPrice?, note?, listedPrice? }` | `200` `{ vehicleId, deal, sale, listedPrice }` |
+| POST | `/finance/vehicles/:vehicleId/sale` | `{ finalisedPrice, soldOn }` | `200` same shape |
+| DELETE | `/finance/vehicles/:vehicleId/sale` | — | `204` |
+| GET | `/finance/vehicles/:vehicleId/quotes` | — | `200` quotes, newest first |
+| POST | `/finance/vehicles/:vehicleId/quotes` | `{ amount, quotedOn, leadId?, quotedTo?, note? }` | `201` quote |
+| DELETE | `/finance/vehicles/:vehicleId/quotes/:quoteId` | — | `204` |
+| GET | `/finance/vehicles?vehicleIds=a,b,…` | up to 100 ids | `200` summaries in the order asked |
+| GET | `/finance/vehicles/awaiting-sale-price` | — | `200` `[{ vehicleId, label, soldLeadId }]` |
+
+All amounts are rupees.
+
+- **Deal (`PUT`).** The purchase rate agreed with the seller, plus optional purchase date, owner's expected price, minimum selling price and note. `PUT` replaces these fields; it never touches the sale. `listedPrice` is the public asking price (plaintext, used by lead matching): omit it to keep the current one, send `null` to clear it.
+- **Sale.** `POST …/sale` records the finalised price and date. It doesn't change the car's status (that still follows leads), and it can be recorded before the deal. `DELETE …/sale` removes a sale recorded by mistake.
+- **Quotes** are prices offered to a person (`leadId` when they are a lead, or a free-text `quotedTo`). The newest is the current quote.
+- **Awaiting sale price** lists cars whose status is `sold` but whose finalised price isn't recorded yet. Show it as a to-do after converting a lead.
+
+**Car money** (`GET /finance/vehicles/:vehicleId`):
+
+```json
+{
+  "vehicleId": "…", "vehicle": { "id": "…", "label": "Maruti Swift · KA01AB1234" },
+  "deal": { "purchaseRate": 500000, "purchasedOn": "2026-10-01", "ownerExpectedPrice": null, "minimumSellingPrice": null, "note": null },
+  "sale": { "finalisedPrice": 560000, "soldOn": "2026-10-25", "soldBy": "…" },
+  "listedPrice": 585000,
+  "quotes": [ … ], "currentQuote": { "amount": 585000, "quotedOn": "2026-10-18", "quotedTo": "Anil", … },
+  "landingCost": 545000, "costs": 45000,
+  "costBreakdown": [ { "tag": { "id": "…", "name": "Insurance" }, "amount": 15000, "count": 1 }, … ],
+  "paidToSeller": 500000, "receivedFromBuyer": 560000,
+  "profit": 15000, "owedToSeller": 0, "owedByBuyer": 0,
+  "flags": { "purchaseRateMissing": false, "saleRecorded": true }
+}
+```
+
+- `landingCost` = purchase rate + entries with purpose `cost`. `profit` = finalised price − landing cost (negative is a loss; `null` until both are known).
+- `owedToSeller` = purchase rate − `purchase` payments (negative means overpaid; `null` without a purchase rate). `owedByBuyer` = finalised price − `sale` payments (`null` until the sale is recorded).
+- `costBreakdown` groups cost entries by their **first** tag (so an entry with several tags is counted once); `tag: null` means untagged.
+- The car's entries themselves come from `GET /finance/entries?vehicleId=…`.
+
+**Car screen recipe:** `GET /vehicles/:id` for the car, then (when finance is unlocked) `GET /finance/vehicles/:id` for the money tab and `GET /finance/entries?vehicleId=:id` for the entry list. In the car list, send the page's ids to `GET /finance/vehicles?vehicleIds=…` and match rows by `vehicleId`.
+
 ---
 
 ## Suggested admin UI map
@@ -1009,7 +1056,7 @@ For `salesperson`, show owners, catalog, vehicles, leads, the inbox and their ow
 ## Not shipped yet — do not design screens against these
 
 - Owner self-registration / portal (`owners.userId` linking)
-- Finance car deal, sale, quotes, profit, dues and reports (ADR-0015). The planned contract is in `docs/plans/finance-module.md` §8; build those screens once they appear here and in Postman. Vault, tags and the ledger are shipped.
+- Finance reports: P&L, cash flow, per-car profit, dues and stock (`docs/plans/finance-module.md` §8). Build those screens once they appear here and in Postman. Vault, tags, ledger and car money are shipped.
 - Marketplace / buyer browse and buyer inquiries (registered-buyer leads)
 - Automatic lead assignment
 - Password reset or change-own-password
