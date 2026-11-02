@@ -1,6 +1,6 @@
 # Vehicle profit is a domain service keyed by acquisition type
 
-**Status:** accepted
+**Status:** accepted · superseded in part by ADR-0015 (single profit formula; the business only buys and resells)
 
 PRD §27.3 defines profit differently by acquisition type:
 

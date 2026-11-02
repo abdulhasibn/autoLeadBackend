@@ -892,7 +892,7 @@ For `salesperson`, show owners, catalog, vehicles, leads, the inbox and their ow
 ## Not shipped yet — do not design screens against these
 
 - Owner self-registration / portal (`owners.userId` linking)
-- Acquisition prices / finance / profit (`vehicle_financials`)
+- Finance (Admin only, encrypted; ADR-0014/0015): vault and unlock, income/expense entries with tags and car links, car deal/sale/quotes, profit, dues and reports. The planned contract is in `docs/plans/finance-module.md` §8; screens should not be built until the Finance folder appears here and in Postman.
 - Marketplace / buyer browse and buyer inquiries (registered-buyer leads)
 - Automatic lead assignment
 - Password reset or change-own-password

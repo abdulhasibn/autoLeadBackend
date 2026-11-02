@@ -90,14 +90,15 @@ Foundation (shipped)
 
 ## Stint 5 — Finance
 
-**Outcome:** Vehicle-level costs, revenue, and profit tracked; basic P&L reporting.
+**Outcome:** Every rupee in and out recorded as encrypted income/expense entries, linkable to cars; per-car landing cost, profit and dues; P&L and cash flow (ADR-0014, ADR-0015, `docs/plans/finance-module.md`).
 
 | # | Work item | Paths | PRD | Status |
 |---|-----------|-------|-----|--------|
-| 5.1 | Vehicle expenses + revenue per vehicle | `src/features/finance/` | §27 | Todo |
-| 5.2 | Profit calculation (dealership-owned vs consignment) | `finance` | §27.3 | Todo |
-| 5.3 | Business expenses + income | `finance` | §28, §29 | Todo |
-| 5.4 | Basic P&L report query | `finance` | §30 | Todo |
+| 5.0 | Finance vault: finance key, recovery key, unlock sessions | `src/features/finance/` | — | Todo |
+| 5.1 | Ledger: income/expense entries, tags, car links | `finance` | §27, §28, §29 | Todo |
+| 5.2 | Car deal, sale, quotes, profit and dues (single formula) | `finance` | §27.3 | Todo |
+| 5.3 | Reports: P&L, cash flow, per-car profit, dues, stock, summary | `finance` | §30 | Todo |
+| 5.4 | Seeder, Postman, API docs | `scripts/`, `postman/`, `docs/` | — | Todo |
 
 **Exit criteria:** Sold vehicle shows cost breakdown, selling price, and computed profit; monthly P&L query returns expected totals.
 
