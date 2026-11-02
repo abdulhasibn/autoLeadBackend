@@ -53,6 +53,13 @@ const PROTECTED_ROUTES: ReadonlyArray<readonly [string, string]> = [
   ['get', '/notifications'],
   ['patch', `/notifications/${ID}/read`],
   ['get', '/dashboard'],
+  ['get', '/finance/vault'],
+  ['post', '/finance/vault/setup'],
+  ['post', '/finance/vault/confirm'],
+  ['post', '/finance/vault/change-key'],
+  ['post', '/finance/vault/recover'],
+  ['post', '/finance/unlock'],
+  ['post', '/finance/lock'],
 ];
 
 function testConfig(): AppConfig {

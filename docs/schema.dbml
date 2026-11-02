@@ -417,6 +417,44 @@ Table follow_ups {
 // Finance
 // ---------------------------------------------------------------------------
 
+// Finance vault (ADR-0014): the business data key wrapped by the finance key
+// and by the recovery key. Never holds a key in plaintext. Service role only.
+Table finance_vault {
+  id uuid [pk, default: `gen_random_uuid()`]
+  singleton boolean [not null, unique, default: true, note: 'check (singleton): one row per business']
+  status text [not null, default: 'pending', note: 'pending | active (active after the recovery key is confirmed)']
+  kdf jsonb [not null, note: 'scrypt parameters']
+  finance_salt text [not null, note: 'base64']
+  finance_wrapped_dek text [not null, note: 'DEK wrapped by the finance-key KEK']
+  recovery_salt text [not null, note: 'base64']
+  recovery_wrapped_dek text [not null, note: 'DEK wrapped by the recovery-key KEK']
+  key_version integer [not null, default: 1]
+  failed_unlocks integer [not null, default: 0]
+  last_failed_unlock_at timestamptz
+  unlock_blocked_until timestamptz
+  created_by uuid [not null, ref: > users.id]
+  confirmed_at timestamptz
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
+}
+
+// Unlock sessions: the DEK wrapped by a key derived from a secret only the
+// client holds. Deleted on lock, key change and recovery.
+Table finance_sessions {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id, note: 'on delete cascade']
+  wrapped_dek text [not null]
+  created_at timestamptz [not null, default: `now()`]
+  last_used_at timestamptz [not null, default: `now()`]
+  idle_expires_at timestamptz [not null]
+  expires_at timestamptz [not null]
+
+  indexes {
+    user_id [name: 'finance_sessions_user_id_idx']
+    expires_at [name: 'finance_sessions_expires_at_idx']
+  }
+}
+
 Table expenses {
   id uuid [pk, default: `gen_random_uuid()`]
   showroom_id uuid [not null, ref: > showrooms.id]

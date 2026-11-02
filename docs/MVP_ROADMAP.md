@@ -94,7 +94,7 @@ Foundation (shipped)
 
 | # | Work item | Paths | PRD | Status |
 |---|-----------|-------|-----|--------|
-| 5.0 | Finance vault: finance key, recovery key, unlock sessions | `src/features/finance/` | — | Todo |
+| 5.0 | Finance vault: finance key, recovery key, unlock sessions | `src/features/finance/` | — | Done |
 | 5.1 | Ledger: income/expense entries, tags, car links | `finance` | §27, §28, §29 | Todo |
 | 5.2 | Car deal, sale, quotes, profit and dues (single formula) | `finance` | §27.3 | Todo |
 | 5.3 | Reports: P&L, cash flow, per-car profit, dues, stock, summary | `finance` | §30 | Todo |

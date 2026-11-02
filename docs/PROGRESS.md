@@ -9,10 +9,10 @@
 | Area | Status |
 |------|--------|
 | Repo scaffold (Express / TS / Vitest / CI) | Done |
-| Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0012 | Done |
+| Architecture docs + ADR-0001 / ADR-0005 / ADR-0006–0015 | Done |
 | Cursor rules (architecture, quality, errors, testing, database, git) | Done |
 | Supabase project | Done (`autolead`, `ap-south-1`) |
-| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name + dealer handoff round 2 + lead match preferences + follow-up completion + replace vehicle catalog) | All 19 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
+| SQL migrations (stints 1–6 + save_staff_user + email unique + catalog seed + admin vehicles/leads + media lifecycle + lead assignment + status lifecycle + dashboard summary + lead preference / document file name + dealer handoff round 2 + lead match preferences + follow-up completion + replace vehicle catalog + finance vault) | All 20 applied to hosted project (plus hosted-only `lead_assignment_fix_user_id`, already folded into the repo file) |
 | Schema source of truth (`docs/schema.dbml`) | Done |
 | Generated `database.types.ts` | Done |
 | Local `.env` with service role key | Done — local dev only, not committed |
@@ -26,10 +26,10 @@
 | Leads (`src/features/leads`) | Staff walk-in create, associate vehicle (`linkedVehicle` summary on reads), structured preference (catalog make → model → variant plus colours / fuel / transmission / body type / year window / km ceiling / max owners; budget = price ceiling; set on create or `PUT /leads/:id/preference`), `GET /leads/vehicle-matches/:vehicleId` (weighted match % for linked leads + suggested open leads, ADR-0013) and the reverse `GET /leads/:id/vehicle-matches` (linked car + suggested linkable cars for one lead), status (`new` / `not_now` / `booking_confirmed` / `converted` / `lost` / `vehicle_unavailable`; converting sells the vehicle), follow-up + due notification, `GET /leads/:id/follow-ups` (open / closed / all), complete (outcome + notes, optional next follow-up in the same transaction) and cancel; Admin assignment; salesperson sees assigned leads only; `PATCH /leads/:id` edit, `DELETE /leads/:id/vehicle` unlink, `GET /leads/:id/status-history`, `assignedToName`, list `search` + budget / source / link / timeline / finance / created-at filters |
 | Sales (`src/features/sales`) | Not started |
 | Dashboard (`src/features/dashboard`) | `GET /dashboard` — KPIs, attention lists, today's follow-ups (ADR-0012); admin `scope: all`, salesperson `scope: mine` (own leads, no stock); money metrics after finance |
-| Finance (`src/features/finance`) | Not started |
+| Finance (`src/features/finance`) | Phase 1 of 5 — encrypted vault (ADR-0014): setup with finance + recovery keys, recovery-key confirmation, unlock sessions (`X-Finance-Session`, 30 min idle / 8 h), lock, change key, recover, 5-failure lockout, value-free audit, log redaction. Ledger, car money and reports next (ADR-0015, `docs/plans/finance-module.md`) |
 | Notifications (`src/features/notifications`) | Staff inbox (`due_at` filter, `isRead` filter, `unreadCount`) + mark read; `follow_up_due`, `lead_assigned`; items carry `leadId` |
-| Audit trail (cross-cutting) | Partial — status history tables; lead assignment in `audit_logs` |
-| Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications, Dashboard, Showrooms) | Done — local `postman/`, GitHub repo, cloud My Workspace |
+| Audit trail (cross-cutting) | Partial — status history tables; lead assignment and finance vault actions in `audit_logs` |
+| Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications, Dashboard, Showrooms, Finance › Vault) | Done — local `postman/`, GitHub repo, cloud My Workspace |
 | Frontend API guide (`docs/api.md`) | Done — current endpoints + how to start |
 | HTTP integration tests (local Docker Supabase) | Not started |
 | Vercel production host | Done — `autolead-backend` (`bom1`), `https://autolead-backend-lyart.vercel.app` |
@@ -43,18 +43,26 @@
 | Region | `ap-south-1` (Mumbai) |
 | URL | `https://pptljtbxqzmjossuamve.supabase.co` |
 | Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
-| Tables | 25 |
-| Migrations applied | 19 hosted rows (18 repo migrations + `lead_assignment_fix_user_id`) |
+| Tables | 27 |
+| Migrations applied | 20 hosted rows (19 repo migrations + `lead_assignment_fix_user_id`) |
 | Roles seeded | admin, salesperson, owner, buyer |
 
 ## Next up
 
 1. Merge `feat/dealer-handoff-round-2` (its migration is already on hosted), deploy, then run `scripts/smoke-api.sh` with admin credentials and ask the dealer team to move handoff items 2–13 to Resolved.
 2. Run the live `scripts/smoke-api.sh` flow against production (needs `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
-3. Acquisition prices on `vehicle_financials` (Stint 2.3).
+3. Finance phase 2: tags + income/expense ledger (`docs/plans/finance-module.md`); phase 3 absorbs acquisition prices (Stint 2.3).
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-11-02 — Finance phase 1: encrypted vault
+
+- ADR-0014 (finance data encrypted with session-unlocked keys) and ADR-0015 (one ledger of tagged income/expense entries, single profit formula) accepted; ADR-0009 superseded in part. Plans: `docs/plans/finance-module.md`, `docs/plans/finance-phase-1-vault.md`.
+- Migration `20261102120000_finance_vault` applied to hosted: `finance_vault` (singleton; data key wrapped by the finance key and by the recovery key; scrypt N=2¹⁷) and `finance_sessions` (data key wrapped by a key derived from a secret only the client holds). RLS on, no policies.
+- `src/features/finance`: setup (keys shown once, vault pending) → confirm with the recovery key → unlock (`X-Finance-Session`, 30 min idle / 8 h) → lock; change key (re-wraps only, ends other sessions); recover (rotates both keys, ends all sessions). Five wrong keys in 15 minutes block key entry for 15 minutes. `FinanceSessionService.open` is the only way to get a `FinanceCipher` (AES-256-GCM, row-bound AAD, 256-byte padding) for later phases.
+- Logger redacts the session header, keys, tokens and payloads; a test captures output to prove it. Audit rows name the action only.
+- Verified end to end against hosted: every flow, lockout, 403 for salespeople; no keys or tokens in the DB or server logs. The test vault was deleted afterwards, so the admin runs setup themselves.
 
 ### 2026-10-17 — Architecture audit; operator scripts moved to TypeScript
 

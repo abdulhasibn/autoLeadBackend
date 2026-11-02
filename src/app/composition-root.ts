@@ -7,6 +7,7 @@ import { JSON_BODY_LIMIT } from '../config/constants';
 import type { AppConfig } from '../config/environment';
 import { composeAuth } from '../features/auth/composition';
 import { composeDashboard } from '../features/dashboard/composition';
+import { composeFinance } from '../features/finance/composition';
 import { composeLeads } from '../features/leads/composition';
 import { composeNotifications } from '../features/notifications/composition';
 import { composeOwners } from '../features/owners/composition';
@@ -93,6 +94,10 @@ export function composeApp(config: AppConfig): AppDependencies {
   const showrooms = composeShowrooms(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,
   });
+  const finance = composeFinance(supabaseClient, {
+    bearerMiddleware: auth.bearerMiddleware,
+    clock,
+  });
 
   const app = express();
 
@@ -113,6 +118,7 @@ export function composeApp(config: AppConfig): AppDependencies {
       notificationsRouter: notifications.router,
       dashboardRouter: dashboard.router,
       showroomsRouter: showrooms.router,
+      financeRouter: finance.router,
     }),
   );
 
@@ -127,6 +133,7 @@ export function composeApp(config: AppConfig): AppDependencies {
       notifications.errorMapper,
       dashboard.errorMapper,
       showrooms.errorMapper,
+      finance.errorMapper,
     ]),
   );
 

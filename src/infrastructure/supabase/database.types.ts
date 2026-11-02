@@ -255,6 +255,109 @@ export type Database = {
           },
         ];
       };
+      finance_sessions: {
+        Row: {
+          created_at: string;
+          expires_at: string;
+          id: string;
+          idle_expires_at: string;
+          last_used_at: string;
+          user_id: string;
+          wrapped_dek: string;
+        };
+        Insert: {
+          created_at?: string;
+          expires_at: string;
+          id: string;
+          idle_expires_at: string;
+          last_used_at?: string;
+          user_id: string;
+          wrapped_dek: string;
+        };
+        Update: {
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          idle_expires_at?: string;
+          last_used_at?: string;
+          user_id?: string;
+          wrapped_dek?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'finance_sessions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      finance_vault: {
+        Row: {
+          confirmed_at: string | null;
+          created_at: string;
+          created_by: string;
+          failed_unlocks: number;
+          finance_salt: string;
+          finance_wrapped_dek: string;
+          id: string;
+          kdf: Json;
+          key_version: number;
+          last_failed_unlock_at: string | null;
+          recovery_salt: string;
+          recovery_wrapped_dek: string;
+          singleton: boolean;
+          status: string;
+          unlock_blocked_until: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          confirmed_at?: string | null;
+          created_at?: string;
+          created_by: string;
+          failed_unlocks?: number;
+          finance_salt: string;
+          finance_wrapped_dek: string;
+          id?: string;
+          kdf: Json;
+          key_version?: number;
+          last_failed_unlock_at?: string | null;
+          recovery_salt: string;
+          recovery_wrapped_dek: string;
+          singleton?: boolean;
+          status?: string;
+          unlock_blocked_until?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          confirmed_at?: string | null;
+          created_at?: string;
+          created_by?: string;
+          failed_unlocks?: number;
+          finance_salt?: string;
+          finance_wrapped_dek?: string;
+          id?: string;
+          kdf?: Json;
+          key_version?: number;
+          last_failed_unlock_at?: string | null;
+          recovery_salt?: string;
+          recovery_wrapped_dek?: string;
+          singleton?: boolean;
+          status?: string;
+          unlock_blocked_until?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'finance_vault_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       follow_ups: {
         Row: {
           assigned_to: string;

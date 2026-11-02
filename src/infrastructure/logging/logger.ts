@@ -7,8 +7,11 @@ import type { Logger } from '../../shared/logging/logger.port';
  * The only file in the codebase that imports `pino`. Every other layer depends
  * on the `Logger` port — never on this module or on `pino` directly.
  */
-export function createLogger(config: Pick<AppConfig, 'logLevel' | 'nodeEnv'>): Logger {
-  const pinoLogger = pino({
+export function createLogger(
+  config: Pick<AppConfig, 'logLevel' | 'nodeEnv'>,
+  destination?: pino.DestinationStream,
+): Logger {
+  const options: pino.LoggerOptions = {
     level: config.logLevel,
     redact: {
       paths: [
@@ -19,6 +22,14 @@ export function createLogger(config: Pick<AppConfig, 'logLevel' | 'nodeEnv'>): L
         '*.otp',
         '*.serviceRoleKey',
         '*.jwtSecret',
+        // Finance (ADR-0014): keys, session tokens and sealed payloads never reach logs.
+        'req.headers["x-finance-session"]',
+        '*.financeKey',
+        '*.currentKey',
+        '*.recoveryKey',
+        '*.sessionToken',
+        '*.payload',
+        '*.dek',
       ],
       censor: '[REDACTED]',
     },
@@ -26,7 +37,7 @@ export function createLogger(config: Pick<AppConfig, 'logLevel' | 'nodeEnv'>): L
       config.nodeEnv === 'development'
         ? { target: 'pino-pretty', options: { colorize: true } }
         : undefined,
-  });
+  };
 
-  return pinoLogger;
+  return destination === undefined ? pino(options) : pino(options, destination);
 }

@@ -1,6 +1,6 @@
 # Finance data is encrypted with keys the admin unlocks per session
 
-**Status:** proposed
+**Status:** accepted
 
 Finance data (purchase rates, sale prices, payments, expenses, notes) must be readable only by the admin who holds the business's **finance key**. A database dump, a backup, Supabase dashboard access or a developer with database credentials must see ciphertext only. The admin uses web and mobile clients, and the backend still has to compute landing cost, profit, dues and P&L.
 

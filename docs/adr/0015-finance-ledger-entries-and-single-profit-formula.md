@@ -1,6 +1,6 @@
 # Finance is one ledger of tagged entries with a single profit formula
 
-**Status:** proposed
+**Status:** accepted
 
 The client (requirements of 2026-10-26 and 2026-11-02) only buys cars outright and resells them; consignment and intermediary deals never happen. They want every rupee in or out recorded, any of it linked to a car from either the car or the ledger, free-form labels instead of fixed categories, part payments in both directions, and no income other than car sales. Their worked example: purchase ₹5,00,000 plus ₹45,000 of costs is a landing cost of ₹5,45,000; sold for ₹5,60,000 is a profit of ₹15,000.
 

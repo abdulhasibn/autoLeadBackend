@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import type { createAuthRouter } from '../features/auth/presentation/auth.routes';
 import type { createDashboardRouter } from '../features/dashboard/presentation/dashboard.routes';
+import type { createFinanceRouter } from '../features/finance/presentation/finance.routes';
 import type { createCatalogRouter } from '../features/vehicles/presentation/catalog.routes';
 import type { createLeadsRouter } from '../features/leads/presentation/leads.routes';
 import type { createNotificationsRouter } from '../features/notifications/presentation/notifications.routes';
@@ -20,6 +21,7 @@ interface RouterDeps {
   readonly notificationsRouter: ReturnType<typeof createNotificationsRouter>;
   readonly dashboardRouter: ReturnType<typeof createDashboardRouter>;
   readonly showroomsRouter: ReturnType<typeof createShowroomsRouter>;
+  readonly financeRouter: ReturnType<typeof createFinanceRouter>;
 }
 
 /**
@@ -41,6 +43,7 @@ export function createRouter(deps: RouterDeps): Router {
   router.use('/notifications', deps.notificationsRouter);
   router.use('/dashboard', deps.dashboardRouter);
   router.use('/showrooms', deps.showroomsRouter);
+  router.use('/finance', deps.financeRouter);
 
   return router;
 }

@@ -160,13 +160,19 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | 422 | `LEAD_REQUIRES_VEHICLE` | Moving a lead with no vehicle to `booking_confirmed` or `converted`, or removing the vehicle of a `booking_confirmed` lead |
 | 422 | `LEAD_STATUS_SYSTEM_MANAGED` | Setting `vehicle_unavailable` by hand |
 | 422 | `ASSIGNEE_NOT_ELIGIBLE` | `assignedTo` is not an active admin or salesperson |
+| 409 | `FINANCE_NOT_INITIALIZED` | Finance used before `POST /finance/vault/setup` |
+| 409 | `FINANCE_ALREADY_INITIALIZED` | Setting up or confirming a vault that is already confirmed |
+| 409 | `FINANCE_VAULT_NOT_CONFIRMED` | Unlocking, changing the key or recovering before the recovery key was confirmed |
+| 422 | `INVALID_FINANCE_KEY` | Well-formed finance or recovery key that doesn't open the vault (counts toward the lockout) |
+| 423 | `FINANCE_LOCKED` | Finance route without a valid `X-Finance-Session` (missing, expired, locked, or another user's): show the unlock screen |
+| 429 | `FINANCE_UNLOCK_BLOCKED` | Five wrong keys within 15 minutes; key entry is paused for 15 minutes |
 | 503 | `DB_UNAVAILABLE` / `DB_TRANSIENT` | Database down or retryable |
 
 ---
 
 ## Endpoint catalogue
 
-**47 routes** are mounted (including `/health`).
+**54 routes** are mounted (including `/health`).
 
 ### Health — public
 
@@ -868,6 +874,47 @@ Each list holds at most 5 rows, oldest or most urgent first. `total` is the full
 
 Revenue, profit and average selling price arrive with finance (Stint 5).
 
+### Finance — Admin only, encrypted (ADR-0014)
+
+Finance data is encrypted with a key only the admin holds. Phase 1 ships the **vault**: setting up the keys, unlocking, locking, changing the key and recovering. Ledger, car money and reports follow (`docs/plans/finance-module.md`).
+
+Every finance response sends `Cache-Control: no-store`. Salespeople get `403`.
+
+| Method | Path | Body | Success |
+|--------|------|------|---------|
+| GET | `/finance/vault` | — (send `X-Finance-Session` if you have one) | `200` `{ initialized, confirmed, unlocked, expiresAt }` |
+| POST | `/finance/vault/setup` | — | `201` `{ financeKey, recoveryKey }` |
+| POST | `/finance/vault/confirm` | `{ recoveryKey }` | `200` vault status |
+| POST | `/finance/unlock` | `{ financeKey }` | `200` `{ sessionToken, expiresAt }` |
+| POST | `/finance/lock` | — (`X-Finance-Session`) | `204` |
+| POST | `/finance/vault/change-key` | `{ currentKey }` + `X-Finance-Session` | `200` `{ financeKey }` |
+| POST | `/finance/vault/recover` | `{ recoveryKey }` | `200` `{ financeKey, recoveryKey }` |
+
+**Which screen to show.** Call `GET /finance/vault` when the admin opens Finance:
+
+| `initialized` | `confirmed` | `unlocked` | Screen |
+|---|---|---|---|
+| false | — | — | Set up finance |
+| true | false | — | Confirm recovery key (or set up again) |
+| true | true | false | Enter finance key |
+| true | true | true | Finance |
+
+**Setup.** `POST /finance/vault/setup` returns both keys **once**; the server keeps no copy it can read. Show them with copy/print buttons and make clear that losing both means the finance data is gone for good. Then ask the admin to type the recovery key back in and send it to `POST /finance/vault/confirm`. Until then the vault can't be unlocked. Calling setup again before confirming replaces both keys.
+
+**Keys.** The finance key looks like `FK-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX` and the recovery key like `RK-XXXX-…` (13 groups). Input is forgiving: case, spaces, dashes and the letters O/I/L for 0/1 don't matter, and the prefix may be left off. A key that isn't in this shape gets `422 VALIDATION_ERROR` and doesn't count toward the lockout.
+
+**Unlock session.** `POST /finance/unlock` returns a `sessionToken`. Send it as `X-Finance-Session` on every finance request.
+- Keep it in memory on web (never `localStorage`), in Keychain/Keystore on mobile.
+- It locks after **30 minutes idle** (each finance request extends it) and **8 hours** at most. `expiresAt` is the idle deadline. `GET /finance/vault` does not extend it.
+- Any `423 FINANCE_LOCKED` means: drop the token and show the unlock screen.
+- `POST /finance/lock` ends it (use on "Lock" and sign-out). Always `204`.
+
+**Lockout.** Five wrong keys within 15 minutes (finance or recovery key) pause key entry for 15 minutes: `429 FINANCE_UNLOCK_BLOCKED`, with the minutes left in the message.
+
+**Change key.** Needs an unlocked session and the current key. Returns the new finance key once. Other sessions end; the caller's stays unlocked. No data is re-encrypted.
+
+**Recover.** For a lost finance key. `POST /finance/vault/recover` with the recovery key returns a **new finance key and a new recovery key** (the used one stops working). Every session ends.
+
 ---
 
 ## Suggested admin UI map
@@ -892,7 +939,7 @@ For `salesperson`, show owners, catalog, vehicles, leads, the inbox and their ow
 ## Not shipped yet — do not design screens against these
 
 - Owner self-registration / portal (`owners.userId` linking)
-- Finance (Admin only, encrypted; ADR-0014/0015): vault and unlock, income/expense entries with tags and car links, car deal/sale/quotes, profit, dues and reports. The planned contract is in `docs/plans/finance-module.md` §8; screens should not be built until the Finance folder appears here and in Postman.
+- Finance beyond the vault (ADR-0015): income/expense entries with tags and car links, car deal/sale/quotes, profit, dues and reports. The planned contract is in `docs/plans/finance-module.md` §8; build those screens once they appear here and in Postman. The vault screens (setup, confirm, unlock) can be built now.
 - Marketplace / buyer browse and buyer inquiries (registered-buyer leads)
 - Automatic lead assignment
 - Password reset or change-own-password

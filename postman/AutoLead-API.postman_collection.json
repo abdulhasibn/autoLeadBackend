@@ -119,6 +119,18 @@
     {
       "key": "resetCode",
       "value": ""
+    },
+    {
+      "key": "financeKey",
+      "value": ""
+    },
+    {
+      "key": "recoveryKey",
+      "value": ""
+    },
+    {
+      "key": "financeSessionToken",
+      "value": ""
     }
   ],
   "item": [
@@ -1534,6 +1546,694 @@
             "url": "{{baseUrl}}/showrooms?limit=20&offset=0",
             "description": "GET /showrooms (Admin or Salesperson) — 200 page of { id, name, city }, active showrooms by name."
           }
+        }
+      ]
+    },
+    {
+      "name": "Finance",
+      "description": "Admin-only, encrypted finance (ADR-0014). Phase 1: the vault. Run Setup → Confirm → Unlock; the scripts carry keys and the session token in collection variables.",
+      "item": [
+        {
+          "name": "Vault",
+          "item": [
+            {
+              "name": "Get Vault Status",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('has vault flags', () => pm.expect(pm.response.json()).to.include.keys('initialized', 'confirmed', 'unlocked', 'expiresAt'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vault",
+                "description": "**Story:** When the admin opens Finance, the app asks which screen to show: set up, confirm the recovery key, enter the finance key, or the finance screens.\n\nGET /finance/vault — vault state and whether this request carries a valid session.\n\n**Auth:** Bearer, Admin only.\n\n- Header `X-Finance-Session` (optional): the token from Unlock. Checking it does **not** extend the session.\n- `200` `{ initialized, confirmed, unlocked, expiresAt }`:\n  - `initialized` — a vault exists (pending or confirmed)\n  - `confirmed` — the recovery key was confirmed; finance can be unlocked\n  - `unlocked` — the header holds a live session\n  - `expiresAt` — ISO time the session locks if left idle, or null\n\n- Every finance response sends `Cache-Control: no-store`.\n- Salespeople get `403 FORBIDDEN`. See docs/api.md#finance--admin-only-encrypted-adr-0014."
+              },
+              "response": [
+                {
+                  "id": "ea070d5e-7063-4aa6-8952-c1d037764dd7",
+                  "name": "200 OK — unlocked",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vault"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"initialized\": true,\n  \"confirmed\": true,\n  \"unlocked\": true,\n  \"expiresAt\": \"2026-11-02T11:30:00.000Z\"\n}"
+                },
+                {
+                  "id": "05c41951-5e2d-4903-9ab8-de2ebc40abdd",
+                  "name": "200 OK — not set up",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vault"
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"initialized\": false,\n  \"confirmed\": false,\n  \"unlocked\": false,\n  \"expiresAt\": null\n}"
+                },
+                {
+                  "id": "99c913af-ffaa-470f-ab13-317c8a83f28e",
+                  "name": "403 — FORBIDDEN",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vault"
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Only an admin can use finance\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Setup Vault",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                      "if (pm.response.code === 201) {",
+                      "  const body = pm.response.json();",
+                      "  pm.collectionVariables.set('financeKey', body.financeKey);",
+                      "  pm.collectionVariables.set('recoveryKey', body.recoveryKey);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": "{{baseUrl}}/finance/vault/setup",
+                "description": "**Story:** The admin turns on finance once. The server creates the encryption key and gives the admin a finance key and a recovery key to keep; it can't read either back later.\n\nPOST /finance/vault/setup — creates the vault in `pending` state.\n\n**Auth:** Bearer, Admin only. No body.\n\n- `201` `{ financeKey, recoveryKey }`, shown **once**. Losing both means the finance data can't be read.\n- Next: Confirm Vault with the recovery key. Until then the vault can't be unlocked.\n- Calling setup again before confirming replaces both keys.\n- `409 FINANCE_ALREADY_INITIALIZED` once confirmed.\n- The test script stores both keys in collection variables for the next requests.\n\n- Every finance response sends `Cache-Control: no-store`.\n- Salespeople get `403 FORBIDDEN`. See docs/api.md#finance--admin-only-encrypted-adr-0014."
+              },
+              "response": [
+                {
+                  "id": "30fb2412-79e8-47c5-a267-70c5df64789a",
+                  "name": "201 Created — keys shown once",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "url": "{{baseUrl}}/finance/vault/setup"
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"financeKey\": \"FK-7Q2M-K9XD-3HTV-WB4N-8RCZ-1PAE\",\n  \"recoveryKey\": \"RK-4K8Z-TQ1M-W9HC-2XNE-7DVA-3PJR-6YBK-0GSF-5MTW-8QHZ-1RCE-4NVD-9KXA\"\n}"
+                },
+                {
+                  "id": "5c7d003d-1948-45fc-bc7a-8ad84b2cf3b5",
+                  "name": "409 — FINANCE_ALREADY_INITIALIZED",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [],
+                    "url": "{{baseUrl}}/finance/vault/setup"
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_ALREADY_INITIALIZED\",\n    \"message\": \"Finance is already set up\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Confirm Vault",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('confirmed', () => pm.expect(pm.response.json().confirmed).to.eql(true));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vault/confirm",
+                "description": "**Story:** Right after setup, the admin types the recovery key back in to prove it was saved; that activates finance.\n\nPOST /finance/vault/confirm — activates a pending vault.\n\n**Auth:** Bearer, Admin only.\n\n- Body `recoveryKey` (string, required): `RK-` key from setup. Case, spaces, dashes and O/I/L look-alikes are ignored; the prefix is optional.\n- `200` vault status with `confirmed: true`.\n- `422 INVALID_FINANCE_KEY` wrong key (counts toward the lockout); `422 VALIDATION_ERROR` not key-shaped; `409 FINANCE_NOT_INITIALIZED` no vault; `409 FINANCE_ALREADY_INITIALIZED` already confirmed; `429 FINANCE_UNLOCK_BLOCKED`.\n\n- Every finance response sends `Cache-Control: no-store`.\n- Salespeople get `403 FORBIDDEN`. See docs/api.md#finance--admin-only-encrypted-adr-0014.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"recoveryKey\": \"{{recoveryKey}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "3b8b31b9-ed51-48be-9079-48f9af4f4316",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vault/confirm",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"recoveryKey\": \"{{recoveryKey}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"initialized\": true,\n  \"confirmed\": true,\n  \"unlocked\": false,\n  \"expiresAt\": null\n}"
+                },
+                {
+                  "id": "c469713e-b107-4b85-ad39-2e81f88f82a1",
+                  "name": "422 — INVALID_FINANCE_KEY",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vault/confirm",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"recoveryKey\": \"{{recoveryKey}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"INVALID_FINANCE_KEY\",\n    \"message\": \"The key is not correct\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Unlock",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "if (pm.response.code === 200) {",
+                      "  pm.collectionVariables.set('financeSessionToken', pm.response.json().sessionToken);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/unlock",
+                "description": "**Story:** The admin enters the finance key to open the finance screens; the app gets a session token to send with every finance request.\n\nPOST /finance/unlock — starts an unlock session.\n\n**Auth:** Bearer, Admin only.\n\n- Body `financeKey` (string, required): `FK-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX`, forgiving input as for the recovery key.\n- `200` `{ sessionToken, expiresAt }`. Send the token as `X-Finance-Session`. Keep it in memory (web) or Keychain/Keystore (mobile).\n- The session locks after 30 minutes idle (each finance request extends it) and after 8 hours at most.\n- `422 INVALID_FINANCE_KEY`; five wrong keys in 15 minutes → `429 FINANCE_UNLOCK_BLOCKED` for 15 minutes; `409 FINANCE_VAULT_NOT_CONFIRMED`; `409 FINANCE_NOT_INITIALIZED`.\n- The test script stores the token as `financeSessionToken`.\n\n- Every finance response sends `Cache-Control: no-store`.\n- Salespeople get `403 FORBIDDEN`. See docs/api.md#finance--admin-only-encrypted-adr-0014.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"financeKey\": \"{{financeKey}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "282f9569-be69-4f5d-a337-2bd9d2dfa240",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/unlock",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"financeKey\": \"{{financeKey}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"sessionToken\": \"5f0e2c4a-9b1d-4e8f-a3c7-2d6b8e1f4a90.Yk3mQ8vZ2pL7wR4tN1sX6cB9dF0hJ5gA\",\n  \"expiresAt\": \"2026-11-02T10:30:00.000Z\"\n}"
+                },
+                {
+                  "id": "6b40c84f-1a0f-4c40-a76e-c0d19f853130",
+                  "name": "422 — INVALID_FINANCE_KEY",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/unlock",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"financeKey\": \"{{financeKey}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"INVALID_FINANCE_KEY\",\n    \"message\": \"The key is not correct\"\n  }\n}"
+                },
+                {
+                  "id": "992a2a59-05b4-4c1b-90c8-2f1a56c9ae8d",
+                  "name": "429 — FINANCE_UNLOCK_BLOCKED",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/unlock",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"financeKey\": \"{{financeKey}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Too Many Requests",
+                  "code": 429,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_UNLOCK_BLOCKED\",\n    \"message\": \"Too many wrong keys. Try again in 15 minutes.\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Lock",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('204 No Content', () => pm.response.to.have.status(204));",
+                      "pm.collectionVariables.unset('financeSessionToken');"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/lock",
+                "description": "**Story:** The admin taps Lock (or signs out) and the finance screens close until the key is entered again.\n\nPOST /finance/lock — ends the session named by `X-Finance-Session`.\n\n**Auth:** Bearer, Admin only. No body.\n\n- Always `204`, even with no or an unknown token.\n- Clears `financeSessionToken`.\n\n- Every finance response sends `Cache-Control: no-store`.\n- Salespeople get `403 FORBIDDEN`. See docs/api.md#finance--admin-only-encrypted-adr-0014."
+              },
+              "response": [
+                {
+                  "id": "054a04d2-e93d-449e-b32a-6db32643e8aa",
+                  "name": "204 No Content",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/lock"
+                  },
+                  "status": "No Content",
+                  "code": 204,
+                  "_postman_previewlanguage": "json",
+                  "header": [],
+                  "body": ""
+                }
+              ]
+            },
+            {
+              "name": "Change Finance Key",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "if (pm.response.code === 200) {",
+                      "  pm.collectionVariables.set('financeKey', pm.response.json().financeKey);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vault/change-key",
+                "description": "**Story:** The admin replaces the finance key, for example after sharing it by mistake. Finance data stays as it is; only the key that unlocks it changes.\n\nPOST /finance/vault/change-key — issues a new finance key.\n\n**Auth:** Bearer, Admin only, plus a live `X-Finance-Session`.\n\n- Body `currentKey` (string, required): the finance key in use.\n- `200` `{ financeKey }`, shown once. Every other session ends; this one stays unlocked. The recovery key is unchanged.\n- `423 FINANCE_LOCKED` no valid session; `422 INVALID_FINANCE_KEY` wrong current key (counts toward the lockout); `429 FINANCE_UNLOCK_BLOCKED`.\n- The test script stores the new key as `financeKey`.\n\n- Every finance response sends `Cache-Control: no-store`.\n- Salespeople get `403 FORBIDDEN`. See docs/api.md#finance--admin-only-encrypted-adr-0014.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentKey\": \"{{financeKey}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "f9d61790-5a55-458c-ba80-f48ba61d1e75",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vault/change-key",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"currentKey\": \"{{financeKey}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"financeKey\": \"FK-M3JP-6YQA-0VZK-T7HD-2NWB-9XEC\"\n}"
+                },
+                {
+                  "id": "494b5f1d-625b-49aa-89cc-ae54ca9060c0",
+                  "name": "423 — FINANCE_LOCKED",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vault/change-key",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"currentKey\": \"{{financeKey}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Locked",
+                  "code": 423,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_LOCKED\",\n    \"message\": \"Finance is locked. Enter the finance key to unlock it.\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Recover Vault",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "if (pm.response.code === 200) {",
+                      "  const body = pm.response.json();",
+                      "  pm.collectionVariables.set('financeKey', body.financeKey);",
+                      "  pm.collectionVariables.set('recoveryKey', body.recoveryKey);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/vault/recover",
+                "description": "**Story:** The admin lost the finance key and uses the recovery key to get a new one. The used recovery key is replaced too.\n\nPOST /finance/vault/recover — issues a new finance key and a new recovery key.\n\n**Auth:** Bearer, Admin only. No session needed.\n\n- Body `recoveryKey` (string, required).\n- `200` `{ financeKey, recoveryKey }`, both shown once. The old keys stop working and every session ends.\n- `422 INVALID_FINANCE_KEY` (counts toward the lockout); `429 FINANCE_UNLOCK_BLOCKED`; `409 FINANCE_VAULT_NOT_CONFIRMED`; `409 FINANCE_NOT_INITIALIZED`.\n- The test script stores both new keys.\n\n- Every finance response sends `Cache-Control: no-store`.\n- Salespeople get `403 FORBIDDEN`. See docs/api.md#finance--admin-only-encrypted-adr-0014.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"recoveryKey\": \"{{recoveryKey}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "d52b5234-a11d-4c28-9f42-a068e92f9d63",
+                  "name": "200 OK — both keys rotated",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vault/recover",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"recoveryKey\": \"{{recoveryKey}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"financeKey\": \"FK-M3JP-6YQA-0VZK-T7HD-2NWB-9XEC\",\n  \"recoveryKey\": \"RK-4K8Z-TQ1M-W9HC-2XNE-7DVA-3PJR-6YBK-0GSF-5MTW-8QHZ-1RCE-4NVD-9KXA\"\n}"
+                },
+                {
+                  "id": "0acc177b-af3c-4850-9a9d-27b545a41bb7",
+                  "name": "422 — INVALID_FINANCE_KEY",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vault/recover",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"recoveryKey\": \"{{recoveryKey}}\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"INVALID_FINANCE_KEY\",\n    \"message\": \"The key is not correct\"\n  }\n}"
+                }
+              ]
+            }
+          ]
         }
       ]
     }
