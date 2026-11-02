@@ -13,6 +13,7 @@ import type { ListVehicleDocumentsController } from './controllers/list-vehicle-
 import type { ListVehicleMediaController } from './controllers/list-vehicle-media.controller';
 import type { ListVehicleStatusHistoryController } from './controllers/list-vehicle-status-history.controller';
 import type { ListVehiclesController } from './controllers/list-vehicles.controller';
+import type { SetVehicleListedPriceController } from './controllers/set-vehicle-listed-price.controller';
 import type { UpdateVehicleController } from './controllers/update-vehicle.controller';
 
 export interface VehiclesRouterDeps {
@@ -21,6 +22,7 @@ export interface VehiclesRouterDeps {
   readonly listVehiclesController: ListVehiclesController;
   readonly getVehicleController: GetVehicleController;
   readonly updateVehicleController: UpdateVehicleController;
+  readonly setVehicleListedPriceController: SetVehicleListedPriceController;
   readonly changeVehicleStatusController: ChangeVehicleStatusController;
   readonly listVehicleStatusHistoryController: ListVehicleStatusHistoryController;
   readonly createVehicleMediaUploadController: CreateVehicleMediaUploadController;
@@ -41,6 +43,7 @@ export function createVehiclesRouter(deps: VehiclesRouterDeps): Router {
   router.post('/', deps.createVehicleController.handle());
   router.get('/', deps.listVehiclesController.handle());
   router.post('/:id/status', deps.changeVehicleStatusController.handle());
+  router.put('/:id/listed-price', deps.setVehicleListedPriceController.handle());
   router.get('/:id/status-history', deps.listVehicleStatusHistoryController.handle());
   router.post('/:id/media/uploads', deps.createVehicleMediaUploadController.handle());
   router.post('/:id/media', deps.confirmVehicleMediaController.handle());

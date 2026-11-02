@@ -32,6 +32,8 @@ export interface VehicleReadModel {
   readonly loanStatus: string | null;
   readonly location: string | null;
   readonly description: string | null;
+  /** Public asking price (`vehicle_financials.listed_price`). */
+  readonly listedPrice: number | null;
   readonly status: string;
   readonly soldLeadId: string | null;
   readonly acquisitionType: string;

@@ -17,7 +17,7 @@ import { toVehicleReadModel, type VehicleListRow } from './vehicle.mapper';
 // `vehicle_list` is `vehicles` joined to its variant, model and make, so search
 // and catalog filters are plain column filters.
 const VEHICLE_LIST_COLUMNS =
-  'id, showroom_id, owner_id, variant_id, make_name, model_name, variant_name, year, registration_number, fuel_type, transmission, km_driven, num_previous_owners, colour, insurance_valid_until, rc_status, service_history, accident_history, loan_status, location, description, status, sold_lead_id, acquisition_type, submitted_by, created_at, updated_at, deleted_at';
+  'id, showroom_id, owner_id, variant_id, make_name, model_name, variant_name, year, registration_number, fuel_type, transmission, km_driven, num_previous_owners, colour, insurance_valid_until, rc_status, service_history, accident_history, loan_status, location, description, status, sold_lead_id, acquisition_type, submitted_by, created_at, updated_at, deleted_at, listed_price';
 
 const SEARCH_COLUMNS = ['registration_number', 'make_name', 'model_name', 'variant_name'];
 

@@ -1545,6 +1545,27 @@ export type Database = {
       };
     };
     Views: {
+      public_vehicle_list: {
+        Row: {
+          body_types: string[] | null;
+          colour: string | null;
+          created_at: string | null;
+          description: string | null;
+          fuel_type: string | null;
+          id: string | null;
+          km_driven: number | null;
+          listed_price: number | null;
+          make_id: string | null;
+          make_name: string | null;
+          model_id: string | null;
+          model_name: string | null;
+          num_previous_owners: number | null;
+          transmission: string | null;
+          variant_name: string | null;
+          year: number | null;
+        };
+        Relationships: [];
+      };
       vehicle_list: {
         Row: {
           accident_history: boolean | null;
@@ -1557,6 +1578,7 @@ export type Database = {
           id: string | null;
           insurance_valid_until: string | null;
           km_driven: number | null;
+          listed_price: number | null;
           loan_status: string | null;
           location: string | null;
           make_id: string | null;
@@ -1769,6 +1791,15 @@ export type Database = {
           p_task_type: string;
         };
         Returns: undefined;
+      };
+      submit_public_test_drive: {
+        Args: {
+          p_full_name: string;
+          p_ip_hash: string;
+          p_phone: string;
+          p_vehicle_id: string | null;
+        };
+        Returns: Json;
       };
     };
     Enums: {

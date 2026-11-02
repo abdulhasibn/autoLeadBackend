@@ -2,7 +2,7 @@
 
 What is live today, and how a frontend (admin web first) can start against it.
 
-**Current phase:** staff (admin + salesperson) vehicle intake, inspection, inventory listing statuses, and walk-in lead management with assignment. There is no public marketplace or owner portal yet.
+**Current phase:** staff (admin + salesperson) vehicle intake, inspection, inventory listing statuses, and walk-in lead management with assignment. The customer website reads Listed stock and files test-drive requests through the anonymous `/public` routes. There is no buyer login or owner portal yet.
 
 **Base URL:** `http://localhost:3000`  
 **Production:** `https://autolead-backend-lyart.vercel.app` (deploys from `main`)  
@@ -14,7 +14,7 @@ What is live today, and how a frontend (admin web first) can start against it.
 
 ### 1. Point at the local API
 
-The backend allows any browser origin (`cors()` with defaults). Start the API with `pnpm dev` on port `3000`.
+Staff routes allow any browser origin (`cors()` with defaults). `/public` routes allow only the origins in `PUBLIC_SITE_ORIGINS`. Start the API with `pnpm dev` on port `3000`.
 
 ```ts
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
@@ -189,6 +189,28 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | `GET` | `/health` | Public | `200` `{ status: "ok", timestamp }` |
 
 Use this as the frontend “API is up” check.
+
+### Public marketplace — no auth (customer website, ADR-0010)
+
+Anonymous. CORS is limited to `PUBLIC_SITE_ORIGINS`. Only Listed vehicles (`open` / `linked`, not deleted) are visible, and only through `public_vehicle_list`: no plate, owner, documents, RC/loan state, internal prices or lead counts. Unknown, sold and dropped ids all answer `404`.
+
+| Method | Path | Success |
+|--------|------|---------|
+| `GET` | `/public/vehicles` | `200` page of summaries. Query: `makeId`, `modelId`, `bodyType`, `fuelType`, `transmission` (CSV), `priceMin`, `priceMax`, `yearMin`, `kmMax`, `sort` (`newest` \| `price_asc` \| `price_desc` \| `km_asc`), `limit` (≤ 48, default 24), `offset` |
+| `GET` | `/public/vehicles/:id` | `200` detail: summary + `description` + `photos[]` (`{ url, category }`, in display order) |
+| `GET` | `/public/filters` | `200` `{ makes[{ id, name, models[] }], bodyTypes, fuelTypes, transmissions, priceRange, yearRange }` built from current stock |
+| `POST` | `/public/test-drive-requests` | `201` new lead, `200` repeat on an active lead → `{ outcome, vehicleAvailable, showroom }` |
+
+Summary fields: `id, make, model, variant, bodyType, year, fuelType, transmission, kmDriven, previousOwners, colour, listedPrice` (rupees or `null` → show "Price on request"), `coverImageUrl`. Photo URLs are signed for 24 hours; GET responses carry `Cache-Control: s-maxage=300`.
+
+Test-drive body: `{ vehicleId, fullName, phone, fax? }`. The phone is an Indian mobile in any common shape (`98765 43210`, `+91…`, `0…`), stored as E.164. `fax` is a honeypot: leave the hidden input empty; any value gets a fake `201` and nothing is recorded. Body limit 10 KB.
+
+- Creates a `website` lead, unassigned, in the vehicle's showroom, attributed to the **Website** system user, and notifies every admin (`website_lead`). The vehicle flips `open` → `linked`.
+- An existing contact with that phone is reused and **never renamed**; a different name is kept in the lead notes.
+- An active lead for the same phone + vehicle gets a note appended instead of a duplicate (`200`, `outcome: "updated"`); its assignee (or every admin) is notified.
+- If the car sold meanwhile, the lead is still created without the vehicle and `vehicleAvailable` is `false`.
+- `showroom` (`name, address, city, phone, openingHours, googleMapsUrl`) is returned **only here**; no public GET exposes the address.
+- Rate limits: 5 requests per IP per hour, and 3 per phone + vehicle per day → `429 RATE_LIMITED`. Invalid phone → `422 INVALID_PHONE`.
 
 ### Auth
 
@@ -372,6 +394,7 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
 | `GET` | `/vehicles` | `200` page (includes catalog names, `frontImageUrl` and `linkedLeadCount`) |
 | `GET` | `/vehicles/:id` | `200` vehicle (includes `frontImageUrl` and `linkedLeadCount`) |
 | `PATCH` | `/vehicles/:id` | `200` vehicle (second-hand fields only; cannot change owner/variant/showroom/status) |
+| `PUT` | `/vehicles/:id/listed-price` | `200` `{ listedPrice }`: body `{ "listedPrice": 1250000 \| null }` in whole rupees (Admin). The public asking price; vehicles return it as `listedPrice` |
 | `POST` | `/vehicles/:id/status` | `200` `{ "status", "unlinkedLeadCount" }` (Admin) |
 | `GET` | `/vehicles/:id/status-history` | `200` page (newest first) |
 | `POST` | `/vehicles/:id/media/uploads` | `200` signed upload ticket |
@@ -1010,7 +1033,7 @@ For `salesperson`, show owners, catalog, vehicles, leads, the inbox and their ow
 
 - Owner self-registration / portal (`owners.userId` linking)
 - Finance car deal, sale, quotes, profit, dues and reports (ADR-0015). The planned contract is in `docs/plans/finance-module.md` §8; build those screens once they appear here and in Postman. Vault, tags and the ledger are shipped.
-- Marketplace / buyer browse and buyer inquiries (registered-buyer leads)
+- Buyer accounts and registered-buyer inquiries (anonymous browse and test-drive requests are live under `/public`)
 - Automatic lead assignment
 - Password reset or change-own-password
 

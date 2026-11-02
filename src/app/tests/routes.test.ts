@@ -28,6 +28,7 @@ const PROTECTED_ROUTES: ReadonlyArray<readonly [string, string]> = [
   ['get', '/vehicles'],
   ['get', `/vehicles/${ID}`],
   ['patch', `/vehicles/${ID}`],
+  ['put', `/vehicles/${ID}/listed-price`],
   ['post', `/vehicles/${ID}/status`],
   ['get', `/vehicles/${ID}/status-history`],
   ['post', `/vehicles/${ID}/media/uploads`],
@@ -76,6 +77,7 @@ function testConfig(): AppConfig {
     port: 0,
     logLevel: 'silent',
     businessTimeZone: 'Asia/Kolkata',
+    publicSiteOrigins: ['http://localhost:3002'],
     supabase: {
       url: 'https://test-project.supabase.co',
       anonKey: 'test-anon-key',
@@ -115,5 +117,32 @@ describe('public password routes', () => {
 
     expect(response.status).toBe(422);
     expect(response.body).toMatchObject({ error: { code: 'VALIDATION_ERROR' } });
+  });
+});
+
+describe('public marketplace routes', () => {
+  const { app } = composeApp(testConfig());
+
+  it('validates a test-drive request without a bearer token', async () => {
+    const response = await supertest(app)
+      .post('/public/test-drive-requests')
+      .send({ vehicleId: ID, fullName: 'Asha', phone: '123' });
+
+    expect(response.status).toBe(422);
+  });
+
+  it('sends the configured origin, not a wildcard, to the website', async () => {
+    const response = await supertest(app)
+      .options('/public/vehicles')
+      .set('Origin', 'http://localhost:3002')
+      .set('Access-Control-Request-Method', 'GET');
+
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3002');
+  });
+
+  it('answers unknown public paths with 404', async () => {
+    const response = await supertest(app).get('/public/nope');
+
+    expect(response.status).toBe(404);
   });
 });

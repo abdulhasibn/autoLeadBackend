@@ -46,6 +46,7 @@ const VEHICLE: VehicleReadModel = {
   loanStatus: null,
   location: null,
   description: null,
+  listedPrice: null,
   status: 'open',
   soldLeadId: null,
   acquisitionType: 'consignment',
