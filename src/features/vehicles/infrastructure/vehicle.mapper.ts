@@ -51,6 +51,7 @@ export interface VehicleListRow extends VehicleRow {
   readonly make_name: string | null;
   readonly model_name: string | null;
   readonly variant_name: string | null;
+  readonly listed_price: number | null;
 }
 
 export function toVehicle(row: VehicleRow): Vehicle {
@@ -123,6 +124,7 @@ export function toVehicleReadModel(row: VehicleListRow): VehicleReadModel | null
     loanStatus: row.loan_status,
     location: row.location,
     description: row.description,
+    listedPrice: row.listed_price === null ? null : Number(row.listed_price),
     status: row.status,
     soldLeadId: row.sold_lead_id,
     acquisitionType: row.acquisition_type,

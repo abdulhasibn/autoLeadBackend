@@ -25,6 +25,7 @@ import { ListVehicleDocumentsUseCase } from './application/use-cases/list-vehicl
 import { ListVehicleMediaUseCase } from './application/use-cases/list-vehicle-media.use-case';
 import { ListVehicleStatusHistoryUseCase } from './application/use-cases/list-vehicle-status-history.use-case';
 import { ListVehiclesUseCase } from './application/use-cases/list-vehicles.use-case';
+import { SetVehicleListedPriceUseCase } from './application/use-cases/set-vehicle-listed-price.use-case';
 import { UpdateVehicleUseCase } from './application/use-cases/update-vehicle.use-case';
 import { InvalidVehicleObjectPathError } from './domain/errors/invalid-vehicle-object-path.error';
 import { InvalidVehicleStatusTransitionError } from './domain/errors/invalid-vehicle-status-transition.error';
@@ -43,6 +44,7 @@ import { SupabaseVehicleDocumentQueries } from './infrastructure/supabase-vehicl
 import { SupabaseVehicleDocumentRepository } from './infrastructure/supabase-vehicle-document.repository';
 import { SupabaseVehicleMediaQueries } from './infrastructure/supabase-vehicle-media.queries';
 import { SupabaseVehicleMediaRepository } from './infrastructure/supabase-vehicle-media.repository';
+import { SupabaseVehicleListedPriceWriter } from './infrastructure/supabase-vehicle-listed-price.writer';
 import { SupabaseVehicleQueries } from './infrastructure/supabase-vehicle.queries';
 import { SupabaseVehicleRepository } from './infrastructure/supabase-vehicle.repository';
 import { SupabaseVehicleStatusHistoryQueries } from './infrastructure/supabase-vehicle-status-history.queries';
@@ -63,6 +65,7 @@ import { ListVehicleDocumentsController } from './presentation/controllers/list-
 import { ListVehicleMediaController } from './presentation/controllers/list-vehicle-media.controller';
 import { ListVehicleStatusHistoryController } from './presentation/controllers/list-vehicle-status-history.controller';
 import { ListVehiclesController } from './presentation/controllers/list-vehicles.controller';
+import { SetVehicleListedPriceController } from './presentation/controllers/set-vehicle-listed-price.controller';
 import { UpdateVehicleController } from './presentation/controllers/update-vehicle.controller';
 import { createVehiclesRouter } from './presentation/vehicles.routes';
 
@@ -202,6 +205,13 @@ export function composeVehicles(
     listVehiclesController: new ListVehiclesController(listVehiclesUseCase),
     getVehicleController: new GetVehicleController(getVehicleUseCase),
     updateVehicleController: new UpdateVehicleController(updateVehicleUseCase),
+    setVehicleListedPriceController: new SetVehicleListedPriceController(
+      new SetVehicleListedPriceUseCase(
+        policy,
+        repo,
+        new SupabaseVehicleListedPriceWriter(infraClient),
+      ),
+    ),
     changeVehicleStatusController: new ChangeVehicleStatusController(changeVehicleStatusUseCase),
     listVehicleStatusHistoryController: new ListVehicleStatusHistoryController(
       listVehicleStatusHistoryUseCase,

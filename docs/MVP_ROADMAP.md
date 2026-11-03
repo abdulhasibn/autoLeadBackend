@@ -63,10 +63,10 @@ Foundation (shipped)
 
 | # | Work item | Paths | PRD | Status |
 |---|-----------|-------|-----|--------|
-| 3.1 | Inventory management (status, pricing, listing guard) | `src/features/inventory/` | §9, §10 | Partial — `open` / `linked` / `dropped` / `sold` lifecycle shipped on `vehicles` (ADR-0011); pricing and listing guard Todo |
-| 3.2 | Public marketplace: browse, search, filter | `src/features/marketplace/` | §11 | Todo |
-| 3.3 | Vehicle detail page API | `marketplace` | §12 | Todo |
-| 3.4 | Showroom info (name, address, hours) | `marketplace` or `config` slice | §32 | Todo |
+| 3.1 | Inventory management (status, pricing, listing guard) | `src/features/inventory/` | §9, §10 | Partial — `open` / `linked` / `dropped` / `sold` lifecycle shipped on `vehicles` (ADR-0011); listed price shipped (`PUT /vehicles/:id/listed-price`); listing guard Todo |
+| 3.2 | Public marketplace: browse, search, filter | `src/features/marketplace/` | §11 | Done — anonymous `/public/vehicles` + `/public/filters` |
+| 3.3 | Vehicle detail page API | `marketplace` | §12 | Done — `/public/vehicles/:id` |
+| 3.4 | Showroom info (name, address, hours) | `marketplace` or `config` slice | §32 | Partial — returned after a test-drive request only |
 
 **Exit criteria:** Listed vehicle appears in public search; detail page returns full public fields; internal-only data not exposed.
 
@@ -79,9 +79,9 @@ Foundation (shipped)
 | # | Work item | Paths | PRD | Status |
 |---|-----------|-------|-----|--------|
 | 4.1 | Buyer registration + saved vehicles | buyer slice in `owners` or dedicated | §14–§16 | Todo |
-| 4.2 | Buyer inquiry → internal lead creation | `src/features/leads/` | §17, §19, §20 | Todo |
+| 4.2 | Buyer inquiry → internal lead creation | `src/features/leads/` | §17, §19, §20 | Partial — anonymous website test-drive requests create `website` leads; registered buyers Todo |
 | 4.3 | Lead assignment, status pipeline, follow-ups | `leads` | §21–§23 | Done — admin assignment, salesperson-scoped leads, follow-ups to assignee |
-| 4.4 | Test drive requests | `leads` or `sales` | §24 | Todo |
+| 4.4 | Test drive requests | `leads` or `sales` | §24 | Done (v1, no scheduling) — `POST /public/test-drive-requests` |
 | 4.5 | Salesperson dashboard queries | `src/features/dashboard/` | §25 | Partial — admins work leads today, so `GET /dashboard` (admin) carries the daily work list; salesperson-scoped view Todo (ADR-0012) |
 
 **Exit criteria:** Buyer submits inquiry on listed vehicle → lead appears for Admin/Salesperson → assign → follow-up → status update.

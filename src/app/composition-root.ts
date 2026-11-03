@@ -9,6 +9,7 @@ import { composeAuth } from '../features/auth/composition';
 import { composeDashboard } from '../features/dashboard/composition';
 import { composeFinance } from '../features/finance/composition';
 import { composeLeads } from '../features/leads/composition';
+import { composeMarketplace } from '../features/marketplace/composition';
 import { composeNotifications } from '../features/notifications/composition';
 import { composeOwners } from '../features/owners/composition';
 import { composeShowrooms } from '../features/showrooms/composition';
@@ -98,14 +99,26 @@ export function composeApp(config: AppConfig): AppDependencies {
     bearerMiddleware: auth.bearerMiddleware,
     clock,
   });
+  const marketplace = composeMarketplace(supabaseClient, {
+    allowedOrigins: config.publicSiteOrigins,
+    ipHashKey: config.supabase.serviceRoleKey,
+    vehicleLinkSync: vehicles.vehicleLeadLink,
+  });
 
   const app = express();
 
+  // Vercel's proxy appends the caller to X-Forwarded-For; trust that one hop
+  // so req.ip (used for public rate limits) is the visitor, not the proxy.
+  app.set('trust proxy', 1);
+
   app.use(helmet());
-  app.use(cors());
-  app.use(express.json({ limit: JSON_BODY_LIMIT }));
   app.use(createServerTimingMiddleware());
   app.use(createRequestLoggerMiddleware(logger));
+  // Before the global CORS and body parser: the public routes have their own
+  // origin allow-list and a much smaller body limit.
+  app.use('/public', marketplace.router);
+  app.use(cors());
+  app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
   app.use(
     createRouter({
@@ -134,6 +147,7 @@ export function composeApp(config: AppConfig): AppDependencies {
       dashboard.errorMapper,
       showrooms.errorMapper,
       finance.errorMapper,
+      marketplace.errorMapper,
     ]),
   );
 

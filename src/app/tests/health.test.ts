@@ -10,6 +10,7 @@ function testConfig(): AppConfig {
     port: 0,
     logLevel: 'silent',
     businessTimeZone: 'Asia/Kolkata',
+    publicSiteOrigins: ['http://localhost:3002'],
     supabase: {
       url: 'https://test-project.supabase.co',
       anonKey: 'test-anon-key',

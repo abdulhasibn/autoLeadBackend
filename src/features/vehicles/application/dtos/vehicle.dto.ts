@@ -9,7 +9,8 @@ export interface VehicleDto extends VehicleReadModel {
   readonly linkedLeadCount: number;
 }
 
-export function toVehicleDto(vehicle: Vehicle): VehicleDto {
+/** The entity does not carry the listed price; callers that know it pass it. */
+export function toVehicleDto(vehicle: Vehicle, listedPrice: number | null = null): VehicleDto {
   return {
     id: vehicle.id,
     showroomId: vehicle.showroomId,
@@ -33,6 +34,7 @@ export function toVehicleDto(vehicle: Vehicle): VehicleDto {
     loanStatus: vehicle.loanStatus,
     location: vehicle.location,
     description: vehicle.description,
+    listedPrice,
     status: vehicle.status.value,
     soldLeadId: vehicle.soldLeadId,
     acquisitionType: vehicle.acquisitionType.value,
