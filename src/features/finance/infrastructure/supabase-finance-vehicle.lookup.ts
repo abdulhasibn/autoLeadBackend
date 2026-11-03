@@ -10,13 +10,20 @@ import type {
   IFinanceVehicleLookup,
   SoldVehicleFacts,
 } from '../domain/finance-vehicle-lookup.port';
+import { inBatches } from './in-batches';
 
 type VehicleListRow = Pick<
   Database['public']['Views']['vehicle_list']['Row'],
-  'id' | 'showroom_id' | 'make_name' | 'model_name' | 'registration_number'
+  | 'id'
+  | 'showroom_id'
+  | 'make_name'
+  | 'model_name'
+  | 'registration_number'
+  | 'status'
+  | 'deleted_at'
 >;
 
-const COLUMNS = 'id, showroom_id, make_name, model_name, registration_number';
+const COLUMNS = 'id, showroom_id, make_name, model_name, registration_number, status, deleted_at';
 
 /**
  * Reads car facts from the `vehicle_list` view for finance (ADR-0006
@@ -39,20 +46,18 @@ export class SupabaseFinanceVehicleLookup implements IFinanceVehicleLookup {
   }
 
   async findMany(ids: readonly VehicleId[]): Promise<readonly FinanceVehicleFacts[]> {
-    if (ids.length === 0) {
-      return [];
+    const facts: FinanceVehicleFacts[] = [];
+    for (const batch of inBatches([...new Set(ids)])) {
+      const { data, error } = await this.db.from('vehicle_list').select(COLUMNS).in('id', batch);
+      if (error !== null) {
+        throw new DatabaseUnavailableError(`Failed to look up vehicles: ${error.message}`);
+      }
+      for (const row of data ?? []) {
+        const fact = toFacts(row);
+        if (fact !== null) facts.push(fact);
+      }
     }
-    const { data, error } = await this.db
-      .from('vehicle_list')
-      .select(COLUMNS)
-      .in('id', [...ids]);
-    if (error !== null) {
-      throw new DatabaseUnavailableError(`Failed to look up vehicles: ${error.message}`);
-    }
-    return (data ?? []).flatMap((row) => {
-      const facts = toFacts(row);
-      return facts === null ? [] : [facts];
-    });
+    return facts;
   }
 
   async listSoldWithoutSale(): Promise<readonly SoldVehicleFacts[]> {
@@ -70,15 +75,20 @@ export class SupabaseFinanceVehicleLookup implements IFinanceVehicleLookup {
     if (ids.length === 0) {
       return [];
     }
-    const { data: priced, error: pricedError } = await this.db
-      .from('vehicle_financials')
-      .select('vehicle_id')
-      .in('vehicle_id', ids)
-      .not('sold_on', 'is', null);
-    if (pricedError !== null) {
-      throw new DatabaseUnavailableError(`Failed to check recorded sales: ${pricedError.message}`);
+    const recorded = new Set<string>();
+    for (const batch of inBatches(ids)) {
+      const { data: priced, error: pricedError } = await this.db
+        .from('vehicle_financials')
+        .select('vehicle_id')
+        .in('vehicle_id', batch)
+        .not('sold_on', 'is', null);
+      if (pricedError !== null) {
+        throw new DatabaseUnavailableError(
+          `Failed to check recorded sales: ${pricedError.message}`,
+        );
+      }
+      for (const row of priced ?? []) recorded.add(row.vehicle_id);
     }
-    const recorded = new Set((priced ?? []).map((row) => row.vehicle_id));
     return (sold ?? []).flatMap((row) => {
       const facts = toFacts(row);
       if (facts === null || recorded.has(facts.id)) {
@@ -103,5 +113,7 @@ function toFacts(row: VehicleListRow): FinanceVehicleFacts | null {
     id: toVehicleId(row.id),
     showroomId: toShowroomId(row.showroom_id),
     label: label.length === 0 ? 'Vehicle' : label,
+    status: row.status ?? 'open',
+    deleted: row.deleted_at !== null,
   };
 }

@@ -180,7 +180,7 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 
 ## Endpoint catalogue
 
-**71 routes** are mounted (including `/health`).
+**92 routes** are mounted (including `/health`).
 
 ### Health — public
 
@@ -907,7 +907,7 @@ Revenue, profit and average selling price arrive with finance (Stint 5).
 
 ### Finance — Admin only, encrypted (ADR-0014)
 
-Finance data is encrypted with a key only the admin holds. Shipped: the **vault** (setting up the keys, unlocking, locking, changing the key, recovering), the **ledger** (tags and income/expense entries) and **car money** (purchase rate, sale, quotes, landing cost, profit, dues). Reports follow (`docs/plans/finance-module.md`).
+Finance data is encrypted with a key only the admin holds. Shipped: the **vault** (setting up the keys, unlocking, locking, changing the key, recovering), the **ledger** (tags and income/expense entries), **car money** (purchase rate, sale, quotes, landing cost, profit, dues) and **reports** (profit & loss, cash flow, profit per car, dues, stock, dashboard summary).
 
 Every finance response sends `Cache-Control: no-store`. Salespeople get `403`.
 
@@ -1055,6 +1055,52 @@ All amounts are rupees.
 
 **Car screen recipe:** `GET /vehicles/:id` for the car, then (when finance is unlocked) `GET /finance/vehicles/:id` for the money tab and `GET /finance/entries?vehicleId=:id` for the entry list. In the car list, send the page's ids to `GET /finance/vehicles?vehicleIds=…` and match rows by `vehicleId`.
 
+#### Finance › Reports
+
+All amounts are rupees; profits can be negative. Every request needs `X-Finance-Session`. Each report takes an optional `showroomId`. Every response has `truncated` (true means more than 5,000 entries were involved and figures may be incomplete; narrow the range).
+
+| Method | Path | Query | Use it for |
+|--------|------|-------|-----------|
+| GET | `/finance/reports/pnl` | `from`, `to`, `period` | Profit & loss chart and table |
+| GET | `/finance/reports/cash-flow` | `from`, `to`, `period` | Money in and out |
+| GET | `/finance/reports/vehicle-profit` | `from`, `to`, `sort` | Which cars made or lost money |
+| GET | `/finance/reports/dues` | — | Who still owes whom |
+| GET | `/finance/reports/stock` | — | Money tied up in unsold cars |
+| GET | `/finance/summary` | — | Dashboard money tiles |
+
+- `from` / `to`: `YYYY-MM-DD`, inclusive, required for the first three. `period`: `day`, `week` (Monday start), `month` (default) or `year`. `day`/`week` reports cover at most 366 days; `month`/`year` at most 5 years (`422 DATE_RANGE_TOO_LONG`).
+- `pnl` and `cash-flow` return `{ period, from, to, buckets, totals, truncated }`. Every period in the range has a bucket (`start`, `end`, `label`), even when empty, so a chart has every bar. Labels: `2026-10-25` (day, or the Monday of a week), `2026-10` (month), `2026` (year).
+
+**Profit & loss** (per bucket: `sales, costOfSales, grossProfit, laterCarCosts, otherIncome, businessExpenses, netProfit, carsSold, carsMissingPurchaseRate`):
+
+- A car counts in the period of its **sale date**: its finalised price is `sales`; its purchase rate plus the cost entries dated on or before the sale date are `costOfSales`.
+- Cost entries dated **after** the sale count in their own period as `laterCarCosts`.
+- `otherIncome` = car income with purpose `other` + income with no car. `businessExpenses` = expenses with no car.
+- `netProfit` = gross profit − later car costs + other income − business expenses.
+- Payments to sellers and from buyers are not in profit & loss (they settle prices already counted), and costs of unsold cars aren't either (they're in stock).
+- `carsMissingPurchaseRate` counts sold cars without a purchase rate; their cost of sales is understated until one is entered.
+
+**Cash flow** (per bucket: `in, out, net, cumulative, inFromBuyers, inOther, outToSellers, outCarCosts, outBusiness`): every entry on its own date, including payments to sellers and from buyers. `cumulative` is the running net from the first bucket.
+
+**Profit per car**: cars sold in the range, `{ vehicle, soldOn, purchaseRate, costs, landingCost, finalisedPrice, profit }`. `sort`: `profit` (biggest first, default), `-profit`, `date` (newest first), `-date`. Car profit includes every cost on the car, also ones paid after the sale.
+
+**Dues**: cars where something is still owed, `{ vehicle, purchaseRate, paidToSeller, owedToSeller, finalisedPrice, receivedFromBuyer, owedByBuyer }`, largest first. Negative means overpaid. `totals` add up only what is still owed.
+
+**Stock**: cars with money in them, no recorded sale and status other than `sold`, `{ vehicle, status, purchaseRate, costs, landingCost, currentQuote, listedPrice }`. Dropped cars stay listed (with `status: "dropped"`) until dealt with. `totals.moneyInStock` is the sum of landing costs.
+
+**Summary** (`GET /finance/summary`):
+
+```json
+{
+  "thisMonth": { "from": "2026-11-01", "to": "2026-11-03", "sales": 0, "netProfit": -87000, "businessExpenses": 85000, "cashIn": 0, "cashOut": 87000 },
+  "lastMonth": { "from": "2026-10-01", "to": "2026-10-03", … },
+  "moneyInStock": 408000, "owedToSellers": 200000, "owedByBuyers": 0, "awaitingSalePrice": 0,
+  "truncated": false
+}
+```
+
+`thisMonth` is month to date ("today" in the business timezone); `lastMonth` is the same span of the previous month, so the comparison is fair early in the month. Since finance is locked without the key, the regular `GET /dashboard` carries no money figures; show these tiles when finance is unlocked.
+
 ---
 
 ## Suggested admin UI map
@@ -1079,7 +1125,6 @@ For `salesperson`, show owners, catalog, vehicles, leads, the inbox and their ow
 ## Not shipped yet — do not design screens against these
 
 - Owner self-registration / portal (`owners.userId` linking)
-- Finance reports: P&L, cash flow, per-car profit, dues and stock (`docs/plans/finance-module.md` §8). Build those screens once they appear here and in Postman. Vault, tags, ledger and car money are shipped.
 - Buyer accounts and registered-buyer inquiries (anonymous browse and test-drive requests are live under `/public`)
 - Automatic lead assignment
 - Password reset or change-own-password

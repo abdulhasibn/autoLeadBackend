@@ -97,7 +97,7 @@ Foundation (shipped)
 | 5.0 | Finance vault: finance key, recovery key, unlock sessions | `src/features/finance/` | — | Done |
 | 5.1 | Ledger: income/expense entries, tags, car links | `finance` | §27, §28, §29 | Done |
 | 5.2 | Car deal, sale, quotes, profit and dues (single formula) | `finance` | §27.3 | Done (absorbs Stint 2.3 acquisition prices) |
-| 5.3 | Reports: P&L, cash flow, per-car profit, dues, stock, summary | `finance` | §30 | Todo |
+| 5.3 | Reports: P&L, cash flow, per-car profit, dues, stock, summary | `finance` | §30 | Done |
 | 5.4 | Seeder, Postman, API docs | `scripts/`, `postman/`, `docs/` | — | Todo |
 
 **Exit criteria:** Sold vehicle shows cost breakdown, selling price, and computed profit; monthly P&L query returns expected totals.
@@ -112,7 +112,7 @@ Foundation (shipped)
 |---|-----------|-------|-----|--------|
 | 6.1 | Notifications (in-app / email for MVP) | `src/features/notifications/` | §33 | Partial — in-app inbox for staff; `follow_up_due` + `lead_assigned`. Email Todo |
 | 6.2 | Audit trail writes (status changes, assignments, financial) | cross-cutting in use cases | §38 | Partial — status history tables + lead assignment in `audit_logs`; financial Todo |
-| 6.3 | Admin dashboard aggregate queries | `src/features/dashboard/` | §26 | Partial — `GET /dashboard` inventory/lead/sales counts (ADR-0012); revenue/profit after Stint 5 |
+| 6.3 | Admin dashboard aggregate queries | `src/features/dashboard/` | §26 | Partial — `GET /dashboard` inventory/lead/sales counts (ADR-0012); money tiles come from `GET /finance/summary` (finance must be unlocked, ADR-0014) |
 
 **Exit criteria:** Lead assignment triggers salesperson notification; vehicle status change writes audit row; Admin dashboard returns inventory/lead/sales summaries.
 

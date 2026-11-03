@@ -15,6 +15,7 @@ import { InvalidFinanceKeyError } from './application/errors/invalid-finance-key
 import { FinancePolicy } from './application/policies/finance.policy';
 import { DefaultTagSeeder } from './application/services/default-tag-seeder';
 import { EntrySealer } from './application/services/entry.sealer';
+import { FinanceReportData } from './application/services/finance-report-data';
 import { FinanceSessionService } from './application/services/finance-session.service';
 import { QuoteSealer } from './application/services/quote.sealer';
 import { TagSealer } from './application/services/tag.sealer';
@@ -37,6 +38,12 @@ import { AddVehicleQuoteUseCase } from './application/use-cases/add-vehicle-quot
 import { DeleteVehicleQuoteUseCase } from './application/use-cases/delete-vehicle-quote.use-case';
 import { ListVehicleFinanceSummariesUseCase } from './application/use-cases/list-vehicle-finance-summaries.use-case';
 import { ListVehiclesAwaitingSalePriceUseCase } from './application/use-cases/list-vehicles-awaiting-sale-price.use-case';
+import { GetProfitAndLossUseCase } from './application/use-cases/get-profit-and-loss.use-case';
+import { GetCashFlowUseCase } from './application/use-cases/get-cash-flow.use-case';
+import { GetVehicleProfitReportUseCase } from './application/use-cases/get-vehicle-profit-report.use-case';
+import { GetDuesReportUseCase } from './application/use-cases/get-dues-report.use-case';
+import { GetStockReportUseCase } from './application/use-cases/get-stock-report.use-case';
+import { GetFinanceSummaryUseCase } from './application/use-cases/get-finance-summary.use-case';
 import { ChangeFinanceKeyUseCase } from './application/use-cases/change-finance-key.use-case';
 import { ConfirmVaultUseCase } from './application/use-cases/confirm-vault.use-case';
 import { GetVaultStatusUseCase } from './application/use-cases/get-vault-status.use-case';
@@ -77,6 +84,12 @@ import { AddVehicleQuoteController } from './presentation/controllers/add-vehicl
 import { DeleteVehicleQuoteController } from './presentation/controllers/delete-vehicle-quote.controller';
 import { ListVehicleFinanceSummariesController } from './presentation/controllers/list-vehicle-finance-summaries.controller';
 import { ListVehiclesAwaitingSalePriceController } from './presentation/controllers/list-vehicles-awaiting-sale-price.controller';
+import { GetProfitAndLossController } from './presentation/controllers/get-profit-and-loss.controller';
+import { GetCashFlowController } from './presentation/controllers/get-cash-flow.controller';
+import { GetVehicleProfitReportController } from './presentation/controllers/get-vehicle-profit-report.controller';
+import { GetDuesReportController } from './presentation/controllers/get-dues-report.controller';
+import { GetStockReportController } from './presentation/controllers/get-stock-report.controller';
+import { GetFinanceSummaryController } from './presentation/controllers/get-finance-summary.controller';
 import { ChangeFinanceKeyController } from './presentation/controllers/change-finance-key.controller';
 import { ConfirmVaultController } from './presentation/controllers/confirm-vault.controller';
 import { GetVaultStatusController } from './presentation/controllers/get-vault-status.controller';
@@ -94,6 +107,8 @@ export interface FinanceComposition {
 export interface FinanceCompositionDeps {
   readonly bearerMiddleware: RequestHandler;
   readonly clock: Clock;
+  /** IANA timezone "today" is taken in for the summary (BUSINESS_TIMEZONE). */
+  readonly timeZone: string;
   /** Overridable so tests can use a cheap key derivation. */
   readonly kdf?: KdfParams;
 }
@@ -132,6 +147,15 @@ export function composeFinance(
   const quoteQueries = new SupabaseVehicleQuoteQueries(infraClient);
   const dealSealer = new VehicleDealSealer();
   const quoteSealer = new QuoteSealer();
+  const reportData = new FinanceReportData(
+    dealQueries,
+    entryQueries,
+    quoteQueries,
+    vehicles,
+    dealSealer,
+    entrySealer,
+    quoteSealer,
+  );
 
   const router = createFinanceRouter({
     bearerMiddleware: deps.bearerMiddleware,
@@ -290,6 +314,31 @@ export function composeFinance(
     ),
     listVehiclesAwaitingSalePriceController: new ListVehiclesAwaitingSalePriceController(
       new ListVehiclesAwaitingSalePriceUseCase(policy, sessionService, vehicles),
+    ),
+    getProfitAndLossController: new GetProfitAndLossController(
+      new GetProfitAndLossUseCase(policy, sessionService, reportData),
+    ),
+    getCashFlowController: new GetCashFlowController(
+      new GetCashFlowUseCase(policy, sessionService, reportData),
+    ),
+    getVehicleProfitReportController: new GetVehicleProfitReportController(
+      new GetVehicleProfitReportUseCase(policy, sessionService, reportData),
+    ),
+    getDuesReportController: new GetDuesReportController(
+      new GetDuesReportUseCase(policy, sessionService, reportData),
+    ),
+    getStockReportController: new GetStockReportController(
+      new GetStockReportUseCase(policy, sessionService, reportData),
+    ),
+    getFinanceSummaryController: new GetFinanceSummaryController(
+      new GetFinanceSummaryUseCase(
+        policy,
+        sessionService,
+        reportData,
+        vehicles,
+        deps.clock,
+        deps.timeZone,
+      ),
     ),
   });
 

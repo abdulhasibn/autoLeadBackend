@@ -98,6 +98,7 @@ export function composeApp(config: AppConfig): AppDependencies {
   const finance = composeFinance(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,
     clock,
+    timeZone: config.businessTimeZone,
   });
   const marketplace = composeMarketplace(supabaseClient, {
     allowedOrigins: config.publicSiteOrigins,

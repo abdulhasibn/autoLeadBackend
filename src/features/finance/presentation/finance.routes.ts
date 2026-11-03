@@ -17,6 +17,12 @@ import type { AddVehicleQuoteController } from './controllers/add-vehicle-quote.
 import type { DeleteVehicleQuoteController } from './controllers/delete-vehicle-quote.controller';
 import type { ListVehicleFinanceSummariesController } from './controllers/list-vehicle-finance-summaries.controller';
 import type { ListVehiclesAwaitingSalePriceController } from './controllers/list-vehicles-awaiting-sale-price.controller';
+import type { GetProfitAndLossController } from './controllers/get-profit-and-loss.controller';
+import type { GetCashFlowController } from './controllers/get-cash-flow.controller';
+import type { GetVehicleProfitReportController } from './controllers/get-vehicle-profit-report.controller';
+import type { GetDuesReportController } from './controllers/get-dues-report.controller';
+import type { GetStockReportController } from './controllers/get-stock-report.controller';
+import type { GetFinanceSummaryController } from './controllers/get-finance-summary.controller';
 import type { ChangeFinanceKeyController } from './controllers/change-finance-key.controller';
 import type { ConfirmVaultController } from './controllers/confirm-vault.controller';
 import type { GetVaultStatusController } from './controllers/get-vault-status.controller';
@@ -51,6 +57,12 @@ export interface FinanceRouterDeps {
   readonly deleteVehicleQuoteController: DeleteVehicleQuoteController;
   readonly listVehicleFinanceSummariesController: ListVehicleFinanceSummariesController;
   readonly listVehiclesAwaitingSalePriceController: ListVehiclesAwaitingSalePriceController;
+  readonly getProfitAndLossController: GetProfitAndLossController;
+  readonly getCashFlowController: GetCashFlowController;
+  readonly getVehicleProfitReportController: GetVehicleProfitReportController;
+  readonly getDuesReportController: GetDuesReportController;
+  readonly getStockReportController: GetStockReportController;
+  readonly getFinanceSummaryController: GetFinanceSummaryController;
 }
 
 /** Finance responses carry keys or decrypted amounts; never let them be cached. */
@@ -100,6 +112,13 @@ export function createFinanceRouter(deps: FinanceRouterDeps): Router {
   router.get('/vehicles/:vehicleId/quotes', deps.listVehicleQuotesController.handle());
   router.post('/vehicles/:vehicleId/quotes', deps.addVehicleQuoteController.handle());
   router.delete('/vehicles/:vehicleId/quotes/:quoteId', deps.deleteVehicleQuoteController.handle());
+
+  router.get('/reports/pnl', deps.getProfitAndLossController.handle());
+  router.get('/reports/cash-flow', deps.getCashFlowController.handle());
+  router.get('/reports/vehicle-profit', deps.getVehicleProfitReportController.handle());
+  router.get('/reports/dues', deps.getDuesReportController.handle());
+  router.get('/reports/stock', deps.getStockReportController.handle());
+  router.get('/summary', deps.getFinanceSummaryController.handle());
 
   return router;
 }

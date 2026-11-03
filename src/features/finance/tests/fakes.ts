@@ -49,7 +49,7 @@ import type { IVehicleQuoteRepository } from '../domain/vehicle-quote.repository
 import { QuoteSealer } from '../application/services/quote.sealer';
 import { VehicleDealSealer } from '../application/services/vehicle-deal.sealer';
 import { NodeFinanceCrypto } from '../infrastructure/node-finance-crypto';
-import { toShowroomId } from '../../../domain/shared/showroom-id';
+import { toShowroomId, type ShowroomId } from '../../../domain/shared/showroom-id';
 import { toVehicleId, type VehicleId } from '../../../domain/shared/vehicle-id';
 
 /** Cheap scrypt cost so tests run fast; production uses DEFAULT_KDF_PARAMS. */
@@ -247,22 +247,27 @@ export const SWIFT = toVehicleId('dddddddd-0000-4000-8000-000000000001');
 export const CRETA = toVehicleId('dddddddd-0000-4000-8000-000000000002');
 export const DELETED_CAR = toVehicleId('dddddddd-0000-4000-8000-000000000003');
 
+function car(
+  id: VehicleId,
+  showroomId: ShowroomId,
+  label: string,
+  status: string,
+  deleted: boolean,
+): FinanceVehicleFacts {
+  return { id, showroomId, label, status, deleted };
+}
+
 export class FakeFinanceVehicleLookup implements IFinanceVehicleLookup {
   constructor(private readonly deals: InMemoryVehicleDealStore) {}
 
-  readonly cars = new Map<string, FinanceVehicleFacts & { deleted: boolean; sold?: boolean }>([
-    [
-      SWIFT,
-      { id: SWIFT, showroomId: SHOWROOM_A, label: 'Maruti Swift · KA01AB1234', deleted: false },
-    ],
-    [
-      CRETA,
-      { id: CRETA, showroomId: SHOWROOM_B, label: 'Hyundai Creta · KA05CD5678', deleted: false },
-    ],
-    [
-      DELETED_CAR,
-      { id: DELETED_CAR, showroomId: SHOWROOM_A, label: 'Honda City · KA02EF0001', deleted: true },
-    ],
+  /** Mutable so tests can change a car's status. */
+  readonly cars = new Map<
+    string,
+    { -readonly [K in keyof FinanceVehicleFacts]: FinanceVehicleFacts[K] }
+  >([
+    [SWIFT, car(SWIFT, SHOWROOM_A, 'Maruti Swift · KA01AB1234', 'open', false)],
+    [CRETA, car(CRETA, SHOWROOM_B, 'Hyundai Creta · KA05CD5678', 'open', false)],
+    [DELETED_CAR, car(DELETED_CAR, SHOWROOM_A, 'Honda City · KA02EF0001', 'open', true)],
   ]);
 
   async findLinkable(id: VehicleId): Promise<FinanceVehicleFacts | null> {
@@ -279,14 +284,9 @@ export class FakeFinanceVehicleLookup implements IFinanceVehicleLookup {
 
   async listSoldWithoutSale(): Promise<readonly SoldVehicleFacts[]> {
     return [...this.cars.values()]
-      .filter((car) => car.sold === true && !car.deleted)
+      .filter((car) => car.status === 'sold' && !car.deleted)
       .filter((car) => (this.deals.rows.get(car.id)?.soldOn ?? null) === null)
-      .map((car) => ({
-        id: car.id,
-        showroomId: car.showroomId,
-        label: car.label,
-        soldLeadId: null,
-      }));
+      .map((car) => ({ ...car, soldLeadId: null }));
   }
 }
 
@@ -306,6 +306,16 @@ export class InMemoryVehicleDealStore implements IVehicleDealRepository, IVehicl
 
   async save(deal: SealedVehicleDeal): Promise<void> {
     this.rows.set(deal.vehicleId, deal);
+  }
+
+  async findSoldBetween(from: string, to: string): Promise<readonly SealedVehicleDeal[]> {
+    return [...this.rows.values()].filter(
+      (row) => row.soldOn !== null && row.soldOn >= from && row.soldOn <= to,
+    );
+  }
+
+  async findWithData(): Promise<readonly SealedVehicleDeal[]> {
+    return [...this.rows.values()].filter((row) => row.payload !== null || row.soldOn !== null);
   }
 }
 

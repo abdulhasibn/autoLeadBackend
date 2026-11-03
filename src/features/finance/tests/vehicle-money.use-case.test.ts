@@ -317,7 +317,7 @@ describe('car money', () => {
 
   it('lists sold cars without a recorded sale', async () => {
     const creta = kit.vehicles.cars.get(CRETA);
-    if (creta !== undefined) creta.sold = true;
+    if (creta !== undefined) creta.status = 'sold';
 
     expect(await awaiting.execute({ sessionToken: token }, ADMIN)).toEqual([
       { vehicleId: CRETA, label: 'Hyundai Creta · KA05CD5678', soldLeadId: null },

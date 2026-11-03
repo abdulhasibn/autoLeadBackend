@@ -4030,6 +4030,821 @@
               ]
             }
           ]
+        },
+        {
+          "name": "Reports",
+          "item": [
+            {
+              "name": "Profit & Loss",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('has report fields', () => pm.expect(pm.response.json()).to.include.keys('buckets', 'totals', 'truncated'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/finance/reports/pnl?from=2026-09-01&to=2026-11-30&period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["finance", "reports", "pnl"],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-09-01",
+                      "description": "YYYY-MM-DD, inclusive"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-30",
+                      "description": "YYYY-MM-DD, inclusive"
+                    },
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "day | week | month | year"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "{{showroomId}}",
+                      "description": "Optional showroom",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "**Story:** The owner checks whether the business made money this month, and what drove it.\n\nGET /finance/reports/pnl — profit & loss per period.\n\n**Auth:** Bearer, Admin only.\n\n- `from`, `to` (YYYY-MM-DD, required); `period` = day | week | month (default) | year; `showroomId` optional. day/week ≤ 366 days, month/year ≤ 5 years.\n- Buckets (every period, even empty): `sales, costOfSales, grossProfit, laterCarCosts, otherIncome, businessExpenses, netProfit, carsSold, carsMissingPurchaseRate`, plus `totals`.\n- A car counts on its sale date with its purchase rate and the costs up to that date; later costs, other income and business expenses count on their own dates. Payments to sellers / from buyers and unsold cars' costs are not in P&L.\n- `422 DATE_RANGE_TOO_LONG` / `INVALID_DATE_RANGE`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
+              },
+              "response": [
+                {
+                  "id": "7f194387-1838-43b2-a55d-202efaf76f02",
+                  "name": "200 OK — the client's car sold in October",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/reports/pnl?from=2026-09-01&to=2026-11-30&period=month",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "reports", "pnl"],
+                      "query": [
+                        {
+                          "key": "from",
+                          "value": "2026-09-01",
+                          "description": "YYYY-MM-DD, inclusive"
+                        },
+                        {
+                          "key": "to",
+                          "value": "2026-11-30",
+                          "description": "YYYY-MM-DD, inclusive"
+                        },
+                        {
+                          "key": "period",
+                          "value": "month",
+                          "description": "day | week | month | year"
+                        },
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"period\": \"month\",\n  \"from\": \"2026-09-01\",\n  \"to\": \"2026-11-30\",\n  \"buckets\": [\n    {\n      \"start\": \"2026-09-01\",\n      \"end\": \"2026-09-30\",\n      \"label\": \"2026-09\",\n      \"sales\": 0,\n      \"costOfSales\": 0,\n      \"grossProfit\": 0,\n      \"laterCarCosts\": 0,\n      \"otherIncome\": 0,\n      \"businessExpenses\": 0,\n      \"netProfit\": 0,\n      \"carsSold\": 0,\n      \"carsMissingPurchaseRate\": 0\n    },\n    {\n      \"start\": \"2026-10-01\",\n      \"end\": \"2026-10-31\",\n      \"label\": \"2026-10\",\n      \"sales\": 560000,\n      \"costOfSales\": 545000,\n      \"grossProfit\": 15000,\n      \"laterCarCosts\": 0,\n      \"otherIncome\": 0,\n      \"businessExpenses\": 85000,\n      \"netProfit\": -70000,\n      \"carsSold\": 1,\n      \"carsMissingPurchaseRate\": 0\n    },\n    {\n      \"start\": \"2026-11-01\",\n      \"end\": \"2026-11-30\",\n      \"label\": \"2026-11\",\n      \"sales\": 0,\n      \"costOfSales\": 0,\n      \"grossProfit\": 0,\n      \"laterCarCosts\": 2000,\n      \"otherIncome\": 0,\n      \"businessExpenses\": 85000,\n      \"netProfit\": -87000,\n      \"carsSold\": 0,\n      \"carsMissingPurchaseRate\": 0\n    }\n  ],\n  \"totals\": {\n    \"sales\": 560000,\n    \"costOfSales\": 545000,\n    \"grossProfit\": 15000,\n    \"laterCarCosts\": 2000,\n    \"otherIncome\": 0,\n    \"businessExpenses\": 170000,\n    \"netProfit\": -157000,\n    \"carsSold\": 1,\n    \"carsMissingPurchaseRate\": 0\n  },\n  \"truncated\": false\n}"
+                },
+                {
+                  "id": "1ac29c07-98de-47ce-ad10-954ab5000442",
+                  "name": "422 — DATE_RANGE_TOO_LONG",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/reports/pnl?from=2026-09-01&to=2026-11-30&period=month",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "reports", "pnl"],
+                      "query": [
+                        {
+                          "key": "from",
+                          "value": "2026-09-01",
+                          "description": "YYYY-MM-DD, inclusive"
+                        },
+                        {
+                          "key": "to",
+                          "value": "2026-11-30",
+                          "description": "YYYY-MM-DD, inclusive"
+                        },
+                        {
+                          "key": "period",
+                          "value": "month",
+                          "description": "day | week | month | year"
+                        },
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"DATE_RANGE_TOO_LONG\",\n    \"message\": \"A day report can cover at most 366 days\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Cash Flow",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('has report fields', () => pm.expect(pm.response.json()).to.include.keys('buckets', 'totals', 'truncated'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/finance/reports/cash-flow?from=2026-09-01&to=2026-11-30&period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["finance", "reports", "cash-flow"],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-09-01",
+                      "description": "YYYY-MM-DD, inclusive"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-11-30",
+                      "description": "YYYY-MM-DD, inclusive"
+                    },
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "day | week | month | year"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "{{showroomId}}",
+                      "description": "Optional showroom",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "**Story:** The owner sees how much money actually came in and went out, and where it went.\n\nGET /finance/reports/cash-flow — every entry on its own date.\n\n**Auth:** Bearer, Admin only.\n\n- Same query as Profit & Loss.\n- Buckets: `in, out, net, cumulative` (running net), with splits `inFromBuyers, inOther, outToSellers, outCarCosts, outBusiness`; plus `totals`.\n- Includes payments to sellers and from buyers.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
+              },
+              "response": [
+                {
+                  "id": "faa56c3c-a46a-45a3-849a-d53260a780fa",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/reports/cash-flow?from=2026-09-01&to=2026-11-30&period=month",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "reports", "cash-flow"],
+                      "query": [
+                        {
+                          "key": "from",
+                          "value": "2026-09-01",
+                          "description": "YYYY-MM-DD, inclusive"
+                        },
+                        {
+                          "key": "to",
+                          "value": "2026-11-30",
+                          "description": "YYYY-MM-DD, inclusive"
+                        },
+                        {
+                          "key": "period",
+                          "value": "month",
+                          "description": "day | week | month | year"
+                        },
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"period\": \"month\",\n  \"from\": \"2026-09-01\",\n  \"to\": \"2026-11-30\",\n  \"buckets\": [\n    {\n      \"start\": \"2026-09-01\",\n      \"end\": \"2026-09-30\",\n      \"label\": \"2026-09\",\n      \"in\": 0,\n      \"out\": 200000,\n      \"net\": -200000,\n      \"inFromBuyers\": 0,\n      \"inOther\": 0,\n      \"outToSellers\": 200000,\n      \"outCarCosts\": 0,\n      \"outBusiness\": 0,\n      \"cumulative\": -200000\n    },\n    {\n      \"start\": \"2026-10-01\",\n      \"end\": \"2026-10-31\",\n      \"label\": \"2026-10\",\n      \"in\": 560000,\n      \"out\": 638000,\n      \"net\": -78000,\n      \"inFromBuyers\": 560000,\n      \"inOther\": 0,\n      \"outToSellers\": 500000,\n      \"outCarCosts\": 53000,\n      \"outBusiness\": 85000,\n      \"cumulative\": -278000\n    },\n    {\n      \"start\": \"2026-11-01\",\n      \"end\": \"2026-11-30\",\n      \"label\": \"2026-11\",\n      \"in\": 0,\n      \"out\": 87000,\n      \"net\": -87000,\n      \"inFromBuyers\": 0,\n      \"inOther\": 0,\n      \"outToSellers\": 0,\n      \"outCarCosts\": 2000,\n      \"outBusiness\": 85000,\n      \"cumulative\": -365000\n    }\n  ],\n  \"totals\": {\n    \"in\": 560000,\n    \"out\": 925000,\n    \"net\": -365000,\n    \"inFromBuyers\": 560000,\n    \"inOther\": 0,\n    \"outToSellers\": 700000,\n    \"outCarCosts\": 55000,\n    \"outBusiness\": 170000\n  },\n  \"truncated\": false\n}"
+                },
+                {
+                  "id": "594c86f8-a44d-4651-9339-6804e85c8294",
+                  "name": "422 — DATE_RANGE_TOO_LONG",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/reports/cash-flow?from=2026-09-01&to=2026-11-30&period=month",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "reports", "cash-flow"],
+                      "query": [
+                        {
+                          "key": "from",
+                          "value": "2026-09-01",
+                          "description": "YYYY-MM-DD, inclusive"
+                        },
+                        {
+                          "key": "to",
+                          "value": "2026-11-30",
+                          "description": "YYYY-MM-DD, inclusive"
+                        },
+                        {
+                          "key": "period",
+                          "value": "month",
+                          "description": "day | week | month | year"
+                        },
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"DATE_RANGE_TOO_LONG\",\n    \"message\": \"A day report can cover at most 366 days\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Profit per Car",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('has report fields', () => pm.expect(pm.response.json()).to.include.keys('items', 'totals', 'truncated'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/finance/reports/vehicle-profit?from=2026-10-01&to=2026-10-31",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["finance", "reports", "vehicle-profit"],
+                  "query": [
+                    {
+                      "key": "from",
+                      "value": "2026-10-01",
+                      "description": "YYYY-MM-DD"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2026-10-31",
+                      "description": "YYYY-MM-DD"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "profit",
+                      "description": "profit | -profit | date | -date",
+                      "disabled": true
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "{{showroomId}}",
+                      "description": "Optional showroom",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "**Story:** The owner sees which cars made the most money, and which lost money.\n\nGET /finance/reports/vehicle-profit — cars sold in the range.\n\n**Auth:** Bearer, Admin only.\n\n- `from`, `to` (required, ≤ 5 years); `sort` = profit (biggest first, default) | -profit | date (newest first) | -date; `showroomId` optional.\n- `items`: `{ vehicle, soldOn, purchaseRate, costs, landingCost, finalisedPrice, profit }` (profit null without a purchase rate); `totals`: `{ cars, sales, landingCost, profit }`.\n- Car profit counts every cost on the car, also ones paid after the sale.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
+              },
+              "response": [
+                {
+                  "id": "224b3721-230c-4ab4-b05d-11fc96d92744",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/reports/vehicle-profit?from=2026-10-01&to=2026-10-31",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "reports", "vehicle-profit"],
+                      "query": [
+                        {
+                          "key": "from",
+                          "value": "2026-10-01",
+                          "description": "YYYY-MM-DD"
+                        },
+                        {
+                          "key": "to",
+                          "value": "2026-10-31",
+                          "description": "YYYY-MM-DD"
+                        },
+                        {
+                          "key": "sort",
+                          "value": "profit",
+                          "description": "profit | -profit | date | -date",
+                          "disabled": true
+                        },
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"from\": \"2026-10-01\",\n  \"to\": \"2026-10-31\",\n  \"items\": [\n    {\n      \"vehicle\": {\n        \"id\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n        \"label\": \"Maruti Swift \\u00b7 KA01AB1234\"\n      },\n      \"soldOn\": \"2026-10-25\",\n      \"purchaseRate\": 500000,\n      \"costs\": 47000,\n      \"landingCost\": 547000,\n      \"finalisedPrice\": 560000,\n      \"profit\": 13000\n    }\n  ],\n  \"totals\": {\n    \"cars\": 1,\n    \"sales\": 560000,\n    \"landingCost\": 547000,\n    \"profit\": 13000\n  },\n  \"truncated\": false\n}"
+                },
+                {
+                  "id": "77ec3bfe-214c-4d5e-82d8-6ff2eb1b01ef",
+                  "name": "423 — FINANCE_LOCKED",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/reports/vehicle-profit?from=2026-10-01&to=2026-10-31",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "reports", "vehicle-profit"],
+                      "query": [
+                        {
+                          "key": "from",
+                          "value": "2026-10-01",
+                          "description": "YYYY-MM-DD"
+                        },
+                        {
+                          "key": "to",
+                          "value": "2026-10-31",
+                          "description": "YYYY-MM-DD"
+                        },
+                        {
+                          "key": "sort",
+                          "value": "profit",
+                          "description": "profit | -profit | date | -date",
+                          "disabled": true
+                        },
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Locked",
+                  "code": 423,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_LOCKED\",\n    \"message\": \"Finance is locked. Enter the finance key to unlock it.\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Dues",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('has report fields', () => pm.expect(pm.response.json()).to.include.keys('items', 'totals', 'truncated'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/finance/reports/dues?",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["finance", "reports", "dues"],
+                  "query": [
+                    {
+                      "key": "showroomId",
+                      "value": "{{showroomId}}",
+                      "description": "Optional showroom",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "**Story:** The owner checks which sellers still need paying and which buyers still owe money.\n\nGET /finance/reports/dues — cars where something is still owed.\n\n**Auth:** Bearer, Admin only.\n\n- `showroomId` optional.\n- `items`: `{ vehicle, purchaseRate, paidToSeller, owedToSeller, finalisedPrice, receivedFromBuyer, owedByBuyer }`, largest first; negative = overpaid.\n- `totals`: `{ owedToSellers, owedByBuyers }` count only what is still owed.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
+              },
+              "response": [
+                {
+                  "id": "d2d81c75-1c33-44d4-94af-d2174421e8d6",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/reports/dues?",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "reports", "dues"],
+                      "query": [
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"items\": [\n    {\n      \"vehicle\": {\n        \"id\": \"1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\n        \"label\": \"Hyundai Creta \\u00b7 KA05CD5678\"\n      },\n      \"purchaseRate\": 400000,\n      \"paidToSeller\": 200000,\n      \"owedToSeller\": 200000,\n      \"finalisedPrice\": null,\n      \"receivedFromBuyer\": 0,\n      \"owedByBuyer\": null\n    }\n  ],\n  \"totals\": {\n    \"owedToSellers\": 200000,\n    \"owedByBuyers\": 0\n  },\n  \"truncated\": false\n}"
+                },
+                {
+                  "id": "0eb50143-70f1-4274-bfe7-a8c1dd542d8a",
+                  "name": "423 — FINANCE_LOCKED",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/reports/dues?",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "reports", "dues"],
+                      "query": [
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Locked",
+                  "code": 423,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_LOCKED\",\n    \"message\": \"Finance is locked. Enter the finance key to unlock it.\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Stock",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('has report fields', () => pm.expect(pm.response.json()).to.include.keys('items', 'totals', 'truncated'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/finance/reports/stock?",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["finance", "reports", "stock"],
+                  "query": [
+                    {
+                      "key": "showroomId",
+                      "value": "{{showroomId}}",
+                      "description": "Optional showroom",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "**Story:** The owner sees how much money is tied up in cars that haven't sold yet.\n\nGET /finance/reports/stock — cars with money in them, no recorded sale, status other than sold.\n\n**Auth:** Bearer, Admin only.\n\n- `showroomId` optional.\n- `items`: `{ vehicle, status, purchaseRate, costs, landingCost, currentQuote, listedPrice }`, biggest first. Dropped cars stay listed until dealt with.\n- `totals`: `{ cars, moneyInStock }`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
+              },
+              "response": [
+                {
+                  "id": "86da52ea-daca-4bfd-b9fd-213823fbf9a5",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/reports/stock?",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "reports", "stock"],
+                      "query": [
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"items\": [\n    {\n      \"vehicle\": {\n        \"id\": \"1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\n        \"label\": \"Hyundai Creta \\u00b7 KA05CD5678\"\n      },\n      \"status\": \"open\",\n      \"purchaseRate\": 400000,\n      \"costs\": 8000,\n      \"landingCost\": 408000,\n      \"currentQuote\": null,\n      \"listedPrice\": 430000\n    }\n  ],\n  \"totals\": {\n    \"cars\": 1,\n    \"moneyInStock\": 408000\n  },\n  \"truncated\": false\n}"
+                },
+                {
+                  "id": "a4731b5a-ecfb-4ff7-b3aa-2b6f07356e0c",
+                  "name": "423 — FINANCE_LOCKED",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/reports/stock?",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "reports", "stock"],
+                      "query": [
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Locked",
+                  "code": 423,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_LOCKED\",\n    \"message\": \"Finance is locked. Enter the finance key to unlock it.\"\n  }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Summary",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                      "pm.test('has report fields', () => pm.expect(pm.response.json()).to.include.keys('thisMonth', 'lastMonth', 'moneyInStock'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/finance/summary?",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["finance", "summary"],
+                  "query": [
+                    {
+                      "key": "showroomId",
+                      "value": "{{showroomId}}",
+                      "description": "Optional showroom",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "**Story:** When finance is unlocked, the dashboard shows this month's money at a glance.\n\nGET /finance/summary — dashboard money tiles.\n\n**Auth:** Bearer, Admin only.\n\n- `showroomId` optional.\n- `thisMonth` (month to date, today in the business timezone) and `lastMonth` (same span of the previous month): `{ from, to, sales, netProfit, businessExpenses, cashIn, cashOut }`.\n- Plus `moneyInStock`, `owedToSellers`, `owedByBuyers`, `awaitingSalePrice` (sold cars without a recorded price).\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
+              },
+              "response": [
+                {
+                  "id": "4218e5fc-6612-41d2-adc1-bb8bc9e44a03",
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/summary?",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "summary"],
+                      "query": [
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"thisMonth\": {\n    \"from\": \"2026-11-01\",\n    \"to\": \"2026-11-03\",\n    \"sales\": 0,\n    \"netProfit\": -87000,\n    \"businessExpenses\": 85000,\n    \"cashIn\": 0,\n    \"cashOut\": 87000\n  },\n  \"lastMonth\": {\n    \"from\": \"2026-10-01\",\n    \"to\": \"2026-10-03\",\n    \"sales\": 0,\n    \"netProfit\": -85000,\n    \"businessExpenses\": 85000,\n    \"cashIn\": 0,\n    \"cashOut\": 85000\n  },\n  \"moneyInStock\": 408000,\n  \"owedToSellers\": 200000,\n  \"owedByBuyers\": 0,\n  \"awaitingSalePrice\": 0,\n  \"truncated\": false\n}"
+                },
+                {
+                  "id": "a5e33b76-5be8-40bf-969f-c0b696d48f2f",
+                  "name": "423 — FINANCE_LOCKED",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/finance/summary?",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["finance", "summary"],
+                      "query": [
+                        {
+                          "key": "showroomId",
+                          "value": "{{showroomId}}",
+                          "description": "Optional showroom",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Locked",
+                  "code": 423,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"FINANCE_LOCKED\",\n    \"message\": \"Finance is locked. Enter the finance key to unlock it.\"\n  }\n}"
+                }
+              ]
+            }
+          ]
         }
       ]
     }

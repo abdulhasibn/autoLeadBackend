@@ -8,6 +8,9 @@ export interface FinanceVehicleFacts {
   readonly showroomId: ShowroomId;
   /** "Make Model · REG" for lists. */
   readonly label: string;
+  /** Car status (`open`, `linked`, `dropped`, `sold`). */
+  readonly status: string;
+  readonly deleted: boolean;
 }
 
 /**

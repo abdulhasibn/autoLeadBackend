@@ -10,6 +10,7 @@ import type {
 } from '../domain/finance-entry.queries';
 import type { SealedFinanceEntry } from '../domain/sealed-finance-records';
 import { FINANCE_ENTRY_COLUMNS, toSealedFinanceEntry } from './finance-entry.mapper';
+import { MAX_IDS_PER_REQUEST, inBatches } from './in-batches';
 
 /** PostgREST caps one response at 1,000 rows, so larger reads come in pages. */
 const PAGE_SIZE = 1000;
@@ -18,6 +19,22 @@ export class SupabaseFinanceEntryQueries implements IFinanceEntryQueries {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
   async list(criteria: FinanceEntryCriteria): Promise<SealedEntryPage> {
+    const ids = criteria.vehicleId === undefined ? criteria.vehicleIds : undefined;
+    if (ids !== undefined && ids.length > MAX_IDS_PER_REQUEST) {
+      const rows: SealedFinanceEntry[] = [];
+      for (const batch of inBatches(ids)) {
+        const page = await this.list({ ...criteria, vehicleIds: batch });
+        rows.push(...page.rows);
+        if (page.truncated || rows.length > criteria.maxRows) {
+          return { rows: rows.slice(0, criteria.maxRows), truncated: true };
+        }
+      }
+      return { rows, truncated: false };
+    }
+    return this.listOnePass(criteria);
+  }
+
+  private async listOnePass(criteria: FinanceEntryCriteria): Promise<SealedEntryPage> {
     const rows: SealedFinanceEntry[] = [];
     // Read one row past the cap to know whether more matched.
     const wanted = criteria.maxRows + 1;
