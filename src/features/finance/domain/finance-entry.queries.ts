@@ -11,7 +11,9 @@ export interface FinanceEntryCriteria {
   readonly to?: string;
   readonly kind?: EntryKindValue;
   readonly vehicleId?: VehicleId;
-  /** Only entries with no car. Ignored when `vehicleId` is set. */
+  /** Entries of any of these cars. Ignored when `vehicleId` is set. */
+  readonly vehicleIds?: readonly VehicleId[];
+  /** Only entries with no car. Ignored when `vehicleId` or `vehicleIds` is set. */
   readonly unlinked?: boolean;
   readonly showroomId?: ShowroomId;
   /** Most rows to return; `truncated` says more matched. */

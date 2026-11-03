@@ -8,6 +8,15 @@ import type { CreateFinanceEntryController } from './controllers/create-finance-
 import type { GetFinanceEntryController } from './controllers/get-finance-entry.controller';
 import type { UpdateFinanceEntryController } from './controllers/update-finance-entry.controller';
 import type { DeleteFinanceEntryController } from './controllers/delete-finance-entry.controller';
+import type { GetVehicleFinanceController } from './controllers/get-vehicle-finance.controller';
+import type { SetVehicleDealController } from './controllers/set-vehicle-deal.controller';
+import type { RecordVehicleSaleController } from './controllers/record-vehicle-sale.controller';
+import type { ClearVehicleSaleController } from './controllers/clear-vehicle-sale.controller';
+import type { ListVehicleQuotesController } from './controllers/list-vehicle-quotes.controller';
+import type { AddVehicleQuoteController } from './controllers/add-vehicle-quote.controller';
+import type { DeleteVehicleQuoteController } from './controllers/delete-vehicle-quote.controller';
+import type { ListVehicleFinanceSummariesController } from './controllers/list-vehicle-finance-summaries.controller';
+import type { ListVehiclesAwaitingSalePriceController } from './controllers/list-vehicles-awaiting-sale-price.controller';
 import type { ChangeFinanceKeyController } from './controllers/change-finance-key.controller';
 import type { ConfirmVaultController } from './controllers/confirm-vault.controller';
 import type { GetVaultStatusController } from './controllers/get-vault-status.controller';
@@ -33,6 +42,15 @@ export interface FinanceRouterDeps {
   readonly getFinanceEntryController: GetFinanceEntryController;
   readonly updateFinanceEntryController: UpdateFinanceEntryController;
   readonly deleteFinanceEntryController: DeleteFinanceEntryController;
+  readonly getVehicleFinanceController: GetVehicleFinanceController;
+  readonly setVehicleDealController: SetVehicleDealController;
+  readonly recordVehicleSaleController: RecordVehicleSaleController;
+  readonly clearVehicleSaleController: ClearVehicleSaleController;
+  readonly listVehicleQuotesController: ListVehicleQuotesController;
+  readonly addVehicleQuoteController: AddVehicleQuoteController;
+  readonly deleteVehicleQuoteController: DeleteVehicleQuoteController;
+  readonly listVehicleFinanceSummariesController: ListVehicleFinanceSummariesController;
+  readonly listVehiclesAwaitingSalePriceController: ListVehiclesAwaitingSalePriceController;
 }
 
 /** Finance responses carry keys or decrypted amounts; never let them be cached. */
@@ -68,6 +86,20 @@ export function createFinanceRouter(deps: FinanceRouterDeps): Router {
   router.get('/entries/:id', deps.getFinanceEntryController.handle());
   router.patch('/entries/:id', deps.updateFinanceEntryController.handle());
   router.delete('/entries/:id', deps.deleteFinanceEntryController.handle());
+
+  // Literal paths before `/vehicles/:vehicleId`.
+  router.get('/vehicles', deps.listVehicleFinanceSummariesController.handle());
+  router.get(
+    '/vehicles/awaiting-sale-price',
+    deps.listVehiclesAwaitingSalePriceController.handle(),
+  );
+  router.get('/vehicles/:vehicleId', deps.getVehicleFinanceController.handle());
+  router.put('/vehicles/:vehicleId', deps.setVehicleDealController.handle());
+  router.post('/vehicles/:vehicleId/sale', deps.recordVehicleSaleController.handle());
+  router.delete('/vehicles/:vehicleId/sale', deps.clearVehicleSaleController.handle());
+  router.get('/vehicles/:vehicleId/quotes', deps.listVehicleQuotesController.handle());
+  router.post('/vehicles/:vehicleId/quotes', deps.addVehicleQuoteController.handle());
+  router.delete('/vehicles/:vehicleId/quotes/:quoteId', deps.deleteVehicleQuoteController.handle());
 
   return router;
 }

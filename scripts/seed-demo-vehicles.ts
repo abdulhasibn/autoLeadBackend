@@ -408,13 +408,7 @@ async function seedVehicle(
   check(
     await db.from('vehicle_financials').insert({
       vehicle_id: vehicleId,
-      owner_expected_price: roundTo(listed * 0.95, 5000),
-      company_purchase_price:
-        acquisition === 'dealership_purchase' ? roundTo(listed * 0.88, 5000) : null,
-      expected_selling_price: listed,
-      minimum_selling_price: roundTo(listed * 0.94, 5000),
       listed_price: listed,
-      commission_percent: acquisition === 'dealership_purchase' ? null : 2,
     }),
     'insert financials',
   );

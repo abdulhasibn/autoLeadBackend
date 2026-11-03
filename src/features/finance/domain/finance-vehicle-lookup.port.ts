@@ -1,3 +1,4 @@
+import type { LeadId } from '../../../domain/shared/lead-id';
 import type { ShowroomId } from '../../../domain/shared/showroom-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 
@@ -18,4 +19,10 @@ export interface IFinanceVehicleLookup {
   findLinkable(id: VehicleId): Promise<FinanceVehicleFacts | null>;
   /** Labels for entries already linked, including cars deleted since. */
   findMany(ids: readonly VehicleId[]): Promise<readonly FinanceVehicleFacts[]>;
+  /** Live cars with status `sold` whose sale price hasn't been recorded in finance. */
+  listSoldWithoutSale(): Promise<readonly SoldVehicleFacts[]>;
+}
+
+export interface SoldVehicleFacts extends FinanceVehicleFacts {
+  readonly soldLeadId: LeadId | null;
 }

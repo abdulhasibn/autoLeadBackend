@@ -33,8 +33,21 @@ import type { IFinanceTagRepository } from '../domain/finance-tag.repository';
 import type {
   FinanceVehicleFacts,
   IFinanceVehicleLookup,
+  SoldVehicleFacts,
 } from '../domain/finance-vehicle-lookup.port';
-import type { SealedFinanceEntry, SealedFinanceTag } from '../domain/sealed-finance-records';
+import type {
+  SealedFinanceEntry,
+  SealedFinanceTag,
+  SealedVehicleDeal,
+  SealedVehicleQuote,
+} from '../domain/sealed-finance-records';
+import type { IVehicleDealQueries } from '../domain/vehicle-deal.queries';
+import type { IVehicleDealRepository } from '../domain/vehicle-deal.repository';
+import type { VehicleQuoteId } from '../domain/vehicle-quote-id';
+import type { IVehicleQuoteQueries } from '../domain/vehicle-quote.queries';
+import type { IVehicleQuoteRepository } from '../domain/vehicle-quote.repository';
+import { QuoteSealer } from '../application/services/quote.sealer';
+import { VehicleDealSealer } from '../application/services/vehicle-deal.sealer';
 import { NodeFinanceCrypto } from '../infrastructure/node-finance-crypto';
 import { toShowroomId } from '../../../domain/shared/showroom-id';
 import { toVehicleId, type VehicleId } from '../../../domain/shared/vehicle-id';
@@ -178,9 +191,11 @@ export class InMemoryFinanceEntryStore implements IFinanceEntryRepository, IFina
       .filter((row) =>
         criteria.vehicleId !== undefined
           ? row.vehicleId === criteria.vehicleId
-          : criteria.unlinked === true
-            ? row.vehicleId === null
-            : true,
+          : criteria.vehicleIds !== undefined
+            ? row.vehicleId !== null && criteria.vehicleIds.includes(row.vehicleId)
+            : criteria.unlinked === true
+              ? row.vehicleId === null
+              : true,
       );
     return {
       rows: matched.slice(0, criteria.maxRows),
@@ -233,7 +248,9 @@ export const CRETA = toVehicleId('dddddddd-0000-4000-8000-000000000002');
 export const DELETED_CAR = toVehicleId('dddddddd-0000-4000-8000-000000000003');
 
 export class FakeFinanceVehicleLookup implements IFinanceVehicleLookup {
-  readonly cars = new Map<string, FinanceVehicleFacts & { deleted: boolean }>([
+  constructor(private readonly deals: InMemoryVehicleDealStore) {}
+
+  readonly cars = new Map<string, FinanceVehicleFacts & { deleted: boolean; sold?: boolean }>([
     [
       SWIFT,
       { id: SWIFT, showroomId: SHOWROOM_A, label: 'Maruti Swift · KA01AB1234', deleted: false },
@@ -259,6 +276,56 @@ export class FakeFinanceVehicleLookup implements IFinanceVehicleLookup {
       return car === undefined ? [] : [car];
     });
   }
+
+  async listSoldWithoutSale(): Promise<readonly SoldVehicleFacts[]> {
+    return [...this.cars.values()]
+      .filter((car) => car.sold === true && !car.deleted)
+      .filter((car) => (this.deals.rows.get(car.id)?.soldOn ?? null) === null)
+      .map((car) => ({
+        id: car.id,
+        showroomId: car.showroomId,
+        label: car.label,
+        soldLeadId: null,
+      }));
+  }
+}
+
+export class InMemoryVehicleDealStore implements IVehicleDealRepository, IVehicleDealQueries {
+  readonly rows = new Map<string, SealedVehicleDeal>();
+
+  async find(vehicleId: VehicleId): Promise<SealedVehicleDeal | null> {
+    return this.rows.get(vehicleId) ?? null;
+  }
+
+  async findMany(vehicleIds: readonly VehicleId[]): Promise<readonly SealedVehicleDeal[]> {
+    return vehicleIds.flatMap((id) => {
+      const row = this.rows.get(id);
+      return row === undefined ? [] : [row];
+    });
+  }
+
+  async save(deal: SealedVehicleDeal): Promise<void> {
+    this.rows.set(deal.vehicleId, deal);
+  }
+}
+
+export class InMemoryVehicleQuoteStore implements IVehicleQuoteRepository, IVehicleQuoteQueries {
+  readonly rows = new Map<string, SealedVehicleQuote>();
+
+  async findById(id: VehicleQuoteId): Promise<SealedVehicleQuote | null> {
+    const row = this.rows.get(id);
+    return row === undefined || row.deletedAt !== null ? null : row;
+  }
+
+  async save(quote: SealedVehicleQuote): Promise<void> {
+    this.rows.set(quote.id, quote);
+  }
+
+  async listForVehicles(vehicleIds: readonly VehicleId[]): Promise<readonly SealedVehicleQuote[]> {
+    return [...this.rows.values()].filter(
+      (row) => row.deletedAt === null && vehicleIds.includes(row.vehicleId),
+    );
+  }
 }
 
 export interface FinanceTestKit {
@@ -278,6 +345,10 @@ export interface FinanceTestKit {
   readonly entrySealer: EntrySealer;
   readonly tagSealer: TagSealer;
   readonly tagSeeder: DefaultTagSeeder;
+  readonly deals: InMemoryVehicleDealStore;
+  readonly quotes: InMemoryVehicleQuoteStore;
+  readonly dealSealer: VehicleDealSealer;
+  readonly quoteSealer: QuoteSealer;
 }
 
 export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z')): FinanceTestKit {
@@ -289,6 +360,7 @@ export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z'))
   const audit = new FakeFinanceAuditLog();
   const tags = new InMemoryFinanceTagStore();
   const tagSealer = new TagSealer();
+  const deals = new InMemoryVehicleDealStore();
   return {
     clock,
     ids,
@@ -302,10 +374,14 @@ export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z'))
     sessionService: new FinanceSessionService(sessions, crypto, clock, ids),
     entries: new InMemoryFinanceEntryStore(),
     tags,
-    vehicles: new FakeFinanceVehicleLookup(),
+    vehicles: new FakeFinanceVehicleLookup(deals),
     entrySealer: new EntrySealer(),
     tagSealer,
     tagSeeder: new DefaultTagSeeder(tags, tagSealer, clock, ids),
+    deals,
+    quotes: new InMemoryVehicleQuoteStore(),
+    dealSealer: new VehicleDealSealer(),
+    quoteSealer: new QuoteSealer(),
   };
 }
 

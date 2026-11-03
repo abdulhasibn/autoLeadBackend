@@ -16,7 +16,9 @@ import { FinancePolicy } from './application/policies/finance.policy';
 import { DefaultTagSeeder } from './application/services/default-tag-seeder';
 import { EntrySealer } from './application/services/entry.sealer';
 import { FinanceSessionService } from './application/services/finance-session.service';
+import { QuoteSealer } from './application/services/quote.sealer';
 import { TagSealer } from './application/services/tag.sealer';
+import { VehicleDealSealer } from './application/services/vehicle-deal.sealer';
 import { VaultKeyring } from './application/services/vault-keyring';
 import { CreateFinanceEntryUseCase } from './application/use-cases/create-finance-entry.use-case';
 import { CreateFinanceTagUseCase } from './application/use-cases/create-finance-tag.use-case';
@@ -26,6 +28,15 @@ import { ListFinanceEntriesUseCase } from './application/use-cases/list-finance-
 import { ListFinanceTagsUseCase } from './application/use-cases/list-finance-tags.use-case';
 import { UpdateFinanceEntryUseCase } from './application/use-cases/update-finance-entry.use-case';
 import { UpdateFinanceTagUseCase } from './application/use-cases/update-finance-tag.use-case';
+import { GetVehicleFinanceUseCase } from './application/use-cases/get-vehicle-finance.use-case';
+import { SetVehicleDealUseCase } from './application/use-cases/set-vehicle-deal.use-case';
+import { RecordVehicleSaleUseCase } from './application/use-cases/record-vehicle-sale.use-case';
+import { ClearVehicleSaleUseCase } from './application/use-cases/clear-vehicle-sale.use-case';
+import { ListVehicleQuotesUseCase } from './application/use-cases/list-vehicle-quotes.use-case';
+import { AddVehicleQuoteUseCase } from './application/use-cases/add-vehicle-quote.use-case';
+import { DeleteVehicleQuoteUseCase } from './application/use-cases/delete-vehicle-quote.use-case';
+import { ListVehicleFinanceSummariesUseCase } from './application/use-cases/list-vehicle-finance-summaries.use-case';
+import { ListVehiclesAwaitingSalePriceUseCase } from './application/use-cases/list-vehicles-awaiting-sale-price.use-case';
 import { ChangeFinanceKeyUseCase } from './application/use-cases/change-finance-key.use-case';
 import { ConfirmVaultUseCase } from './application/use-cases/confirm-vault.use-case';
 import { GetVaultStatusUseCase } from './application/use-cases/get-vault-status.use-case';
@@ -41,6 +52,10 @@ import { SupabaseFinanceEntryRepository } from './infrastructure/supabase-financ
 import { SupabaseFinanceTagQueries } from './infrastructure/supabase-finance-tag.queries';
 import { SupabaseFinanceTagRepository } from './infrastructure/supabase-finance-tag.repository';
 import { SupabaseFinanceVehicleLookup } from './infrastructure/supabase-finance-vehicle.lookup';
+import { SupabaseVehicleDealQueries } from './infrastructure/supabase-vehicle-deal.queries';
+import { SupabaseVehicleDealRepository } from './infrastructure/supabase-vehicle-deal.repository';
+import { SupabaseVehicleQuoteQueries } from './infrastructure/supabase-vehicle-quote.queries';
+import { SupabaseVehicleQuoteRepository } from './infrastructure/supabase-vehicle-quote.repository';
 import { SupabaseFinanceAuditLog } from './infrastructure/supabase-finance-audit-log';
 import { SupabaseFinanceVaultQueries } from './infrastructure/supabase-finance-vault.queries';
 import { SupabaseFinanceSessionRepository } from './infrastructure/supabase-finance-session.repository';
@@ -53,6 +68,15 @@ import { ListFinanceEntriesController } from './presentation/controllers/list-fi
 import { ListFinanceTagsController } from './presentation/controllers/list-finance-tags.controller';
 import { UpdateFinanceEntryController } from './presentation/controllers/update-finance-entry.controller';
 import { UpdateFinanceTagController } from './presentation/controllers/update-finance-tag.controller';
+import { GetVehicleFinanceController } from './presentation/controllers/get-vehicle-finance.controller';
+import { SetVehicleDealController } from './presentation/controllers/set-vehicle-deal.controller';
+import { RecordVehicleSaleController } from './presentation/controllers/record-vehicle-sale.controller';
+import { ClearVehicleSaleController } from './presentation/controllers/clear-vehicle-sale.controller';
+import { ListVehicleQuotesController } from './presentation/controllers/list-vehicle-quotes.controller';
+import { AddVehicleQuoteController } from './presentation/controllers/add-vehicle-quote.controller';
+import { DeleteVehicleQuoteController } from './presentation/controllers/delete-vehicle-quote.controller';
+import { ListVehicleFinanceSummariesController } from './presentation/controllers/list-vehicle-finance-summaries.controller';
+import { ListVehiclesAwaitingSalePriceController } from './presentation/controllers/list-vehicles-awaiting-sale-price.controller';
 import { ChangeFinanceKeyController } from './presentation/controllers/change-finance-key.controller';
 import { ConfirmVaultController } from './presentation/controllers/confirm-vault.controller';
 import { GetVaultStatusController } from './presentation/controllers/get-vault-status.controller';
@@ -101,6 +125,13 @@ export function composeFinance(
   const entrySealer = new EntrySealer();
   const tagSealer = new TagSealer();
   const tagSeeder = new DefaultTagSeeder(tags, tagSealer, deps.clock, ids);
+
+  const deals = new SupabaseVehicleDealRepository(infraClient);
+  const dealQueries = new SupabaseVehicleDealQueries(infraClient);
+  const quotes = new SupabaseVehicleQuoteRepository(infraClient);
+  const quoteQueries = new SupabaseVehicleQuoteQueries(infraClient);
+  const dealSealer = new VehicleDealSealer();
+  const quoteSealer = new QuoteSealer();
 
   const router = createFinanceRouter({
     bearerMiddleware: deps.bearerMiddleware,
@@ -201,6 +232,64 @@ export function composeFinance(
     ),
     deleteFinanceEntryController: new DeleteFinanceEntryController(
       new DeleteFinanceEntryUseCase(policy, sessionService, entries, entrySealer, deps.clock),
+    ),
+    getVehicleFinanceController: new GetVehicleFinanceController(
+      new GetVehicleFinanceUseCase(
+        policy,
+        sessionService,
+        vehicles,
+        dealQueries,
+        entryQueries,
+        quoteQueries,
+        tagQueries,
+        dealSealer,
+        entrySealer,
+        quoteSealer,
+        tagSealer,
+        deps.clock,
+      ),
+    ),
+    setVehicleDealController: new SetVehicleDealController(
+      new SetVehicleDealUseCase(policy, sessionService, vehicles, deals, dealSealer, deps.clock),
+    ),
+    recordVehicleSaleController: new RecordVehicleSaleController(
+      new RecordVehicleSaleUseCase(policy, sessionService, vehicles, deals, dealSealer, deps.clock),
+    ),
+    clearVehicleSaleController: new ClearVehicleSaleController(
+      new ClearVehicleSaleUseCase(policy, sessionService, deals, dealSealer, deps.clock),
+    ),
+    listVehicleQuotesController: new ListVehicleQuotesController(
+      new ListVehicleQuotesUseCase(policy, sessionService, quoteQueries, quoteSealer),
+    ),
+    addVehicleQuoteController: new AddVehicleQuoteController(
+      new AddVehicleQuoteUseCase(
+        policy,
+        sessionService,
+        vehicles,
+        quotes,
+        quoteSealer,
+        deps.clock,
+        ids,
+      ),
+    ),
+    deleteVehicleQuoteController: new DeleteVehicleQuoteController(
+      new DeleteVehicleQuoteUseCase(policy, sessionService, quotes, quoteSealer, deps.clock),
+    ),
+    listVehicleFinanceSummariesController: new ListVehicleFinanceSummariesController(
+      new ListVehicleFinanceSummariesUseCase(
+        policy,
+        sessionService,
+        dealQueries,
+        entryQueries,
+        quoteQueries,
+        dealSealer,
+        entrySealer,
+        quoteSealer,
+        deps.clock,
+      ),
+    ),
+    listVehiclesAwaitingSalePriceController: new ListVehiclesAwaitingSalePriceController(
+      new ListVehiclesAwaitingSalePriceUseCase(policy, sessionService, vehicles),
     ),
   });
 
