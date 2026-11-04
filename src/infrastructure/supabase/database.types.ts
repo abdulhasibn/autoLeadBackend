@@ -1742,6 +1742,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      ingest_web_events: {
+        Args: { p_events: Json; p_ip_hash: string; p_session: Json };
+        Returns: number;
+      };
       save_lead: {
         Args: {
           p_actor_id?: string | null;
@@ -1841,6 +1845,7 @@ export type Database = {
       };
       submit_public_test_drive: {
         Args: {
+          p_attribution?: Json;
           p_full_name: string;
           p_ip_hash: string;
           p_phone: string;

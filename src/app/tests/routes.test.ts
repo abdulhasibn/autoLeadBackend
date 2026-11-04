@@ -155,6 +155,26 @@ describe('public marketplace routes', () => {
     expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3002');
   });
 
+  it('lets other origins load /public responses (CORP cross-origin), staff routes stay same-origin', async () => {
+    const publicResponse = await supertest(app).get('/public/nope');
+    const staffResponse = await supertest(app).get('/health');
+
+    expect(publicResponse.headers['cross-origin-resource-policy']).toBe('cross-origin');
+    expect(staffResponse.headers['cross-origin-resource-policy']).toBe('same-origin');
+  });
+
+  it('answers a malformed analytics beacon with 204 and the site origin', async () => {
+    const response = await supertest(app)
+      .post('/public/events')
+      .set('Origin', 'http://localhost:3002')
+      .set('Content-Type', 'text/plain')
+      .send('{"events":[]}');
+
+    expect(response.status).toBe(204);
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3002');
+    expect(response.headers['cross-origin-resource-policy']).toBe('cross-origin');
+  });
+
   it('answers unknown public paths with 404', async () => {
     const response = await supertest(app).get('/public/nope');
 

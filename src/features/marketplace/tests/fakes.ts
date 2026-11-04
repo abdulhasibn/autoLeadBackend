@@ -16,8 +16,25 @@ import type {
   TestDriveIntakeInput,
   TestDriveIntakeResult,
 } from '../domain/test-drive-intake.port';
+import type {
+  ITouchClassifier,
+  TouchClassification,
+  VisitorTouch,
+} from '../domain/touch-classifier.port';
 
 export const VEHICLE_ID = '11111111-1111-4111-8111-111111111111';
+export const VISITOR_ID = '22222222-2222-4222-8222-222222222222';
+export const SESSION_ID = '33333333-3333-4333-8333-333333333333';
+
+export function visitorTouch(overrides: Partial<VisitorTouch> = {}): VisitorTouch {
+  return {
+    hasFbclid: false,
+    hasGclid: false,
+    landingPath: '/cars/x',
+    inAppBrowser: null,
+    ...overrides,
+  };
+}
 
 export function publicVehicle(
   overrides: Partial<PublicVehicleReadModel> = {},
@@ -128,5 +145,24 @@ export class FakeVehicleLinkSync implements IVehicleLinkSync {
     actorId: UserId,
   ): Promise<void> {
     this.calls.push({ vehicleId, actorId });
+  }
+}
+
+/** Stand-in for site-analytics: enough rules to tell touches apart in tests. */
+export class FakeTouchClassifier implements ITouchClassifier {
+  readonly classified: VisitorTouch[] = [];
+
+  classify(touch: VisitorTouch): TouchClassification {
+    this.classified.push(touch);
+    if (touch.utmSource === 'instagram') {
+      return { channel: 'instagram_ads', referrerHost: null };
+    }
+    if (touch.referrer !== undefined) {
+      return {
+        channel: 'google_organic',
+        referrerHost: new URL(touch.referrer).host.replace(/^www\./, ''),
+      };
+    }
+    return { channel: 'direct', referrerHost: null };
   }
 }

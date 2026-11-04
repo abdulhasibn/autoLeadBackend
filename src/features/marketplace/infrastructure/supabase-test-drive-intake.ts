@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
 import { toVehicleId } from '../../../domain/shared/vehicle-id';
-import type { Database } from '../../../infrastructure/supabase/database.types';
+import type { Database, Json } from '../../../infrastructure/supabase/database.types';
 import { PublicRateLimitedError } from '../domain/errors/public-rate-limited.error';
 import type {
   ITestDriveIntake,
@@ -31,6 +31,17 @@ export class SupabaseTestDriveIntake implements ITestDriveIntake {
       p_full_name: input.fullName,
       p_phone: input.phone,
       p_ip_hash: input.ipHash,
+      // Omitted rather than null when absent, so the call matches older DBs too.
+      ...(input.attribution === null
+        ? {}
+        : {
+            p_attribution: {
+              visitorId: input.attribution.visitorId,
+              sessionId: input.attribution.sessionId,
+              firstTouch: { ...input.attribution.firstTouch },
+              lastTouch: { ...input.attribution.lastTouch },
+            } satisfies Json,
+          }),
     });
 
     if (error !== null) {

@@ -202,10 +202,13 @@ Anonymous. CORS is limited to `PUBLIC_SITE_ORIGINS`. Only Listed vehicles (`open
 | `GET` | `/public/vehicles/:id` | `200` detail: summary + `description` + `photos[]` (`{ url, category }`, in display order) |
 | `GET` | `/public/filters` | `200` `{ makes[{ id, name, models[] }], bodyTypes, fuelTypes, transmissions, priceRange, yearRange }` built from current stock |
 | `POST` | `/public/test-drive-requests` | `201` new lead, `200` repeat on an active lead → `{ outcome, vehicleAvailable, showroom }` |
+| `POST` | `/public/events` | `204` always. Website analytics beacon (ADR-0016), see below |
 
 Summary fields: `id, make, model, variant, bodyType, year, fuelType, transmission, kmDriven, previousOwners, colour, listedPrice` (rupees or `null` → show "Price on request"), `coverImageUrl`. Photo URLs are signed for 24 hours; GET responses carry `Cache-Control: s-maxage=300`.
 
-Test-drive body: `{ vehicleId, fullName, phone, fax? }`. The phone is an Indian mobile in any common shape (`98765 43210`, `+91…`, `0…`), stored as E.164. `fax` is a honeypot: leave the hidden input empty; any value gets a fake `201` and nothing is recorded. Body limit 10 KB.
+All `/public` responses send `Cross-Origin-Resource-Policy: cross-origin` (staff routes keep helmet's `same-origin`).
+
+Test-drive body: `{ vehicleId, fullName, phone, fax?, attribution? }`. The phone is an Indian mobile in any common shape (`98765 43210`, `+91…`, `0…`), stored as E.164. `fax` is a honeypot: leave the hidden input empty; any value gets a fake `201` and nothing is recorded. Body limit 10 KB.
 
 - Creates a `website` lead, unassigned, in the vehicle's showroom, attributed to the **Website** system user, and notifies every admin (`website_lead`). The vehicle flips `open` → `linked`.
 - An existing contact with that phone is reused and **never renamed**; a different name is kept in the lead notes.
@@ -213,6 +216,31 @@ Test-drive body: `{ vehicleId, fullName, phone, fax? }`. The phone is an Indian 
 - If the car sold meanwhile, the lead is still created without the vehicle and `vehicleAvailable` is `false`.
 - `showroom` (`name, address, city, phone, openingHours, googleMapsUrl`) is returned **only here**; no public GET exposes the address.
 - Rate limits: 5 requests per IP per hour, and 3 per phone + vehicle per day → `429 RATE_LIMITED`. Invalid phone → `422 INVALID_PHONE`.
+- `attribution` (optional; older clients omit it): `{ visitorId, sessionId, firstTouch, lastTouch }` (uuids + touches as below). The server classifies each touch. On a **new** lead it stores `lead_attribution`, and a Meta last touch (`instagram_ads`, `instagram_organic`, `facebook_ads`, `facebook_organic`) makes the lead source `instagram` / `facebook` instead of `website`. A repeat request stores nothing new.
+
+**Analytics events** (`POST /public/events`). The site posts JSON with `Content-Type: text/plain` through `navigator.sendBeacon` (no CORS preflight); `application/json` works too. Body limit 16 KB.
+
+```ts
+{
+  visitorId: uuid, sessionId: uuid,
+  touch: {                                   // the session's landing touch, raw
+    utmSource?, utmMedium?, utmCampaign?, utmContent?, utmTerm?: string (≤ 120),
+    hasFbclid: boolean, hasGclid: boolean,
+    referrer?: string (≤ 300, origin only), landingPath: string (≤ 300),
+    inAppBrowser: "instagram" | "facebook" | null
+  },
+  events: [{                                 // 1..20
+    type: "page_view" | "car_view" | "gallery_open" | "filter_apply" | "test_drive_open"
+        | "whatsapp_click" | "call_click" | "directions_click",
+    at: ISO time, path: string (≤ 300), vehicleId?: uuid,
+    props?: { [key]: string | number | boolean | null }   // ≤ 12 keys
+  }]
+}
+```
+
+- Always `204`, even for invalid or oversized bodies: nothing is reported back. Bot and blank user agents are dropped.
+- The channel is classified server-side: `instagram_ads | instagram_organic | facebook_ads | facebook_organic | google_ads | google_organic | whatsapp | direct | referral | other`. UTM tags win (`utm_medium` containing `paid`, or `cpc`/`ppc`/`cpm`/`display` → ads); without them a `gclid` → `google_ads`, then the in-app browser or referrer names the network; nothing at all → `direct`.
+- A session keeps the touch of its first batch. At most 500 events per session per hour are stored; event times are clamped to the last 24 hours. Events are kept 13 months.
 
 ### Auth
 

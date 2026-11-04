@@ -14,6 +14,26 @@ export interface ShowroomLocation {
   readonly googleMapsUrl: string | null;
 }
 
+/** One classified touch, as stored on the lead. */
+export interface AttributedTouch {
+  readonly channel: string;
+  readonly utmSource: string | null;
+  readonly utmMedium: string | null;
+  readonly utmCampaign: string | null;
+  readonly utmContent: string | null;
+  readonly utmTerm: string | null;
+  readonly referrerHost: string | null;
+  readonly landingPath: string;
+}
+
+/** Where a website lead came from; the last touch is the one credited. */
+export interface LeadAttribution {
+  readonly visitorId: string;
+  readonly sessionId: string;
+  readonly firstTouch: AttributedTouch;
+  readonly lastTouch: AttributedTouch;
+}
+
 export interface TestDriveIntakeInput {
   readonly vehicleId: string;
   readonly fullName: string;
@@ -21,6 +41,11 @@ export interface TestDriveIntakeInput {
   readonly phone: string;
   /** Keyed hash of the caller's IP, for rate limiting only. */
   readonly ipHash: string;
+  /**
+   * Stored only when a new lead is created; a Meta last touch also sets the
+   * lead source to `instagram` / `facebook`.
+   */
+  readonly attribution: LeadAttribution | null;
 }
 
 export interface TestDriveIntakeResult {

@@ -1,7 +1,6 @@
-import { createHmac } from 'node:crypto';
-
 import type { RequestHandler } from 'express';
 
+import { hashClientIp } from '../../../../presentation/http/client-ip-hash';
 import type { SubmitTestDriveUseCase } from '../../application/use-cases/submit-test-drive.use-case';
 import { submitTestDriveBodySchema } from '../schemas/public-marketplace.schemas';
 
@@ -27,9 +26,8 @@ export class SubmitTestDriveController {
           vehicleId: body.vehicleId,
           fullName: body.fullName,
           phone: body.phone,
-          ipHash: createHmac('sha256', this.ipHashKey)
-            .update(req.ip ?? 'unknown')
-            .digest('hex'),
+          ipHash: hashClientIp(req, this.ipHashKey),
+          attribution: body.attribution,
         });
         res.status(receipt.outcome === 'created' ? 201 : 200).json(receipt);
       } catch (err) {

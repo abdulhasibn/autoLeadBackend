@@ -19,8 +19,12 @@ import {
   FakePublicVehicleQueries,
   FakeSigner,
   FakeTestDriveIntake,
+  FakeTouchClassifier,
   FakeVehicleLinkSync,
   VEHICLE_ID,
+  VISITOR_ID,
+  SESSION_ID,
+  visitorTouch,
 } from './fakes';
 
 const SITE = 'https://wheelsexperts.in';
@@ -29,7 +33,7 @@ describe('SubmitTestDriveUseCase', () => {
   it('normalises the phone and links the vehicle as the website user', async () => {
     const intake = new FakeTestDriveIntake();
     const linkSync = new FakeVehicleLinkSync();
-    const useCase = new SubmitTestDriveUseCase(intake, linkSync);
+    const useCase = new SubmitTestDriveUseCase(intake, linkSync, new FakeTouchClassifier());
 
     const receipt = await useCase.execute({
       vehicleId: VEHICLE_ID,
@@ -49,6 +53,7 @@ describe('SubmitTestDriveUseCase', () => {
     const useCase = new SubmitTestDriveUseCase(
       new FakeTestDriveIntake({ outcome: 'updated' }),
       linkSync,
+      new FakeTouchClassifier(),
     );
 
     const receipt = await useCase.execute({
@@ -67,6 +72,7 @@ describe('SubmitTestDriveUseCase', () => {
     const useCase = new SubmitTestDriveUseCase(
       new FakeTestDriveIntake({ vehicleAvailable: false, linkedVehicleId: null }),
       linkSync,
+      new FakeTouchClassifier(),
     );
 
     const receipt = await useCase.execute({
@@ -81,9 +87,79 @@ describe('SubmitTestDriveUseCase', () => {
     expect(linkSync.calls).toEqual([]);
   });
 
+  it('classifies both touches and passes the attribution to the intake', async () => {
+    const intake = new FakeTestDriveIntake();
+    const classifier = new FakeTouchClassifier();
+    const useCase = new SubmitTestDriveUseCase(intake, new FakeVehicleLinkSync(), classifier);
+
+    await useCase.execute({
+      vehicleId: VEHICLE_ID,
+      fullName: 'Asha',
+      phone: '9876543210',
+      ipHash: 'hash',
+      attribution: {
+        visitorId: VISITOR_ID,
+        sessionId: SESSION_ID,
+        firstTouch: visitorTouch({ referrer: 'https://www.google.com' }),
+        lastTouch: visitorTouch({
+          utmSource: 'instagram',
+          utmMedium: 'paid_social',
+          utmCampaign: 'diwali',
+          utmContent: 'creta-reel',
+        }),
+      },
+    });
+
+    expect(classifier.classified).toHaveLength(2);
+    expect(intake.submitted[0]?.attribution).toEqual({
+      visitorId: VISITOR_ID,
+      sessionId: SESSION_ID,
+      firstTouch: {
+        channel: 'google_organic',
+        utmSource: null,
+        utmMedium: null,
+        utmCampaign: null,
+        utmContent: null,
+        utmTerm: null,
+        referrerHost: 'google.com',
+        landingPath: '/cars/x',
+      },
+      lastTouch: {
+        channel: 'instagram_ads',
+        utmSource: 'instagram',
+        utmMedium: 'paid_social',
+        utmCampaign: 'diwali',
+        utmContent: 'creta-reel',
+        utmTerm: null,
+        referrerHost: null,
+        landingPath: '/cars/x',
+      },
+    });
+  });
+
+  it('passes no attribution when an older client omits it', async () => {
+    const intake = new FakeTestDriveIntake();
+    const classifier = new FakeTouchClassifier();
+    const useCase = new SubmitTestDriveUseCase(intake, new FakeVehicleLinkSync(), classifier);
+
+    await useCase.execute({
+      vehicleId: VEHICLE_ID,
+      fullName: 'Asha',
+      phone: '9876543210',
+      ipHash: 'h',
+    });
+
+    expect(intake.submitted[0]?.attribution).toBeNull();
+    expect(classifier.classified).toEqual([]);
+  });
+
   it('rejects a number that is not an Indian mobile', async () => {
     const intake = new FakeTestDriveIntake();
-    const useCase = new SubmitTestDriveUseCase(intake, new FakeVehicleLinkSync());
+    const useCase = new SubmitTestDriveUseCase(
+      intake,
+      new FakeVehicleLinkSync(),
+      new FakeTouchClassifier(),
+    );
 
     await expect(
       useCase.execute({
@@ -125,7 +201,7 @@ describe('marketplace routes', () => {
           new GetPublicFilterOptionsUseCase(queries),
         ),
         submitTestDriveController: new SubmitTestDriveController(
-          new SubmitTestDriveUseCase(intake, new FakeVehicleLinkSync()),
+          new SubmitTestDriveUseCase(intake, new FakeVehicleLinkSync(), new FakeTouchClassifier()),
           'test-key',
         ),
       }),
@@ -153,6 +229,27 @@ describe('marketplace routes', () => {
     expect(response.status).toBe(201);
     expect(response.body.showroom.address).toBe('100 Feet Road');
     expect(intake.submitted[0]?.ipHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('accepts attribution from the site and rejects a malformed one', async () => {
+    const intake = new FakeTestDriveIntake();
+    const attribution = {
+      visitorId: VISITOR_ID,
+      sessionId: SESSION_ID,
+      firstTouch: visitorTouch(),
+      lastTouch: visitorTouch({ utmSource: 'instagram', utmMedium: 'paid_social' }),
+    };
+
+    const ok = await supertest(app(intake))
+      .post('/public/test-drive-requests')
+      .send({ ...body, attribution });
+    const bad = await supertest(app())
+      .post('/public/test-drive-requests')
+      .send({ ...body, attribution: { ...attribution, visitorId: 'nope' } });
+
+    expect(ok.status).toBe(201);
+    expect(intake.submitted[0]?.attribution?.lastTouch.channel).toBe('instagram_ads');
+    expect(bad.status).toBe(422);
   });
 
   it('answers a filled honeypot like a success and records nothing', async () => {

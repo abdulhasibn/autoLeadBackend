@@ -4,6 +4,7 @@ import { BodyType } from '../../../../domain/shared/body-type.value-object';
 import { FuelType } from '../../../../domain/shared/fuel-type.value-object';
 import { Transmission } from '../../../../domain/shared/transmission.value-object';
 import { optionalCsvSchema, refineRange } from '../../../../presentation/validation/search.schemas';
+import { visitorTouchSchema } from '../../../../presentation/validation/visitor-touch.schemas';
 
 export const MAX_PUBLIC_PAGE_SIZE = 48;
 
@@ -41,4 +42,13 @@ export const submitTestDriveBodySchema = z.object({
   phone: z.string().trim().min(10).max(20),
   // Honeypot: hidden from people, filled by bots. Any value means a bot.
   fax: z.string().max(200).optional(),
+  // Where the visitor came from (website analytics). Optional: older clients omit it.
+  attribution: z
+    .object({
+      visitorId: z.string().uuid(),
+      sessionId: z.string().uuid(),
+      firstTouch: visitorTouchSchema,
+      lastTouch: visitorTouchSchema,
+    })
+    .optional(),
 });

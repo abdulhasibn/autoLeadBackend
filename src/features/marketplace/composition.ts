@@ -9,6 +9,7 @@ import { SubmitTestDriveUseCase } from './application/use-cases/submit-test-driv
 import { InvalidMobileError } from './domain/errors/invalid-mobile.error';
 import { PublicRateLimitedError } from './domain/errors/public-rate-limited.error';
 import type { IVehicleLinkSync } from './domain/test-drive-intake.port';
+import type { ITouchClassifier } from './domain/touch-classifier.port';
 import { SupabasePublicMediaSigner } from './infrastructure/supabase-public-media-signer';
 import { SupabasePublicVehicleQueries } from './infrastructure/supabase-public-vehicle.queries';
 import { SupabaseTestDriveIntake } from './infrastructure/supabase-test-drive-intake';
@@ -25,6 +26,7 @@ export interface MarketplaceCompositionDeps {
   readonly allowedOrigins: readonly string[];
   readonly ipHashKey: string;
   readonly vehicleLinkSync: IVehicleLinkSync;
+  readonly touchClassifier: ITouchClassifier;
 }
 
 /**
@@ -46,7 +48,11 @@ export function composeMarketplace(
       new GetPublicFilterOptionsUseCase(queries),
     ),
     submitTestDriveController: new SubmitTestDriveController(
-      new SubmitTestDriveUseCase(new SupabaseTestDriveIntake(infraClient), deps.vehicleLinkSync),
+      new SubmitTestDriveUseCase(
+        new SupabaseTestDriveIntake(infraClient),
+        deps.vehicleLinkSync,
+        deps.touchClassifier,
+      ),
       deps.ipHashKey,
     ),
   });

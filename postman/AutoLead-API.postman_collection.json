@@ -143,6 +143,14 @@
     {
       "key": "financeQuoteId",
       "value": ""
+    },
+    {
+      "key": "visitorId",
+      "value": "22222222-2222-4222-8222-222222222222"
+    },
+    {
+      "key": "webSessionId",
+      "value": "33333333-3333-4333-8333-333333333333"
     }
   ],
   "item": [
@@ -160,6 +168,91 @@
             "header": [],
             "url": "{{baseUrl}}/health",
             "description": "GET /health — 200 `{ status, timestamp }`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public (website)",
+      "description": "Anonymous routes for the customer website (ADR-0010, ADR-0016). No bearer token. CORS is limited to `PUBLIC_SITE_ORIGINS`; responses carry `Cross-Origin-Resource-Policy: cross-origin`.",
+      "auth": {
+        "type": "noauth"
+      },
+      "item": [
+        {
+          "name": "Submit Test Drive (with attribution)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 or 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"fullName\": \"Asha Rao\",\n  \"phone\": \"98765 43210\",\n  \"attribution\": {\n    \"visitorId\": \"{{visitorId}}\",\n    \"sessionId\": \"{{webSessionId}}\",\n    \"firstTouch\": {\n      \"hasFbclid\": false,\n      \"hasGclid\": false,\n      \"referrer\": \"https://www.google.com\",\n      \"landingPath\": \"/\",\n      \"inAppBrowser\": null\n    },\n    \"lastTouch\": {\n      \"utmSource\": \"instagram\",\n      \"utmMedium\": \"paid_social\",\n      \"utmCampaign\": \"diwali\",\n      \"utmContent\": \"creta-reel\",\n      \"utmTerm\": \"instagram_reels\",\n      \"hasFbclid\": true,\n      \"hasGclid\": false,\n      \"landingPath\": \"/cars/{{vehicleId}}\",\n      \"inAppBrowser\": \"instagram\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/public/test-drive-requests",
+            "description": "POST /public/test-drive-requests — `201` new lead, `200` repeat → `{ outcome, vehicleAvailable, showroom }`.\n\n`attribution` is optional (older clients omit it): `{ visitorId, sessionId, firstTouch, lastTouch }`, each touch the raw landing data the site saw. The server classifies the channel. On a **new** lead it stores `lead_attribution`, and a Meta last touch (`instagram_*` / `facebook_*`) sets `leads.source` to `instagram` / `facebook`; anything else stays `website`. A repeat request stores nothing new.\n\n`422 VALIDATION_ERROR` for a malformed attribution; `429 RATE_LIMITED`; `422 INVALID_PHONE`."
+          }
+        },
+        {
+          "name": "Send Analytics Events (beacon)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 204', function () {",
+                  "  pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain;charset=UTF-8"
+              },
+              {
+                "key": "User-Agent",
+                "value": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 350.0.0.0"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"visitorId\": \"{{visitorId}}\",\n  \"sessionId\": \"{{webSessionId}}\",\n  \"touch\": {\n    \"utmSource\": \"instagram\",\n    \"utmMedium\": \"paid_social\",\n    \"utmCampaign\": \"diwali\",\n    \"utmContent\": \"creta-reel\",\n    \"utmTerm\": \"instagram_reels\",\n    \"hasFbclid\": true,\n    \"hasGclid\": false,\n    \"landingPath\": \"/cars/{{vehicleId}}\",\n    \"inAppBrowser\": \"instagram\"\n  },\n  \"events\": [\n    {\n      \"type\": \"page_view\",\n      \"at\": \"2026-11-04T10:00:00.000Z\",\n      \"path\": \"/cars/{{vehicleId}}\"\n    },\n    {\n      \"type\": \"car_view\",\n      \"at\": \"2026-11-04T10:00:01.000Z\",\n      \"path\": \"/cars/{{vehicleId}}\",\n      \"vehicleId\": \"{{vehicleId}}\",\n      \"props\": {\n        \"listedPrice\": 1450000\n      }\n    },\n    {\n      \"type\": \"filter_apply\",\n      \"at\": \"2026-11-04T10:01:00.000Z\",\n      \"path\": \"/cars\",\n      \"props\": {\n        \"bodyType\": \"suv\",\n        \"priceMax\": 1500000,\n        \"resultCount\": 7\n      }\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/public/events",
+            "description": "POST /public/events — always `204`, whatever happens (beacons never read the answer).\n\nThe site sends JSON with `Content-Type: text/plain` via `navigator.sendBeacon` so the request stays CORS-simple; `application/json` is accepted too. Body limit 16 KB.\n\nBody: `{ visitorId, sessionId, touch, events[1..20] }`. Event `type` ∈ `page_view | car_view | gallery_open | filter_apply | test_drive_open | whatsapp_click | call_click | directions_click`; `at` ISO time; `path` ≤ 300; `vehicleId?` uuid; `props?` ≤ 12 scalar values.\n\nDropped silently: bot / blank user agents, invalid bodies, events past 500 per session per hour. The channel is classified server-side; city comes from `x-vercel-ip-city`."
           }
         }
       ]

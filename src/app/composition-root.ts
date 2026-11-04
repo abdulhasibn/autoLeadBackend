@@ -12,6 +12,7 @@ import { composeLeads } from '../features/leads/composition';
 import { composeMarketplace } from '../features/marketplace/composition';
 import { composeNotifications } from '../features/notifications/composition';
 import { composeOwners } from '../features/owners/composition';
+import { composeSiteAnalytics } from '../features/site-analytics/composition';
 import { composeShowrooms } from '../features/showrooms/composition';
 import { composeUsers } from '../features/users/composition';
 import { composeVehicles } from '../features/vehicles/composition';
@@ -100,10 +101,16 @@ export function composeApp(config: AppConfig): AppDependencies {
     clock,
     timeZone: config.businessTimeZone,
   });
+  const siteAnalytics = composeSiteAnalytics(supabaseClient, {
+    allowedOrigins: config.publicSiteOrigins,
+    ipHashKey: config.supabase.serviceRoleKey,
+    logger,
+  });
   const marketplace = composeMarketplace(supabaseClient, {
     allowedOrigins: config.publicSiteOrigins,
     ipHashKey: config.supabase.serviceRoleKey,
     vehicleLinkSync: vehicles.vehicleLeadLink,
+    touchClassifier: siteAnalytics.touchClassifier,
   });
 
   const app = express();
@@ -116,8 +123,15 @@ export function composeApp(config: AppConfig): AppDependencies {
   app.use(createServerTimingMiddleware());
   app.use(createRequestLoggerMiddleware(logger));
   // Before the global CORS and body parser: the public routes have their own
-  // origin allow-list and a much smaller body limit.
-  app.use('/public', marketplace.router);
+  // origin allow-list and a much smaller body limit. Everything under /public
+  // is meant for other origins, so CORP must not be helmet's same-origin:
+  // no-cors requests (sendBeacon with a text/plain body) are otherwise blocked.
+  app.use(
+    '/public',
+    helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }),
+    marketplace.router,
+    siteAnalytics.router,
+  );
   app.use(cors());
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
