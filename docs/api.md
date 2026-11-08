@@ -182,7 +182,7 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 
 ## Endpoint catalogue
 
-**92 routes** are mounted (including `/health`).
+**93 routes** are mounted (including `/health`).
 
 ### Health — public
 
