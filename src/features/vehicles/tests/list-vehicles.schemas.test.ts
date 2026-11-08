@@ -38,4 +38,15 @@ describe('listVehiclesQuerySchema', () => {
   it('rejects a negative km bound', () => {
     expect(listVehiclesQuerySchema.safeParse({ kmMin: '-1' }).success).toBe(false);
   });
+
+  it('parses a listed-price range in rupees and rejects a bad one', () => {
+    expect(listVehiclesQuerySchema.parse({ priceMin: '300000', priceMax: '600000' })).toMatchObject(
+      { priceMin: 300000, priceMax: 600000 },
+    );
+    expect(
+      listVehiclesQuerySchema.safeParse({ priceMin: '600000', priceMax: '300000' }).success,
+    ).toBe(false);
+    expect(listVehiclesQuerySchema.safeParse({ priceMin: '-1' }).success).toBe(false);
+    expect(listVehiclesQuerySchema.safeParse({ priceMax: '4.5' }).success).toBe(false);
+  });
 });

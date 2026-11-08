@@ -3,7 +3,8 @@ export interface AddVehicleQuoteCommand {
   readonly vehicleId: string;
   readonly amountPaise: number;
   readonly quotedOn: string;
-  readonly leadId: string | null;
+  /** Required: the lead the price was offered to. */
+  readonly leadId: string;
   readonly quotedTo: string | null;
   readonly note: string | null;
 }

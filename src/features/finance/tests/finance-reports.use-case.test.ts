@@ -18,6 +18,7 @@ import { SetupVaultUseCase } from '../application/use-cases/setup-vault.use-case
 import { UnlockVaultUseCase } from '../application/use-cases/unlock-vault.use-case';
 import {
   ADMIN,
+  BALENO,
   CRETA,
   DELETED_CAR,
   SALESPERSON,
@@ -281,7 +282,67 @@ describe('finance reports', () => {
         profit: 13000,
       },
     ]);
-    expect(report.totals).toEqual({ cars: 1, sales: 560000, landingCost: 547000, profit: 13000 });
+    expect(report.totals).toEqual({
+      cars: 1,
+      sales: 560000,
+      landingCost: 547000,
+      profit: 13000,
+      carsMissingPurchaseRate: 0,
+      uncountedSales: 0,
+    });
+  });
+
+  it('a car sold without a purchase rate stays out of sales and profit, and is flagged', async () => {
+    await new RecordVehicleSaleUseCase(
+      kit.policy,
+      kit.sessionService,
+      kit.vehicles,
+      kit.deals,
+      kit.dealSealer,
+      kit.clock,
+    ).execute(
+      {
+        sessionToken: token,
+        vehicleId: BALENO,
+        finalisedPricePaise: 30_000_000,
+        soldOn: '2026-10-28',
+      },
+      ADMIN,
+    );
+
+    const oct = (await pnl.execute(range(), ADMIN)).buckets[1];
+    expect(oct).toMatchObject({
+      sales: 560000,
+      grossProfit: 15000,
+      netProfit: -70000,
+      carsSold: 2,
+      carsMissingPurchaseRate: 1,
+      uncountedSales: 300000,
+    });
+
+    const cars = await vehicleProfit.execute(
+      {
+        sessionToken: token,
+        from: '2026-10-01',
+        to: '2026-10-31',
+        showroomId: null,
+        sort: 'profit',
+      },
+      ADMIN,
+    );
+    expect(cars.items.find((i) => i.vehicle.id === BALENO)).toMatchObject({
+      purchaseRate: null,
+      profit: null,
+      finalisedPrice: 300000,
+    });
+    expect(cars.totals).toEqual({
+      cars: 2,
+      sales: 560000,
+      landingCost: 547000,
+      profit: 13000,
+      carsMissingPurchaseRate: 1,
+      uncountedSales: 300000,
+    });
   });
 
   it('dues: half the Creta is still owed to its seller', async () => {
@@ -330,6 +391,8 @@ describe('finance reports', () => {
       businessExpenses: 85000,
       cashIn: 0,
       cashOut: 87000,
+      carsMissingPurchaseRate: 0,
+      uncountedSales: 0,
     });
     expect(s.lastMonth).toMatchObject({
       from: '2026-10-01',

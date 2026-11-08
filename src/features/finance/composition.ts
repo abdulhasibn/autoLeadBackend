@@ -58,6 +58,7 @@ import { SupabaseFinanceEntryQueries } from './infrastructure/supabase-finance-e
 import { SupabaseFinanceEntryRepository } from './infrastructure/supabase-finance-entry.repository';
 import { SupabaseFinanceTagQueries } from './infrastructure/supabase-finance-tag.queries';
 import { SupabaseFinanceTagRepository } from './infrastructure/supabase-finance-tag.repository';
+import { SupabaseFinanceLeadLookup } from './infrastructure/supabase-finance-lead.lookup';
 import { SupabaseFinanceVehicleLookup } from './infrastructure/supabase-finance-vehicle.lookup';
 import { SupabaseVehicleDealQueries } from './infrastructure/supabase-vehicle-deal.queries';
 import { SupabaseVehicleDealRepository } from './infrastructure/supabase-vehicle-deal.repository';
@@ -137,6 +138,7 @@ export function composeFinance(
   const tags = new SupabaseFinanceTagRepository(infraClient);
   const tagQueries = new SupabaseFinanceTagQueries(infraClient);
   const vehicles = new SupabaseFinanceVehicleLookup(infraClient);
+  const leads = new SupabaseFinanceLeadLookup(infraClient);
   const entrySealer = new EntrySealer();
   const tagSealer = new TagSealer();
   const tagSeeder = new DefaultTagSeeder(tags, tagSealer, deps.clock, ids);
@@ -265,6 +267,7 @@ export function composeFinance(
         dealQueries,
         entryQueries,
         quoteQueries,
+        leads,
         tagQueries,
         dealSealer,
         entrySealer,
@@ -283,13 +286,14 @@ export function composeFinance(
       new ClearVehicleSaleUseCase(policy, sessionService, deals, dealSealer, deps.clock),
     ),
     listVehicleQuotesController: new ListVehicleQuotesController(
-      new ListVehicleQuotesUseCase(policy, sessionService, quoteQueries, quoteSealer),
+      new ListVehicleQuotesUseCase(policy, sessionService, quoteQueries, leads, quoteSealer),
     ),
     addVehicleQuoteController: new AddVehicleQuoteController(
       new AddVehicleQuoteUseCase(
         policy,
         sessionService,
         vehicles,
+        leads,
         quotes,
         quoteSealer,
         deps.clock,

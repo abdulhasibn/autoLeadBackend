@@ -445,6 +445,7 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
 | `makeId` / `modelId` / `variantId` | Catalog ids from `/catalog/...`. Combine freely; a mismatched pair just returns nothing |
 | `yearMin` / `yearMax` | Inclusive model-year range (`1900–2100`) |
 | `kmMin` / `kmMax` | Inclusive `kmDriven` range |
+| `priceMin` / `priceMax` | Inclusive `listedPrice` range in whole rupees; cars without a listed price drop out. A min above its max is `422` |
 | `fuelType` | One or more fuel types, comma-separated |
 | `transmission` | One or more transmissions, comma-separated |
 
@@ -625,7 +626,7 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 
 `showroomId` is optional: omit it to use your home showroom (see **Roles**).  
 `source`: `marketplace`, `mobile_app`, `website`, `phone`, `walkin`, `whatsapp`, `instagram`, `facebook`, `referral`, `other`.  
-**List query** (all optional, AND-combined): `limit`, `offset`, `status`, `vehicleId`, `assignedTo` (admin only; a salesperson always gets their own leads), `preferredMakeId`, `preferredModelId`, `preferredVariantId`, plus `search` (partial match on contact name or phone), `budgetMin` / `budgetMax` (inclusive, whole rupees like `budget`; leads with no budget drop out), `source` (one or more, comma-separated), `hasVehicle` (`true` / `false`), `purchaseTimeline` (exact text), `financeRequired` (`true` / `false`), `createdFrom` (inclusive) / `createdTo` (exclusive) as ISO date or datetime. A min above its max is `422 VALIDATION_ERROR`.  
+**List query** (all optional, AND-combined): `limit`, `offset`, `status`, `vehicleId`, `assignedTo` (admin only; a salesperson always gets their own leads), `preferredMakeId`, `preferredModelId`, `preferredVariantId`, `linkedMakeId` / `linkedModelId` / `linkedVariantId` (the make, model or variant of the car linked to the lead; leads with no car, or another car, drop out), plus `search` (partial match on contact name or phone), `budgetMin` / `budgetMax` (inclusive, whole rupees like `budget`; leads with no budget drop out), `source` (one or more, comma-separated), `hasVehicle` (`true` / `false`), `purchaseTimeline` (exact text), `financeRequired` (`true` / `false`), `createdFrom` (inclusive) / `createdTo` (exclusive) as ISO date or datetime. A min above its max is `422 VALIDATION_ERROR`.  
 **Preferred catalog:** the buyer's interest as catalog ids from `/catalog/makes`, `/catalog/makes/:id/models` and `/catalog/models/:id/variants` (the same ids as car create). Send only the narrowest pick: a variant alone is enough, and the server fills in its model and make. Any parent you also send must match (`422 PREFERRED_CATALOG_MISMATCH`); an unknown or deleted id is `404`. Because parents are always stored, filtering by `preferredMakeId` also finds leads that picked a model or variant of that make. `preferredVehicle` stays as optional free text and is not derived from the ids.  
 **Preference profile** (all optional, on create and `PUT /leads/:id/preference`; the same terms a car is recorded in):
 
@@ -1021,7 +1022,7 @@ One car's buy-and-sell numbers (ADR-0015). Every request needs `X-Finance-Sessio
 | POST | `/finance/vehicles/:vehicleId/sale` | `{ finalisedPrice, soldOn }` | `200` same shape |
 | DELETE | `/finance/vehicles/:vehicleId/sale` | — | `204` |
 | GET | `/finance/vehicles/:vehicleId/quotes` | — | `200` quotes, newest first |
-| POST | `/finance/vehicles/:vehicleId/quotes` | `{ amount, quotedOn, leadId?, quotedTo?, note? }` | `201` quote |
+| POST | `/finance/vehicles/:vehicleId/quotes` | `{ amount, quotedOn, leadId, quotedTo?, note? }` | `201` quote |
 | DELETE | `/finance/vehicles/:vehicleId/quotes/:quoteId` | — | `204` |
 | GET | `/finance/vehicles?vehicleIds=a,b,…` | up to 100 ids | `200` summaries in the order asked |
 | GET | `/finance/vehicles/awaiting-sale-price` | — | `200` `[{ vehicleId, label, soldLeadId }]` |
@@ -1030,7 +1031,7 @@ All amounts are rupees.
 
 - **Deal (`PUT`).** The purchase rate agreed with the seller, plus optional purchase date, owner's expected price, minimum selling price and note. `PUT` replaces these fields; it never touches the sale. `listedPrice` is the public asking price (plaintext, used by lead matching): omit it to keep the current one, send `null` to clear it.
 - **Sale.** `POST …/sale` records the finalised price and date. It doesn't change the car's status (that still follows leads), and it can be recorded before the deal. `DELETE …/sale` removes a sale recorded by mistake.
-- **Quotes** are prices offered to a person (`leadId` when they are a lead, or a free-text `quotedTo`). The newest is the current quote.
+- **Quotes** are prices offered to a lead. `leadId` is **required** and must be a live lead (else `404 NOT_FOUND`); it doesn't have to be the car's linked lead. `quotedTo` (display name) and `note` stay optional. Every quote comes back with `lead: { id, name, phone }` (the lead's contact, or registered buyer), so no per-quote lead lookup is needed; it is `null` only for older quotes recorded without a lead. The newest quote is the current one.
 - **Awaiting sale price** lists cars whose status is `sold` but whose finalised price isn't recorded yet. Show it as a to-do after converting a lead.
 
 **Car money** (`GET /finance/vehicles/:vehicleId`):
@@ -1041,7 +1042,7 @@ All amounts are rupees.
   "deal": { "purchaseRate": 500000, "purchasedOn": "2026-10-01", "ownerExpectedPrice": null, "minimumSellingPrice": null, "note": null },
   "sale": { "finalisedPrice": 560000, "soldOn": "2026-10-25", "soldBy": "…" },
   "listedPrice": 585000,
-  "quotes": [ … ], "currentQuote": { "amount": 585000, "quotedOn": "2026-10-18", "quotedTo": "Anil", … },
+  "quotes": [ … ], "currentQuote": { "amount": 585000, "quotedOn": "2026-10-18", "leadId": "…", "lead": { "id": "…", "name": "Anil Kumar", "phone": "+919876500001" }, "quotedTo": null, … },
   "landingCost": 545000, "costs": 45000,
   "costBreakdown": [ { "tag": { "id": "…", "name": "Insurance" }, "amount": 15000, "count": 1 }, … ],
   "paidToSeller": 500000, "receivedFromBuyer": 560000,
@@ -1073,18 +1074,18 @@ All amounts are rupees; profits can be negative. Every request needs `X-Finance-
 - `from` / `to`: `YYYY-MM-DD`, inclusive, required for the first three. `period`: `day`, `week` (Monday start), `month` (default) or `year`. `day`/`week` reports cover at most 366 days; `month`/`year` at most 5 years (`422 DATE_RANGE_TOO_LONG`).
 - `pnl` and `cash-flow` return `{ period, from, to, buckets, totals, truncated }`. Every period in the range has a bucket (`start`, `end`, `label`), even when empty, so a chart has every bar. Labels: `2026-10-25` (day, or the Monday of a week), `2026-10` (month), `2026` (year).
 
-**Profit & loss** (per bucket: `sales, costOfSales, grossProfit, laterCarCosts, otherIncome, businessExpenses, netProfit, carsSold, carsMissingPurchaseRate`):
+**Profit & loss** (per bucket: `sales, costOfSales, grossProfit, laterCarCosts, otherIncome, businessExpenses, netProfit, carsSold, carsMissingPurchaseRate, uncountedSales`):
 
 - A car counts in the period of its **sale date**: its finalised price is `sales`; its purchase rate plus the cost entries dated on or before the sale date are `costOfSales`.
 - Cost entries dated **after** the sale count in their own period as `laterCarCosts`.
 - `otherIncome` = car income with purpose `other` + income with no car. `businessExpenses` = expenses with no car.
 - `netProfit` = gross profit − later car costs + other income − business expenses.
 - Payments to sellers and from buyers are not in profit & loss (they settle prices already counted), and costs of unsold cars aren't either (they're in stock).
-- `carsMissingPurchaseRate` counts sold cars without a purchase rate; their cost of sales is understated until one is entered.
+- **A sold car without a purchase rate has unknown profit.** It counts in `carsSold` and `carsMissingPurchaseRate`, but stays out of `sales`, `costOfSales`, gross and net profit, and so do its later costs. Its finalised price is in `uncountedSales`; show e.g. "₹X of sales not counted until a purchase rate is entered". It joins the numbers as soon as the purchase rate is set.
 
 **Cash flow** (per bucket: `in, out, net, cumulative, inFromBuyers, inOther, outToSellers, outCarCosts, outBusiness`): every entry on its own date, including payments to sellers and from buyers. `cumulative` is the running net from the first bucket.
 
-**Profit per car**: cars sold in the range, `{ vehicle, soldOn, purchaseRate, costs, landingCost, finalisedPrice, profit }`. `sort`: `profit` (biggest first, default), `-profit`, `date` (newest first), `-date`. Car profit includes every cost on the car, also ones paid after the sale.
+**Profit per car**: cars sold in the range, `{ vehicle, soldOn, purchaseRate, costs, landingCost, finalisedPrice, profit }`. `sort`: `profit` (biggest first, default), `-profit`, `date` (newest first), `-date`. Car profit includes every cost on the car, also ones paid after the sale. Cars without a purchase rate are listed with `profit: null`; `totals` (`sales`, `landingCost`, `profit`) cover only cars with a purchase rate, and `totals.carsMissingPurchaseRate` / `totals.uncountedSales` show what was left out. `totals.cars` counts every row.
 
 **Dues**: cars where something is still owed, `{ vehicle, purchaseRate, paidToSeller, owedToSeller, finalisedPrice, receivedFromBuyer, owedByBuyer }`, largest first. Negative means overpaid. `totals` add up only what is still owed.
 
@@ -1101,7 +1102,7 @@ All amounts are rupees; profits can be negative. Every request needs `X-Finance-
 }
 ```
 
-`thisMonth` is month to date ("today" in the business timezone); `lastMonth` is the same span of the previous month, so the comparison is fair early in the month. Since finance is locked without the key, the regular `GET /dashboard` carries no money figures; show these tiles when finance is unlocked.
+Each window also has `carsMissingPurchaseRate` and `uncountedSales` (same rule as profit & loss). `thisMonth` is month to date ("today" in the business timezone); `lastMonth` is the same span of the previous month, so the comparison is fair early in the month. Since finance is locked without the key, the regular `GET /dashboard` carries no money figures; show these tiles when finance is unlocked.
 
 ---
 

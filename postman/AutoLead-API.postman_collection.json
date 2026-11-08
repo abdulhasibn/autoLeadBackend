@@ -910,8 +910,34 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/vehicles?limit=20&offset=0",
-            "description": "GET /vehicles — filters: status, ownerId, showroomId, registration. Each item carries `frontImageUrl` / `frontImageUrlExpiresAt` (signed URL of the lowest-sortOrder `front` photo, ~10 min; both null when there is none) for list thumbnails. Optional: search, makeId, modelId, variantId, yearMin/yearMax, kmMin/kmMax, fuelType and transmission (comma-separated). Items carry linkedLeadCount."
+            "url": {
+              "raw": "{{baseUrl}}/vehicles?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicles"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "priceMin",
+                  "value": "300000",
+                  "description": "Inclusive minimum listedPrice (whole rupees)",
+                  "disabled": true
+                },
+                {
+                  "key": "priceMax",
+                  "value": "600000",
+                  "description": "Inclusive maximum listedPrice (whole rupees)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /vehicles — filters: status, ownerId, showroomId, registration. Each item carries `frontImageUrl` / `frontImageUrlExpiresAt` (signed URL of the lowest-sortOrder `front` photo, ~10 min; both null when there is none) for list thumbnails. Optional: search, makeId, modelId, variantId, yearMin/yearMax, kmMin/kmMax, fuelType and transmission (comma-separated). Items carry linkedLeadCount.\n- `priceMin` / `priceMax` (whole rupees, optional): inclusive `listedPrice` range; cars without a listed price drop out; a min above its max is `422`."
           }
         },
         {
@@ -1209,8 +1235,40 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/leads?limit=20&offset=0",
-            "description": "GET /leads — filters (all optional, AND-combined): status, vehicleId, assignedTo (admin only), preferredMakeId, preferredModelId, preferredVariantId, search (contact name/phone, partial), budgetMin, budgetMax, source (comma-separated), hasVehicle (true|false), purchaseTimeline, financeRequired (true|false), createdFrom (inclusive), createdTo (exclusive). A salesperson only sees leads assigned to them. Items include `assignedToName`, `linkedVehicle` ({ id, makeName, modelName, variantName, year, registrationNumber } or null) and the preferred catalog ids + names."
+            "url": {
+              "raw": "{{baseUrl}}/leads?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["leads"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "linkedMakeId",
+                  "value": "{{makeId}}",
+                  "description": "Make of the linked car",
+                  "disabled": true
+                },
+                {
+                  "key": "linkedModelId",
+                  "value": "{{modelId}}",
+                  "description": "Model of the linked car",
+                  "disabled": true
+                },
+                {
+                  "key": "linkedVariantId",
+                  "value": "{{variantId}}",
+                  "description": "Variant of the linked car",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /leads — filters (all optional, AND-combined): status, vehicleId, assignedTo (admin only), preferredMakeId, preferredModelId, preferredVariantId, search (contact name/phone, partial), budgetMin, budgetMax, source (comma-separated), hasVehicle (true|false), purchaseTimeline, financeRequired (true|false), createdFrom (inclusive), createdTo (exclusive). A salesperson only sees leads assigned to them. Items include `assignedToName`, `linkedVehicle` ({ id, makeName, modelName, variantName, year, registrationNumber } or null) and the preferred catalog ids + names.\n- `linkedMakeId` / `linkedModelId` / `linkedVariantId` (uuid, optional, AND-combined): the catalog of the car linked to the lead; leads with no car or another car drop out."
           }
         },
         {
@@ -3320,7 +3378,7 @@
                       "value": "application/json"
                     }
                   ],
-                  "body": "{\n  \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n  \"deal\": {\n    \"purchaseRate\": 500000,\n    \"purchasedOn\": \"2026-10-01\",\n    \"ownerExpectedPrice\": 520000,\n    \"minimumSellingPrice\": 550000,\n    \"note\": \"Bought from Mr Rao\"\n  },\n  \"sale\": {\n    \"finalisedPrice\": 560000,\n    \"soldOn\": \"2026-10-25\",\n    \"soldBy\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\"\n  },\n  \"listedPrice\": 585000,\n  \"vehicle\": {\n    \"id\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"label\": \"Maruti Swift \\u00b7 KA01AB1234\"\n  },\n  \"quotes\": [\n    {\n      \"id\": \"33333333-3333-4333-8333-000000000001\",\n      \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n      \"amount\": 585000,\n      \"quotedOn\": \"2026-10-18\",\n      \"leadId\": null,\n      \"quotedTo\": \"Anil Kumar\",\n      \"note\": null,\n      \"createdAt\": \"2026-10-18T09:00:00.000Z\"\n    }\n  ],\n  \"currentQuote\": {\n    \"id\": \"33333333-3333-4333-8333-000000000001\",\n    \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"amount\": 585000,\n    \"quotedOn\": \"2026-10-18\",\n    \"leadId\": null,\n    \"quotedTo\": \"Anil Kumar\",\n    \"note\": null,\n    \"createdAt\": \"2026-10-18T09:00:00.000Z\"\n  },\n  \"landingCost\": 545000,\n  \"costs\": 45000,\n  \"costBreakdown\": [\n    {\n      \"tag\": {\n        \"id\": \"7c1e2a9b-4d3f-4e8a-9b1c-2d3e4f5a6b7c\",\n        \"name\": \"Insurance\"\n      },\n      \"amount\": 15000,\n      \"count\": 1\n    },\n    {\n      \"tag\": null,\n      \"amount\": 5000,\n      \"count\": 1\n    }\n  ],\n  \"paidToSeller\": 500000,\n  \"receivedFromBuyer\": 560000,\n  \"profit\": 15000,\n  \"owedToSeller\": 0,\n  \"owedByBuyer\": 0,\n  \"flags\": {\n    \"purchaseRateMissing\": false,\n    \"saleRecorded\": true\n  }\n}"
+                  "body": "{\n  \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n  \"deal\": {\n    \"purchaseRate\": 500000,\n    \"purchasedOn\": \"2026-10-01\",\n    \"ownerExpectedPrice\": 520000,\n    \"minimumSellingPrice\": 550000,\n    \"note\": \"Bought from Mr Rao\"\n  },\n  \"sale\": {\n    \"finalisedPrice\": 560000,\n    \"soldOn\": \"2026-10-25\",\n    \"soldBy\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\"\n  },\n  \"listedPrice\": 585000,\n  \"vehicle\": {\n    \"id\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"label\": \"Maruti Swift \\u00b7 KA01AB1234\"\n  },\n  \"quotes\": [\n    {\n      \"id\": \"33333333-3333-4333-8333-000000000001\",\n      \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n      \"amount\": 585000,\n      \"quotedOn\": \"2026-10-18\",\n      \"leadId\": \"4b5c6d7e-8f9a-4b0c-9d1e-2f3a4b5c6d7e\",\n      \"quotedTo\": \"Anil Kumar\",\n      \"note\": null,\n      \"createdAt\": \"2026-10-18T09:00:00.000Z\",\n      \"lead\": {\n        \"id\": \"4b5c6d7e-8f9a-4b0c-9d1e-2f3a4b5c6d7e\",\n        \"name\": \"Anil Kumar\",\n        \"phone\": \"+919876500001\"\n      }\n    }\n  ],\n  \"currentQuote\": {\n    \"id\": \"33333333-3333-4333-8333-000000000001\",\n    \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"amount\": 585000,\n    \"quotedOn\": \"2026-10-18\",\n    \"leadId\": \"4b5c6d7e-8f9a-4b0c-9d1e-2f3a4b5c6d7e\",\n    \"quotedTo\": \"Anil Kumar\",\n    \"note\": null,\n    \"createdAt\": \"2026-10-18T09:00:00.000Z\",\n    \"lead\": {\n      \"id\": \"4b5c6d7e-8f9a-4b0c-9d1e-2f3a4b5c6d7e\",\n      \"name\": \"Anil Kumar\",\n      \"phone\": \"+919876500001\"\n    }\n  },\n  \"landingCost\": 545000,\n  \"costs\": 45000,\n  \"costBreakdown\": [\n    {\n      \"tag\": {\n        \"id\": \"7c1e2a9b-4d3f-4e8a-9b1c-2d3e4f5a6b7c\",\n        \"name\": \"Insurance\"\n      },\n      \"amount\": 15000,\n      \"count\": 1\n    },\n    {\n      \"tag\": null,\n      \"amount\": 5000,\n      \"count\": 1\n    }\n  ],\n  \"paidToSeller\": 500000,\n  \"receivedFromBuyer\": 560000,\n  \"profit\": 15000,\n  \"owedToSeller\": 0,\n  \"owedByBuyer\": 0,\n  \"flags\": {\n    \"purchaseRateMissing\": false,\n    \"saleRecorded\": true\n  }\n}"
                 },
                 {
                   "id": "c83693c9-af1b-448d-a3fd-21aa2789ac59",
@@ -3636,7 +3694,7 @@
                   }
                 ],
                 "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes",
-                "description": "**Story:** During negotiation the admin checks what prices were offered to whom.\n\nGET /finance/vehicles/:vehicleId/quotes — live quotes, newest first (by quote date, then time recorded). The first is the current quote.\n\n**Auth:** Bearer, Admin only.\n\n- `200` array of `{ id, vehicleId, amount, quotedOn, leadId, quotedTo, note, createdAt }`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money."
+                "description": "**Story:** During negotiation the admin checks what prices were offered to whom.\n\nGET /finance/vehicles/:vehicleId/quotes — live quotes, newest first (by quote date, then time recorded). The first is the current quote.\n\n**Auth:** Bearer, Admin only.\n\n- `200` array of `{ id, vehicleId, amount, quotedOn, leadId, lead: { id, name, phone } | null, quotedTo, note, createdAt }`. `lead` is null only for older quotes recorded without a lead.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money."
               },
               "response": [
                 {
@@ -3661,7 +3719,7 @@
                       "value": "application/json"
                     }
                   ],
-                  "body": "[\n  {\n    \"id\": \"33333333-3333-4333-8333-000000000001\",\n    \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"amount\": 585000,\n    \"quotedOn\": \"2026-10-18\",\n    \"leadId\": null,\n    \"quotedTo\": \"Anil Kumar\",\n    \"note\": null,\n    \"createdAt\": \"2026-10-18T09:00:00.000Z\"\n  }\n]"
+                  "body": "[\n  {\n    \"id\": \"33333333-3333-4333-8333-000000000001\",\n    \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"amount\": 585000,\n    \"quotedOn\": \"2026-10-18\",\n    \"leadId\": \"4b5c6d7e-8f9a-4b0c-9d1e-2f3a4b5c6d7e\",\n    \"quotedTo\": \"Anil Kumar\",\n    \"note\": null,\n    \"createdAt\": \"2026-10-18T09:00:00.000Z\",\n    \"lead\": {\n      \"id\": \"4b5c6d7e-8f9a-4b0c-9d1e-2f3a4b5c6d7e\",\n      \"name\": \"Anil Kumar\",\n      \"phone\": \"+919876500001\"\n    }\n  }\n]"
                 },
                 {
                   "id": "cc8a8fa8-528f-4c6b-a5d7-340d09fe7247",
@@ -3718,10 +3776,10 @@
                   }
                 ],
                 "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes",
-                "description": "**Story:** The admin notes the price just offered to a buyer.\n\nPOST /finance/vehicles/:vehicleId/quotes — records a quote.\n\n**Auth:** Bearer, Admin only.\n\n- `amount` (rupees, required), `quotedOn` (YYYY-MM-DD, required).\n- `leadId` (uuid or null): the lead quoted, if any. `quotedTo` (≤ 120), `note` (≤ 1000): optional.\n- `201` the quote. `404` unknown car or lead.\n- The test script stores the id as `financeQuoteId`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.",
+                "description": "**Story:** The admin notes the price just offered to a buyer.\n\nPOST /finance/vehicles/:vehicleId/quotes — records a quote.\n\n**Auth:** Bearer, Admin only.\n\n- `amount` (rupees, required), `quotedOn` (YYYY-MM-DD, required).\n- `leadId` (uuid, **required**): the lead the price was offered to; must exist and not be deleted (else `404`). It need not be the car's linked lead. `quotedTo` (≤ 120), `note` (≤ 1000): optional.\n- `201` the quote, with `lead: { id, name, phone }`. `404` unknown car or lead; `422 VALIDATION_ERROR` without `leadId`.\n- The test script stores the id as `financeQuoteId`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": null,\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null\n}",
+                  "raw": "{\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": \"{{leadId}}\",\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -3748,7 +3806,7 @@
                     "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes",
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": null,\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null\n}",
+                      "raw": "{\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": \"{{leadId}}\",\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -3765,7 +3823,7 @@
                       "value": "application/json"
                     }
                   ],
-                  "body": "{\n  \"id\": \"33333333-3333-4333-8333-000000000001\",\n  \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": null,\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null,\n  \"createdAt\": \"2026-10-18T09:00:00.000Z\"\n}"
+                  "body": "{\n  \"id\": \"33333333-3333-4333-8333-000000000001\",\n  \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": \"4b5c6d7e-8f9a-4b0c-9d1e-2f3a4b5c6d7e\",\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null,\n  \"createdAt\": \"2026-10-18T09:00:00.000Z\",\n  \"lead\": {\n    \"id\": \"4b5c6d7e-8f9a-4b0c-9d1e-2f3a4b5c6d7e\",\n    \"name\": \"Anil Kumar\",\n    \"phone\": \"+919876500001\"\n  }\n}"
                 },
                 {
                   "id": "c1a95f51-3d42-4f4c-a6f8-6a28e49f0665",
@@ -3785,7 +3843,7 @@
                     "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/quotes",
                     "body": {
                       "mode": "raw",
-                      "raw": "{\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": null,\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null\n}",
+                      "raw": "{\n  \"amount\": 585000,\n  \"quotedOn\": \"2026-10-18\",\n  \"leadId\": \"{{leadId}}\",\n  \"quotedTo\": \"Anil Kumar\",\n  \"note\": null\n}",
                       "options": {
                         "raw": {
                           "language": "json"
@@ -4084,7 +4142,7 @@
                     }
                   ]
                 },
-                "description": "**Story:** The owner checks whether the business made money this month, and what drove it.\n\nGET /finance/reports/pnl — profit & loss per period.\n\n**Auth:** Bearer, Admin only.\n\n- `from`, `to` (YYYY-MM-DD, required); `period` = day | week | month (default) | year; `showroomId` optional. day/week ≤ 366 days, month/year ≤ 5 years.\n- Buckets (every period, even empty): `sales, costOfSales, grossProfit, laterCarCosts, otherIncome, businessExpenses, netProfit, carsSold, carsMissingPurchaseRate`, plus `totals`.\n- A car counts on its sale date with its purchase rate and the costs up to that date; later costs, other income and business expenses count on their own dates. Payments to sellers / from buyers and unsold cars' costs are not in P&L.\n- `422 DATE_RANGE_TOO_LONG` / `INVALID_DATE_RANGE`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
+                "description": "**Story:** The owner checks whether the business made money this month, and what drove it.\n\nGET /finance/reports/pnl — profit & loss per period.\n\n**Auth:** Bearer, Admin only.\n\n- `from`, `to` (YYYY-MM-DD, required); `period` = day | week | month (default) | year; `showroomId` optional. day/week ≤ 366 days, month/year ≤ 5 years.\n- Buckets (every period, even empty): `sales, costOfSales, grossProfit, laterCarCosts, otherIncome, businessExpenses, netProfit, carsSold, carsMissingPurchaseRate, uncountedSales`, plus `totals`.\n- A sold car without a purchase rate has unknown profit: it counts in `carsSold` / `carsMissingPurchaseRate` but stays out of sales, cost of sales and profit (with its later costs); its price is in `uncountedSales`.\n- A car counts on its sale date with its purchase rate and the costs up to that date; later costs, other income and business expenses count on their own dates. Payments to sellers / from buyers and unsold cars' costs are not in P&L.\n- `422 DATE_RANGE_TOO_LONG` / `INVALID_DATE_RANGE`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
               },
               "response": [
                 {
@@ -4136,7 +4194,7 @@
                       "value": "application/json"
                     }
                   ],
-                  "body": "{\n  \"period\": \"month\",\n  \"from\": \"2026-09-01\",\n  \"to\": \"2026-11-30\",\n  \"buckets\": [\n    {\n      \"start\": \"2026-09-01\",\n      \"end\": \"2026-09-30\",\n      \"label\": \"2026-09\",\n      \"sales\": 0,\n      \"costOfSales\": 0,\n      \"grossProfit\": 0,\n      \"laterCarCosts\": 0,\n      \"otherIncome\": 0,\n      \"businessExpenses\": 0,\n      \"netProfit\": 0,\n      \"carsSold\": 0,\n      \"carsMissingPurchaseRate\": 0\n    },\n    {\n      \"start\": \"2026-10-01\",\n      \"end\": \"2026-10-31\",\n      \"label\": \"2026-10\",\n      \"sales\": 560000,\n      \"costOfSales\": 545000,\n      \"grossProfit\": 15000,\n      \"laterCarCosts\": 0,\n      \"otherIncome\": 0,\n      \"businessExpenses\": 85000,\n      \"netProfit\": -70000,\n      \"carsSold\": 1,\n      \"carsMissingPurchaseRate\": 0\n    },\n    {\n      \"start\": \"2026-11-01\",\n      \"end\": \"2026-11-30\",\n      \"label\": \"2026-11\",\n      \"sales\": 0,\n      \"costOfSales\": 0,\n      \"grossProfit\": 0,\n      \"laterCarCosts\": 2000,\n      \"otherIncome\": 0,\n      \"businessExpenses\": 85000,\n      \"netProfit\": -87000,\n      \"carsSold\": 0,\n      \"carsMissingPurchaseRate\": 0\n    }\n  ],\n  \"totals\": {\n    \"sales\": 560000,\n    \"costOfSales\": 545000,\n    \"grossProfit\": 15000,\n    \"laterCarCosts\": 2000,\n    \"otherIncome\": 0,\n    \"businessExpenses\": 170000,\n    \"netProfit\": -157000,\n    \"carsSold\": 1,\n    \"carsMissingPurchaseRate\": 0\n  },\n  \"truncated\": false\n}"
+                  "body": "{\n  \"period\": \"month\",\n  \"from\": \"2026-09-01\",\n  \"to\": \"2026-11-30\",\n  \"buckets\": [\n    {\n      \"start\": \"2026-09-01\",\n      \"end\": \"2026-09-30\",\n      \"label\": \"2026-09\",\n      \"sales\": 0,\n      \"costOfSales\": 0,\n      \"grossProfit\": 0,\n      \"laterCarCosts\": 0,\n      \"otherIncome\": 0,\n      \"businessExpenses\": 0,\n      \"netProfit\": 0,\n      \"carsSold\": 0,\n      \"carsMissingPurchaseRate\": 0,\n      \"uncountedSales\": 0\n    },\n    {\n      \"start\": \"2026-10-01\",\n      \"end\": \"2026-10-31\",\n      \"label\": \"2026-10\",\n      \"sales\": 560000,\n      \"costOfSales\": 545000,\n      \"grossProfit\": 15000,\n      \"laterCarCosts\": 0,\n      \"otherIncome\": 0,\n      \"businessExpenses\": 85000,\n      \"netProfit\": -70000,\n      \"carsSold\": 1,\n      \"carsMissingPurchaseRate\": 0,\n      \"uncountedSales\": 0\n    },\n    {\n      \"start\": \"2026-11-01\",\n      \"end\": \"2026-11-30\",\n      \"label\": \"2026-11\",\n      \"sales\": 0,\n      \"costOfSales\": 0,\n      \"grossProfit\": 0,\n      \"laterCarCosts\": 2000,\n      \"otherIncome\": 0,\n      \"businessExpenses\": 85000,\n      \"netProfit\": -87000,\n      \"carsSold\": 0,\n      \"carsMissingPurchaseRate\": 0,\n      \"uncountedSales\": 0\n    }\n  ],\n  \"totals\": {\n    \"sales\": 560000,\n    \"costOfSales\": 545000,\n    \"grossProfit\": 15000,\n    \"laterCarCosts\": 2000,\n    \"otherIncome\": 0,\n    \"businessExpenses\": 170000,\n    \"netProfit\": -157000,\n    \"carsSold\": 1,\n    \"carsMissingPurchaseRate\": 0,\n    \"uncountedSales\": 0\n  },\n  \"truncated\": false\n}"
                 },
                 {
                   "id": "1ac29c07-98de-47ce-ad10-954ab5000442",
@@ -4399,7 +4457,7 @@
                     }
                   ]
                 },
-                "description": "**Story:** The owner sees which cars made the most money, and which lost money.\n\nGET /finance/reports/vehicle-profit — cars sold in the range.\n\n**Auth:** Bearer, Admin only.\n\n- `from`, `to` (required, ≤ 5 years); `sort` = profit (biggest first, default) | -profit | date (newest first) | -date; `showroomId` optional.\n- `items`: `{ vehicle, soldOn, purchaseRate, costs, landingCost, finalisedPrice, profit }` (profit null without a purchase rate); `totals`: `{ cars, sales, landingCost, profit }`.\n- Car profit counts every cost on the car, also ones paid after the sale.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
+                "description": "**Story:** The owner sees which cars made the most money, and which lost money.\n\nGET /finance/reports/vehicle-profit — cars sold in the range.\n\n**Auth:** Bearer, Admin only.\n\n- `from`, `to` (required, ≤ 5 years); `sort` = profit (biggest first, default) | -profit | date (newest first) | -date; `showroomId` optional.\n- `items`: `{ vehicle, soldOn, purchaseRate, costs, landingCost, finalisedPrice, profit }` (profit null without a purchase rate); `totals`: `{ cars, sales, landingCost, profit, carsMissingPurchaseRate, uncountedSales }`; the money totals cover only cars with a purchase rate.\n- Car profit counts every cost on the car, also ones paid after the sale.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
               },
               "response": [
                 {
@@ -4452,7 +4510,7 @@
                       "value": "application/json"
                     }
                   ],
-                  "body": "{\n  \"from\": \"2026-10-01\",\n  \"to\": \"2026-10-31\",\n  \"items\": [\n    {\n      \"vehicle\": {\n        \"id\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n        \"label\": \"Maruti Swift \\u00b7 KA01AB1234\"\n      },\n      \"soldOn\": \"2026-10-25\",\n      \"purchaseRate\": 500000,\n      \"costs\": 47000,\n      \"landingCost\": 547000,\n      \"finalisedPrice\": 560000,\n      \"profit\": 13000\n    }\n  ],\n  \"totals\": {\n    \"cars\": 1,\n    \"sales\": 560000,\n    \"landingCost\": 547000,\n    \"profit\": 13000\n  },\n  \"truncated\": false\n}"
+                  "body": "{\n  \"from\": \"2026-10-01\",\n  \"to\": \"2026-10-31\",\n  \"items\": [\n    {\n      \"vehicle\": {\n        \"id\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n        \"label\": \"Maruti Swift \\u00b7 KA01AB1234\"\n      },\n      \"soldOn\": \"2026-10-25\",\n      \"purchaseRate\": 500000,\n      \"costs\": 47000,\n      \"landingCost\": 547000,\n      \"finalisedPrice\": 560000,\n      \"profit\": 13000\n    }\n  ],\n  \"totals\": {\n    \"cars\": 1,\n    \"sales\": 560000,\n    \"landingCost\": 547000,\n    \"profit\": 13000,\n    \"carsMissingPurchaseRate\": 0,\n    \"uncountedSales\": 0\n  },\n  \"truncated\": false\n}"
                 },
                 {
                   "id": "77ec3bfe-214c-4d5e-82d8-6ff2eb1b01ef",
@@ -4767,7 +4825,7 @@
                     }
                   ]
                 },
-                "description": "**Story:** When finance is unlocked, the dashboard shows this month's money at a glance.\n\nGET /finance/summary — dashboard money tiles.\n\n**Auth:** Bearer, Admin only.\n\n- `showroomId` optional.\n- `thisMonth` (month to date, today in the business timezone) and `lastMonth` (same span of the previous month): `{ from, to, sales, netProfit, businessExpenses, cashIn, cashOut }`.\n- Plus `moneyInStock`, `owedToSellers`, `owedByBuyers`, `awaitingSalePrice` (sold cars without a recorded price).\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
+                "description": "**Story:** When finance is unlocked, the dashboard shows this month's money at a glance.\n\nGET /finance/summary — dashboard money tiles.\n\n**Auth:** Bearer, Admin only.\n\n- `showroomId` optional.\n- `thisMonth` (month to date, today in the business timezone) and `lastMonth` (same span of the previous month): `{ from, to, sales, netProfit, businessExpenses, cashIn, cashOut, carsMissingPurchaseRate, uncountedSales }`.\n- Plus `moneyInStock`, `owedToSellers`, `owedByBuyers`, `awaitingSalePrice` (sold cars without a recorded price).\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. `truncated: true` means over 5,000 entries were involved.\n- See docs/api.md#finance--reports."
               },
               "response": [
                 {
@@ -4804,7 +4862,7 @@
                       "value": "application/json"
                     }
                   ],
-                  "body": "{\n  \"thisMonth\": {\n    \"from\": \"2026-11-01\",\n    \"to\": \"2026-11-03\",\n    \"sales\": 0,\n    \"netProfit\": -87000,\n    \"businessExpenses\": 85000,\n    \"cashIn\": 0,\n    \"cashOut\": 87000\n  },\n  \"lastMonth\": {\n    \"from\": \"2026-10-01\",\n    \"to\": \"2026-10-03\",\n    \"sales\": 0,\n    \"netProfit\": -85000,\n    \"businessExpenses\": 85000,\n    \"cashIn\": 0,\n    \"cashOut\": 85000\n  },\n  \"moneyInStock\": 408000,\n  \"owedToSellers\": 200000,\n  \"owedByBuyers\": 0,\n  \"awaitingSalePrice\": 0,\n  \"truncated\": false\n}"
+                  "body": "{\n  \"thisMonth\": {\n    \"from\": \"2026-11-01\",\n    \"to\": \"2026-11-03\",\n    \"sales\": 0,\n    \"netProfit\": -87000,\n    \"businessExpenses\": 85000,\n    \"cashIn\": 0,\n    \"cashOut\": 87000,\n    \"carsMissingPurchaseRate\": 0,\n    \"uncountedSales\": 0\n  },\n  \"lastMonth\": {\n    \"from\": \"2026-10-01\",\n    \"to\": \"2026-10-03\",\n    \"sales\": 0,\n    \"netProfit\": -85000,\n    \"businessExpenses\": 85000,\n    \"cashIn\": 0,\n    \"cashOut\": 85000,\n    \"carsMissingPurchaseRate\": 0,\n    \"uncountedSales\": 0\n  },\n  \"moneyInStock\": 408000,\n  \"owedToSellers\": 200000,\n  \"owedByBuyers\": 0,\n  \"awaitingSalePrice\": 0,\n  \"truncated\": false\n}"
                 },
                 {
                   "id": "a5e33b76-5be8-40bf-969f-c0b696d48f2f",

@@ -49,15 +49,29 @@ const HAS_PREFERENCE = [
   'preferred_body_types.neq.{}',
 ].join(',');
 
+const LINKED_VEHICLE_EMBED =
+  'linked_vehicle:vehicles!vehicle_id ( id, year, registration_number, deleted_at, variants ( name, models ( name, makes ( name ) ) ) )';
+// Filtering by the linked car's catalog needs inner joins (leads without a
+// matching car drop out) and the ids to filter on.
+const LINKED_VEHICLE_FILTER_EMBED =
+  'linked_vehicle:vehicles!vehicle_id!inner ( id, year, registration_number, deleted_at, variant_id, variants!inner ( name, model_id, models!inner ( name, make_id, makes ( name ) ) ) )';
+
 export class SupabaseLeadQueries implements ILeadQueries {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
   async listLeads(criteria: LeadListCriteria, page: Pagination): Promise<Page<LeadReadModel>> {
     // A contact search must drop non-matching leads, so the contact embed turns inner.
-    const columns =
+    const byLinkedCatalog =
+      criteria.linkedMakeId !== undefined ||
+      criteria.linkedModelId !== undefined ||
+      criteria.linkedVariantId !== undefined;
+    let columns =
       criteria.search === undefined
         ? LEAD_LIST_COLUMNS
         : LEAD_LIST_COLUMNS.replace('contacts (', 'contacts!inner (');
+    if (byLinkedCatalog) {
+      columns = columns.replace(LINKED_VEHICLE_EMBED, LINKED_VEHICLE_FILTER_EMBED);
+    }
     let query = this.db
       .from('leads')
       .select(columns, { count: 'exact' })
@@ -81,6 +95,15 @@ export class SupabaseLeadQueries implements ILeadQueries {
     }
     if (criteria.preferredVariantId !== undefined) {
       query = query.eq('preferred_variant_id', criteria.preferredVariantId);
+    }
+    if (criteria.linkedMakeId !== undefined) {
+      query = query.eq('linked_vehicle.variants.models.make_id', criteria.linkedMakeId);
+    }
+    if (criteria.linkedModelId !== undefined) {
+      query = query.eq('linked_vehicle.variants.model_id', criteria.linkedModelId);
+    }
+    if (criteria.linkedVariantId !== undefined) {
+      query = query.eq('linked_vehicle.variant_id', criteria.linkedVariantId);
     }
 
     if (criteria.search !== undefined) {

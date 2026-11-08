@@ -56,6 +56,13 @@
 
 ## Log
 
+### 2026-11-08 — Dealer app handoff: finance fixes and two list filters
+
+- **Fix (finance reports):** a sold car without a purchase rate counted its whole finalised price as sales with ₹0 cost of sales, inflating P&L, the summary and the dashboard tiles. It now stays out of sales, cost of sales and profit (and its later costs too), is counted in `carsMissingPurchaseRate`, and its price is reported as `uncountedSales`. Profit-per-car totals follow the same rule. Raised by the dealer app team in `wheels-expert-dealer/docs/BACKEND_HANDOFF.md`.
+- Quotes: `leadId` is required and must be a live lead; quote reads carry `lead: { id, name, phone }` via a finance-local lead lookup (contact or registered buyer), batched per request.
+- `GET /vehicles`: `priceMin` / `priceMax` on `listedPrice`. `GET /leads`: `linkedMakeId` / `linkedModelId` / `linkedVariantId` (inner join on the linked car's catalog).
+- Verified: unit and use-case tests; filters checked read-only against hosted (counts match SQL). The live finance vault was not touched.
+
 ### 2026-11-08 — Finance phase 5: encrypted seed data, smoke checks
 
 - `pnpm seed:test-data` now also seeds finance through the API's own code (`scripts/lib/seed-finance.ts`: `NodeFinanceCrypto`, domain entities, sealers, mappers): an active vault, 15 tags, ~1,500 entries (seller payments, costs, buyer payments, business running costs), deals for every live car, quotes, sales with some balances still due, a few sold cars awaiting a price, two deleted mistakes, and one car holding the client's worked example exactly. Every sealed row is reopened and the client car must come to landing ₹5,45,000 / profit ₹15,000, or the script stops. `SEED_FINANCE_KEY` fixes the finance key; otherwise it is generated; both keys are printed at the end (test-only). Finance has its own random stream, so the rest of the seed data is unchanged. `--dry-run` now skips the empty-database check (it writes nothing), so it can be run against a full database.

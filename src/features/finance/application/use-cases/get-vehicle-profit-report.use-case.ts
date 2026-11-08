@@ -54,6 +54,8 @@ export class GetVehicleProfitReportUseCase {
       };
     });
     items.sort(comparators[query.sort]);
+    // Profit is unknown without a purchase rate, so those cars stay out of the money totals.
+    const counted = items.filter((i) => i.purchaseRate !== null);
 
     return {
       from: from.value,
@@ -61,9 +63,13 @@ export class GetVehicleProfitReportUseCase {
       items,
       totals: {
         cars: items.length,
-        sales: sum(items.map((i) => i.finalisedPrice)),
-        landingCost: sum(items.map((i) => i.landingCost)),
-        profit: sum(items.map((i) => i.profit ?? 0)),
+        sales: sum(counted.map((i) => i.finalisedPrice)),
+        landingCost: sum(counted.map((i) => i.landingCost)),
+        profit: sum(counted.map((i) => i.profit ?? 0)),
+        carsMissingPurchaseRate: items.length - counted.length,
+        uncountedSales: sum(
+          items.filter((i) => i.purchaseRate === null).map((i) => i.finalisedPrice),
+        ),
       },
       truncated: sold.truncated,
     };

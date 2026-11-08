@@ -34,7 +34,7 @@ export const recordVehicleSaleBodySchema = z.object({
 export const addVehicleQuoteBodySchema = z.object({
   amount: amountSchema,
   quotedOn: calendarDateSchema,
-  leadId: uuidSchema('leadId').nullable().default(null),
+  leadId: uuidSchema('leadId'),
   quotedTo: optionalTextSchema.transform((v) => v ?? null),
   note: optionalTextSchema.transform((v) => v ?? null),
 });

@@ -44,12 +44,15 @@ export interface VehicleProfitReportDto {
   readonly from: string;
   readonly to: string;
   readonly items: readonly VehicleProfitRowDto[];
+  /** `cars` counts every row; the money totals cover only cars with a purchase rate. */
   readonly totals: {
     readonly cars: number;
     readonly sales: number;
     readonly landingCost: number;
-    /** Over cars with a purchase rate. */
     readonly profit: number;
+    readonly carsMissingPurchaseRate: number;
+    /** Finalised prices of cars without a purchase rate. */
+    readonly uncountedSales: number;
   };
   readonly truncated: boolean;
 }
@@ -97,6 +100,10 @@ export interface SummaryWindowDto {
   readonly businessExpenses: number;
   readonly cashIn: number;
   readonly cashOut: number;
+  /** Cars sold in the window whose purchase rate is missing (left out of sales and profit). */
+  readonly carsMissingPurchaseRate: number;
+  /** Their finalised prices, not yet counted in sales. */
+  readonly uncountedSales: number;
 }
 
 export interface FinanceSummaryDto {

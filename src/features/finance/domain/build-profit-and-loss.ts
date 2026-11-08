@@ -13,8 +13,16 @@ export interface SoldCar {
   readonly entries: readonly FinanceEntry[];
 }
 
+/** What the report needs to know about every car with a recorded sale. */
+export interface SaleInfo {
+  /** YYYY-MM-DD */
+  readonly soldOn: string;
+  readonly hasPurchaseRate: boolean;
+}
+
 /** Paise. */
 export interface ProfitAndLossLine {
+  /** Finalised prices of sold cars whose purchase rate is known. */
   readonly sales: number;
   readonly costOfSales: number;
   readonly grossProfit: number;
@@ -24,6 +32,8 @@ export interface ProfitAndLossLine {
   readonly netProfit: number;
   readonly carsSold: number;
   readonly carsMissingPurchaseRate: number;
+  /** Finalised prices of sold cars left out because their purchase rate is missing. */
+  readonly uncountedSales: number;
 }
 
 export interface ProfitAndLoss {
@@ -39,6 +49,7 @@ interface MutableLine {
   businessExpenses: number;
   carsSold: number;
   carsMissingPurchaseRate: number;
+  uncountedSales: number;
 }
 
 /**
@@ -48,18 +59,22 @@ interface MutableLine {
  * - `cost` entries dated after the sale land on their own date;
  * - `other` car income and unlinked income / expenses land on their own date;
  * - payments to sellers and from buyers never appear (they settle the prices
- *   above), nor do costs of unsold cars (they're stock).
+ *   above), nor do costs of unsold cars (they're stock);
+ * - a sold car without a purchase rate has unknown profit: it is counted
+ *   (`carsSold`, `carsMissingPurchaseRate`) but left out of sales, cost of
+ *   sales and profit, with its later costs; its price shows as `uncountedSales`.
  * Items dated outside the buckets are ignored, so callers may pass more.
  *
  * @param soldCars cars with a recorded sale (any date)
  * @param entries live entries to place by their own date
- * @param saleDates sale date of every car that has one, to tell later costs apart
+ * @param sales sale date and purchase-rate presence of every car with a sale,
+ *   to tell later costs apart
  */
 export function buildProfitAndLoss(input: {
   readonly buckets: readonly ReportBucket[];
   readonly soldCars: readonly SoldCar[];
   readonly entries: readonly FinanceEntry[];
-  readonly saleDates: ReadonlyMap<string, string>;
+  readonly sales: ReadonlyMap<string, SaleInfo>;
 }): ProfitAndLoss {
   const lines: MutableLine[] = input.buckets.map(() => emptyLine());
 
@@ -67,13 +82,17 @@ export function buildProfitAndLoss(input: {
     const index = bucketIndexOf(input.buckets, car.soldOn);
     const line = lines[index];
     if (line === undefined) continue;
+    line.carsSold += 1;
+    if (car.purchaseRate === null) {
+      line.carsMissingPurchaseRate += 1;
+      line.uncountedSales += car.finalisedPrice.paise;
+      continue;
+    }
     const costsUpToSale = car.entries
       .filter((e) => e.purpose === 'cost' && e.entryDate.value <= car.soldOn)
       .reduce((sum, e) => sum + e.amount.paise, 0);
     line.sales += car.finalisedPrice.paise;
-    line.costOfSales += (car.purchaseRate?.paise ?? 0) + costsUpToSale;
-    line.carsSold += 1;
-    if (car.purchaseRate === null) line.carsMissingPurchaseRate += 1;
+    line.costOfSales += car.purchaseRate.paise + costsUpToSale;
   }
 
   for (const entry of input.entries) {
@@ -86,8 +105,10 @@ export function buildProfitAndLoss(input: {
     } else if (entry.purpose === 'other') {
       line.otherIncome += paise;
     } else if (entry.purpose === 'cost') {
-      const soldOn = input.saleDates.get(entry.vehicleId);
-      if (soldOn !== undefined && entry.entryDate.value > soldOn) line.laterCarCosts += paise;
+      const sale = input.sales.get(entry.vehicleId);
+      if (sale !== undefined && sale.hasPurchaseRate && entry.entryDate.value > sale.soldOn) {
+        line.laterCarCosts += paise;
+      }
     }
   }
 
@@ -107,6 +128,7 @@ function emptyLine(): MutableLine {
     businessExpenses: 0,
     carsSold: 0,
     carsMissingPurchaseRate: 0,
+    uncountedSales: 0,
   };
 }
 
@@ -119,6 +141,7 @@ function addLines(a: MutableLine, b: MutableLine): MutableLine {
     businessExpenses: a.businessExpenses + b.businessExpenses,
     carsSold: a.carsSold + b.carsSold,
     carsMissingPurchaseRate: a.carsMissingPurchaseRate + b.carsMissingPurchaseRate,
+    uncountedSales: a.uncountedSales + b.uncountedSales,
   };
 }
 

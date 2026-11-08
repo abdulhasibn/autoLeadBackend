@@ -72,6 +72,12 @@ export class SupabaseVehicleQueries implements IVehicleQueries {
     if (criteria.kmMax !== undefined) {
       query = query.lte('km_driven', criteria.kmMax);
     }
+    if (criteria.priceMin !== undefined) {
+      query = query.gte('listed_price', criteria.priceMin);
+    }
+    if (criteria.priceMax !== undefined) {
+      query = query.lte('listed_price', criteria.priceMax);
+    }
     if (criteria.fuelTypes !== undefined) {
       query = query.in('fuel_type', [...criteria.fuelTypes]);
     }

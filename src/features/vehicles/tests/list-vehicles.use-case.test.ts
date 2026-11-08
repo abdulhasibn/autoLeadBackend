@@ -87,6 +87,24 @@ describe('ListVehiclesUseCase', () => {
     expect(leadCounts.calls).toBe(1);
   });
 
+  it('passes the listed-price range to the query', async () => {
+    queries.vehicles.length = 0;
+    queries.seed({ ...VEHICLE, listedPrice: 450000 });
+    queries.seed({ ...VEHICLE, id: OTHER_VEHICLE_ID, listedPrice: 900000 });
+    queries.seed({
+      ...VEHICLE,
+      id: '33333333-3333-4333-8333-333333333333',
+      listedPrice: null,
+    });
+
+    const page = await useCase.execute(
+      { priceMin: 300000, priceMax: 600000, page: { limit: 20, offset: 0 } },
+      ADMIN,
+    );
+
+    expect(page.items.map((item) => item.id)).toEqual([VEHICLE.id]);
+  });
+
   it('returns a page of vehicles', async () => {
     const page = await useCase.execute({ page: { limit: 20, offset: 0 } }, ADMIN);
     expect(page.total).toBe(1);

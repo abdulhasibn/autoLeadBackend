@@ -56,6 +56,9 @@ export interface VehicleListCriteria {
   readonly yearMax?: number;
   readonly kmMin?: number;
   readonly kmMax?: number;
+  /** Rupees, inclusive, on `listedPrice`; cars without a listed price drop out. */
+  readonly priceMin?: number;
+  readonly priceMax?: number;
   readonly fuelTypes?: readonly FuelTypeValue[];
   readonly transmissions?: readonly TransmissionValue[];
 }

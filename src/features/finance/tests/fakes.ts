@@ -49,7 +49,9 @@ import type { IVehicleQuoteRepository } from '../domain/vehicle-quote.repository
 import { QuoteSealer } from '../application/services/quote.sealer';
 import { VehicleDealSealer } from '../application/services/vehicle-deal.sealer';
 import { NodeFinanceCrypto } from '../infrastructure/node-finance-crypto';
+import { toLeadId, type LeadId } from '../../../domain/shared/lead-id';
 import { toShowroomId, type ShowroomId } from '../../../domain/shared/showroom-id';
+import type { FinanceLeadFacts, IFinanceLeadLookup } from '../domain/finance-lead-lookup.port';
 import { toVehicleId, type VehicleId } from '../../../domain/shared/vehicle-id';
 
 /** Cheap scrypt cost so tests run fast; production uses DEFAULT_KDF_PARAMS. */
@@ -246,6 +248,23 @@ export const SHOWROOM_B = toShowroomId('b0000000-0000-4000-8000-000000000002');
 export const SWIFT = toVehicleId('dddddddd-0000-4000-8000-000000000001');
 export const CRETA = toVehicleId('dddddddd-0000-4000-8000-000000000002');
 export const DELETED_CAR = toVehicleId('dddddddd-0000-4000-8000-000000000003');
+export const BALENO = toVehicleId('dddddddd-0000-4000-8000-000000000004');
+export const LEAD_ANIL = toLeadId('eeeeeeee-0000-4000-8000-000000000001');
+export const LEAD_DELETED = toLeadId('eeeeeeee-0000-4000-8000-000000000002');
+
+export class FakeFinanceLeadLookup implements IFinanceLeadLookup {
+  readonly leads = new Map<string, FinanceLeadFacts>([
+    [LEAD_ANIL, { id: LEAD_ANIL, name: 'Anil Kumar', phone: '+919876500001', deleted: false }],
+    [LEAD_DELETED, { id: LEAD_DELETED, name: 'Old Lead', phone: '+919876500002', deleted: true }],
+  ]);
+
+  async findMany(ids: readonly LeadId[]): Promise<readonly FinanceLeadFacts[]> {
+    return ids.flatMap((id) => {
+      const lead = this.leads.get(id);
+      return lead === undefined ? [] : [lead];
+    });
+  }
+}
 
 function car(
   id: VehicleId,
@@ -268,6 +287,7 @@ export class FakeFinanceVehicleLookup implements IFinanceVehicleLookup {
     [SWIFT, car(SWIFT, SHOWROOM_A, 'Maruti Swift · KA01AB1234', 'open', false)],
     [CRETA, car(CRETA, SHOWROOM_B, 'Hyundai Creta · KA05CD5678', 'open', false)],
     [DELETED_CAR, car(DELETED_CAR, SHOWROOM_A, 'Honda City · KA02EF0001', 'open', true)],
+    [BALENO, car(BALENO, SHOWROOM_A, 'Maruti Baleno · KA03GH0002', 'open', false)],
   ]);
 
   async findLinkable(id: VehicleId): Promise<FinanceVehicleFacts | null> {
@@ -359,6 +379,7 @@ export interface FinanceTestKit {
   readonly quotes: InMemoryVehicleQuoteStore;
   readonly dealSealer: VehicleDealSealer;
   readonly quoteSealer: QuoteSealer;
+  readonly leads: FakeFinanceLeadLookup;
 }
 
 export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z')): FinanceTestKit {
@@ -392,6 +413,7 @@ export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z'))
     quotes: new InMemoryVehicleQuoteStore(),
     dealSealer: new VehicleDealSealer(),
     quoteSealer: new QuoteSealer(),
+    leads: new FakeFinanceLeadLookup(),
   };
 }
 

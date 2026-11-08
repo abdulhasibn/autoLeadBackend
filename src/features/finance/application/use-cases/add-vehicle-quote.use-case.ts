@@ -5,6 +5,7 @@ import { toLeadId } from '../../../../domain/shared/lead-id';
 import { toVehicleId } from '../../../../domain/shared/vehicle-id';
 import type { Clock } from '../../../../shared/clock/clock';
 import type { IdGenerator } from '../../../../shared/ids/id-generator';
+import type { IFinanceLeadLookup } from '../../domain/finance-lead-lookup.port';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
 import { Money } from '../../domain/money.value-object';
 import { toVehicleQuoteId } from '../../domain/vehicle-quote-id';
@@ -16,12 +17,13 @@ import type { FinancePolicy } from '../policies/finance.policy';
 import type { FinanceSessionService } from '../services/finance-session.service';
 import type { QuoteSealer } from '../services/quote.sealer';
 
-/** Records a price offered to a person. An unknown lead id is rejected by the database (404). */
+/** Records a price offered to a lead. The lead must exist and not be deleted. */
 export class AddVehicleQuoteUseCase {
   constructor(
     private readonly policy: FinancePolicy,
     private readonly sessions: FinanceSessionService,
     private readonly vehicles: IFinanceVehicleLookup,
+    private readonly leads: IFinanceLeadLookup,
     private readonly quotes: IVehicleQuoteRepository,
     private readonly sealer: QuoteSealer,
     private readonly clock: Clock,
@@ -39,10 +41,15 @@ export class AddVehicleQuoteUseCase {
     if ((await this.vehicles.findLinkable(vehicleId)) === null) {
       throw new NotFoundError(`Vehicle not found for id ${command.vehicleId}`);
     }
+    const leadId = toLeadId(command.leadId);
+    const [lead] = await this.leads.findMany([leadId]);
+    if (lead === undefined || lead.deleted) {
+      throw new NotFoundError(`Lead not found for id ${command.leadId}`);
+    }
     const quote = VehicleQuote.create({
       id: toVehicleQuoteId(this.ids.generate()),
       vehicleId,
-      leadId: command.leadId === null ? null : toLeadId(command.leadId),
+      leadId,
       quotedOn: CalendarDate.create(command.quotedOn),
       amount: Money.ofPaise(command.amountPaise),
       quotedTo: command.quotedTo,
@@ -51,6 +58,6 @@ export class AddVehicleQuoteUseCase {
       createdAt: this.clock.now(),
     });
     await this.quotes.save(this.sealer.seal(quote, cipher));
-    return toVehicleQuoteDto(quote);
+    return toVehicleQuoteDto(quote, new Map([[lead.id as string, lead]]));
   }
 }

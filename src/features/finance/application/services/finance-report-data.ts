@@ -1,6 +1,6 @@
 import type { ShowroomId } from '../../../../domain/shared/showroom-id';
 import type { VehicleId } from '../../../../domain/shared/vehicle-id';
-import type { SoldCar } from '../../domain/build-profit-and-loss';
+import type { SaleInfo, SoldCar } from '../../domain/build-profit-and-loss';
 import type { FinanceCipher } from '../../domain/finance-cipher.port';
 import type { FinanceEntry } from '../../domain/finance-entry.entity';
 import type { IFinanceEntryQueries } from '../../domain/finance-entry.queries';
@@ -109,13 +109,21 @@ export class FinanceReportData {
     };
   }
 
-  /** Recorded sale dates for these cars (plaintext; nothing to decrypt). */
-  async saleDates(vehicleIds: readonly VehicleId[]): Promise<Map<string, string>> {
-    const dates = new Map<string, string>();
-    for (const deal of await this.deals.findMany([...new Set(vehicleIds)])) {
-      if (deal.soldOn !== null) dates.set(deal.vehicleId, deal.soldOn);
+  /**
+   * Sale date and whether a purchase rate is known, for these cars' recorded
+   * sales. The date is plaintext; the purchase rate needs the deal opened.
+   */
+  async saleInfo(
+    cipher: FinanceCipher,
+    vehicleIds: readonly VehicleId[],
+  ): Promise<Map<string, SaleInfo>> {
+    const sales = new Map<string, SaleInfo>();
+    for (const row of await this.deals.findMany([...new Set(vehicleIds)])) {
+      if (row.soldOn === null) continue;
+      const deal = this.dealSealer.open(row, cipher);
+      sales.set(row.vehicleId, { soldOn: row.soldOn, hasPurchaseRate: deal.terms !== null });
     }
-    return dates;
+    return sales;
   }
 
   /** Every live car holding a deal or entries, with its numbers. */

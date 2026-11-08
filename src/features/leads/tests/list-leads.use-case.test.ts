@@ -84,6 +84,38 @@ describe('ListLeadsUseCase', () => {
     expect(page.items.map((lead) => lead.assignedTo)).toEqual([SALES.userId]);
   });
 
+  it("filters by the linked car's make, model and variant (AND)", async () => {
+    const queries = new FakeLeadQueries();
+    const swift = 'd0000000-0000-4000-8000-000000000001';
+    const creta = 'd0000000-0000-4000-8000-000000000002';
+    queries.linkedCatalog.set(swift, {
+      makeId: 'mk-maruti',
+      modelId: 'md-swift',
+      variantId: 'vr-vxi',
+    });
+    queries.linkedCatalog.set(creta, {
+      makeId: 'mk-hyundai',
+      modelId: 'md-creta',
+      variantId: 'vr-sx',
+    });
+    queries.seed({ ...LEAD, id: 'a0000000-0000-4000-8000-000000000001', vehicleId: swift });
+    queries.seed({ ...LEAD, id: 'a0000000-0000-4000-8000-000000000002', vehicleId: creta });
+    queries.seed({ ...LEAD, id: 'a0000000-0000-4000-8000-000000000003', vehicleId: null });
+    const filtered = new ListLeadsUseCase(new LeadManagementPolicy(), queries);
+    const ids = async (q: Partial<Parameters<typeof filtered.execute>[0]>) =>
+      (await filtered.execute({ page: { limit: 20, offset: 0 }, ...q }, ADMIN)).items.map(
+        (l) => l.id,
+      );
+
+    expect(await ids({ linkedMakeId: 'mk-hyundai' })).toEqual([
+      'a0000000-0000-4000-8000-000000000002',
+    ]);
+    expect(await ids({ linkedModelId: 'md-swift', linkedVariantId: 'vr-vxi' })).toEqual([
+      'a0000000-0000-4000-8000-000000000001',
+    ]);
+    expect(await ids({ linkedMakeId: 'mk-hyundai', linkedVariantId: 'vr-vxi' })).toEqual([]);
+  });
+
   it('filters by preferred model', async () => {
     const queries = new FakeLeadQueries();
     queries.seed(LEAD);

@@ -18,8 +18,14 @@ import { RecordVehicleSaleUseCase } from '../application/use-cases/record-vehicl
 import { SetVehicleDealUseCase } from '../application/use-cases/set-vehicle-deal.use-case';
 import { SetupVaultUseCase } from '../application/use-cases/setup-vault.use-case';
 import { UnlockVaultUseCase } from '../application/use-cases/unlock-vault.use-case';
+import { CalendarDate } from '../../../domain/shared/calendar-date.value-object';
+import { Money } from '../domain/money.value-object';
+import { toVehicleQuoteId } from '../domain/vehicle-quote-id';
+import { VehicleQuote } from '../domain/vehicle-quote.entity';
 import {
   ADMIN,
+  LEAD_ANIL,
+  LEAD_DELETED,
   CRETA,
   DELETED_CAR,
   SALESPERSON,
@@ -98,6 +104,7 @@ describe('car money', () => {
       k.deals,
       k.entries,
       k.quotes,
+      k.leads,
       k.tags,
       k.dealSealer,
       k.entrySealer,
@@ -132,12 +139,19 @@ describe('car money', () => {
       k.policy,
       k.sessionService,
       k.vehicles,
+      k.leads,
       k.quotes,
       k.quoteSealer,
       k.clock,
       k.ids,
     );
-    listQuotes = new ListVehicleQuotesUseCase(k.policy, k.sessionService, k.quotes, k.quoteSealer);
+    listQuotes = new ListVehicleQuotesUseCase(
+      k.policy,
+      k.sessionService,
+      k.quotes,
+      k.leads,
+      k.quoteSealer,
+    );
     deleteQuote = new DeleteVehicleQuoteUseCase(
       k.policy,
       k.sessionService,
@@ -210,7 +224,7 @@ describe('car money', () => {
         vehicleId: SWIFT,
         amountPaise: 58_500_000,
         quotedOn: '2026-10-18',
-        leadId: null,
+        leadId: LEAD_ANIL,
         quotedTo: 'Anil',
         note: null,
       },
@@ -239,7 +253,12 @@ describe('car money', () => {
       deal: { purchaseRate: 500000, purchasedOn: '2026-10-01' },
       sale: { finalisedPrice: 560000, soldOn: '2026-10-25', soldBy: ADMIN.userId },
       listedPrice: 585000,
-      currentQuote: { amount: 585000, quotedTo: 'Anil' },
+      currentQuote: {
+        amount: 585000,
+        quotedTo: 'Anil',
+        leadId: LEAD_ANIL,
+        lead: { id: LEAD_ANIL, name: 'Anil Kumar', phone: '+919876500001' },
+      },
       landingCost: 545000,
       costs: 45000,
       paidToSeller: 500000,
@@ -343,7 +362,7 @@ describe('car money', () => {
           vehicleId: SWIFT,
           amountPaise,
           quotedOn,
-          leadId: null,
+          leadId: LEAD_ANIL,
           quotedTo: null,
           note: null,
         },
@@ -365,6 +384,51 @@ describe('car money', () => {
     expect(await listQuotes.execute({ sessionToken: token, vehicleId: SWIFT }, ADMIN)).toHaveLength(
       1,
     );
+  });
+
+  it('needs a live lead for a quote and returns its name and phone', async () => {
+    const add = (leadId: string) =>
+      addQuote.execute(
+        {
+          sessionToken: token,
+          vehicleId: SWIFT,
+          amountPaise: 58_500_000,
+          quotedOn: '2026-10-18',
+          leadId,
+          quotedTo: null,
+          note: null,
+        },
+        ADMIN,
+      );
+
+    await expect(add('99999999-9999-4999-8999-999999999999')).rejects.toBeInstanceOf(NotFoundError);
+    await expect(add(LEAD_DELETED)).rejects.toBeInstanceOf(NotFoundError);
+    const added = await add(LEAD_ANIL);
+
+    expect(added.lead).toEqual({ id: LEAD_ANIL, name: 'Anil Kumar', phone: '+919876500001' });
+    expect(
+      (await listQuotes.execute({ sessionToken: token, vehicleId: SWIFT }, ADMIN))[0]?.lead,
+    ).toEqual({ id: LEAD_ANIL, name: 'Anil Kumar', phone: '+919876500001' });
+  });
+
+  it('still reads older quotes recorded without a lead', async () => {
+    const { cipher } = await kit.sessionService.open(ADMIN, token);
+    const legacy = VehicleQuote.create({
+      id: toVehicleQuoteId('33333333-3333-4333-8333-000000000009'),
+      vehicleId: SWIFT,
+      leadId: null,
+      quotedOn: CalendarDate.create('2026-10-01'),
+      amount: Money.fromRupees(600000),
+      quotedTo: 'Walk-in',
+      note: null,
+      createdBy: ADMIN.userId,
+      createdAt: new Date('2026-10-01T10:00:00.000Z'),
+    });
+    await kit.quotes.save(kit.quoteSealer.seal(legacy, cipher));
+
+    const [quote] = await listQuotes.execute({ sessionToken: token, vehicleId: SWIFT }, ADMIN);
+
+    expect(quote).toMatchObject({ leadId: null, lead: null, quotedTo: 'Walk-in' });
   });
 
   it('summarises several cars in the order asked, including empty ones', async () => {

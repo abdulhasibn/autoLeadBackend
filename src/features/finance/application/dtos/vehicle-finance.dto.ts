@@ -1,3 +1,4 @@
+import type { FinanceLeadFacts } from '../../domain/finance-lead-lookup.port';
 import type { FinanceTag } from '../../domain/finance-tag.entity';
 import type { FinanceVehicleFacts } from '../../domain/finance-vehicle-lookup.port';
 import type { VehicleDeal } from '../../domain/vehicle-deal.entity';
@@ -58,10 +59,11 @@ export function toVehicleFinanceDto(input: {
   readonly deal: VehicleDeal;
   readonly money: VehicleMoney;
   readonly quotes: readonly VehicleQuote[];
+  readonly leadsById: ReadonlyMap<string, FinanceLeadFacts>;
   readonly tagsById: ReadonlyMap<string, FinanceTag>;
 }): VehicleFinanceDto {
   const { deal, money } = input;
-  const quotes = input.quotes.map(toVehicleQuoteDto);
+  const quotes = input.quotes.map((quote) => toVehicleQuoteDto(quote, input.leadsById));
   return {
     ...toVehicleDealStateDto(deal),
     vehicle: { id: input.vehicle.id, label: input.vehicle.label },

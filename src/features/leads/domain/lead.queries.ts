@@ -71,6 +71,10 @@ export interface LeadListCriteria {
   readonly preferredMakeId?: string;
   readonly preferredModelId?: string;
   readonly preferredVariantId?: string;
+  /** The linked car's catalog; leads without a matching car drop out. */
+  readonly linkedMakeId?: string;
+  readonly linkedModelId?: string;
+  readonly linkedVariantId?: string;
   /** Partial, case-insensitive match on contact name or phone. */
   readonly search?: SearchTerm;
   readonly budgetMin?: number;

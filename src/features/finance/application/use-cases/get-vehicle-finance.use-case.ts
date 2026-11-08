@@ -3,6 +3,7 @@ import type { AuthenticatedContext } from '../../../../domain/shared/auth-contex
 import { toVehicleId } from '../../../../domain/shared/vehicle-id';
 import type { Clock } from '../../../../shared/clock/clock';
 import type { IFinanceEntryQueries } from '../../domain/finance-entry.queries';
+import type { IFinanceLeadLookup } from '../../domain/finance-lead-lookup.port';
 import type { IFinanceTagQueries } from '../../domain/finance-tag.queries';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
 import { MAX_LEDGER_ROWS } from '../../domain/finance.constants';
@@ -16,6 +17,7 @@ import type { FinancePolicy } from '../policies/finance.policy';
 import type { EntrySealer } from '../services/entry.sealer';
 import type { FinanceSessionService } from '../services/finance-session.service';
 import type { QuoteSealer } from '../services/quote.sealer';
+import { leadsOf } from '../services/quote-leads';
 import type { TagSealer } from '../services/tag.sealer';
 import type { VehicleDealSealer } from '../services/vehicle-deal.sealer';
 
@@ -28,6 +30,7 @@ export class GetVehicleFinanceUseCase {
     private readonly deals: IVehicleDealQueries,
     private readonly entries: IFinanceEntryQueries,
     private readonly quotes: IVehicleQuoteQueries,
+    private readonly leads: IFinanceLeadLookup,
     private readonly tags: IFinanceTagQueries,
     private readonly dealSealer: VehicleDealSealer,
     private readonly entrySealer: EntrySealer,
@@ -70,6 +73,7 @@ export class GetVehicleFinanceUseCase {
         entries,
       }),
       quotes,
+      leadsById: await leadsOf(this.leads, quotes),
       tagsById: new Map(tags.map((tag) => [tag.id as string, tag])),
     });
   }

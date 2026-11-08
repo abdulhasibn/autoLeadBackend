@@ -8,6 +8,9 @@ export interface ListLeadsQuery {
   readonly preferredMakeId?: string;
   readonly preferredModelId?: string;
   readonly preferredVariantId?: string;
+  readonly linkedMakeId?: string;
+  readonly linkedModelId?: string;
+  readonly linkedVariantId?: string;
   readonly search?: string;
   readonly budgetMin?: number;
   readonly budgetMax?: number;

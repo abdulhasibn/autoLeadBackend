@@ -26,6 +26,8 @@ export class ListVehiclesController {
             yearMax: query.yearMax,
             kmMin: query.kmMin,
             kmMax: query.kmMax,
+            priceMin: query.priceMin,
+            priceMax: query.priceMax,
             fuelTypes: query.fuelType,
             transmissions: query.transmission,
             page: { limit: query.limit, offset: query.offset },

@@ -125,6 +125,11 @@ export class FakeLeadRepository implements ILeadRepository {
 
 export class FakeLeadQueries implements ILeadQueries {
   readonly leads: LeadReadModel[] = [];
+  /** Catalog ids of each linked car, by vehicle id (the read model carries names only). */
+  readonly linkedCatalog = new Map<
+    string,
+    { makeId: string; modelId: string; variantId: string }
+  >();
 
   seed(lead: LeadReadModel): void {
     this.leads.push(lead);
@@ -156,6 +161,19 @@ export class FakeLeadQueries implements ILeadQueries {
       if (
         criteria.preferredVariantId !== undefined &&
         lead.preferredVariantId !== criteria.preferredVariantId
+      ) {
+        return false;
+      }
+      const linked = lead.vehicleId === null ? undefined : this.linkedCatalog.get(lead.vehicleId);
+      if (criteria.linkedMakeId !== undefined && linked?.makeId !== criteria.linkedMakeId) {
+        return false;
+      }
+      if (criteria.linkedModelId !== undefined && linked?.modelId !== criteria.linkedModelId) {
+        return false;
+      }
+      if (
+        criteria.linkedVariantId !== undefined &&
+        linked?.variantId !== criteria.linkedVariantId
       ) {
         return false;
       }

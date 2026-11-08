@@ -245,6 +245,12 @@ export class FakeVehicleQueries implements IVehicleQueries {
       ) {
         return false;
       }
+      if (criteria.priceMin !== undefined || criteria.priceMax !== undefined) {
+        const price = vehicle.listedPrice;
+        if (price === null) return false;
+        if (criteria.priceMin !== undefined && price < criteria.priceMin) return false;
+        if (criteria.priceMax !== undefined && price > criteria.priceMax) return false;
+      }
       return true;
     });
     return toPage(filtered.slice(page.offset, page.offset + page.limit), filtered.length, page);

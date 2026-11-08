@@ -13,6 +13,9 @@ export interface ListVehiclesQuery {
   readonly yearMax?: number;
   readonly kmMin?: number;
   readonly kmMax?: number;
+  /** Rupees, on the listed price. */
+  readonly priceMin?: number;
+  readonly priceMax?: number;
   readonly fuelTypes?: readonly string[];
   readonly transmissions?: readonly string[];
   readonly page: Pagination;

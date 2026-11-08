@@ -17,6 +17,9 @@ import {
   optionalVehicleStatusSchema,
 } from './vehicle-fields.schemas';
 
+/** Whole rupees, as on the public marketplace. */
+const optionalPriceSchema = z.coerce.number({ error: 'must be a number' }).int().min(0).optional();
+
 export const paginationQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
   offset: z.coerce.number().int().min(0).default(0),
@@ -36,10 +39,13 @@ export const listVehiclesQuerySchema = paginationQuerySchema
     yearMax: optionalNumberQuerySchema((val) => VehicleYear.create(val)),
     kmMin: optionalNumberQuerySchema((val) => KilometersDriven.create(val)),
     kmMax: optionalNumberQuerySchema((val) => KilometersDriven.create(val)),
+    priceMin: optionalPriceSchema,
+    priceMax: optionalPriceSchema,
     fuelType: optionalCsvSchema('fuelType', (raw) => FuelType.create(raw).value),
     transmission: optionalCsvSchema('transmission', (raw) => Transmission.create(raw).value),
   })
   .superRefine(refineRange('yearMin', 'yearMax'))
-  .superRefine(refineRange('kmMin', 'kmMax'));
+  .superRefine(refineRange('kmMin', 'kmMax'))
+  .superRefine(refineRange('priceMin', 'priceMax'));
 
 export type ListVehiclesQueryParams = z.infer<typeof listVehiclesQuerySchema>;

@@ -47,6 +47,8 @@ export class ListVehiclesUseCase {
         yearMax: query.yearMax,
         kmMin: query.kmMin,
         kmMax: query.kmMax,
+        priceMin: query.priceMin,
+        priceMax: query.priceMax,
         fuelTypes: query.fuelTypes?.map((value) => FuelType.create(value).value),
         transmissions: query.transmissions?.map((value) => Transmission.create(value).value),
       },

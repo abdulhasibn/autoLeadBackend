@@ -48,7 +48,7 @@ export class GetProfitAndLossUseCase {
       buckets: period.bucketsBetween(from, to),
       soldCars: sold.rows,
       entries: entries.rows,
-      saleDates: await this.data.saleDates(carIds as VehicleId[]),
+      sales: await this.data.saleInfo(cipher, carIds as VehicleId[]),
     });
 
     return {

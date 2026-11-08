@@ -5,7 +5,7 @@ import { toShowroomId } from '../../../../domain/shared/showroom-id';
 import type { VehicleId } from '../../../../domain/shared/vehicle-id';
 import type { Clock } from '../../../../shared/clock/clock';
 import { buildCashFlow } from '../../domain/build-cash-flow';
-import { buildProfitAndLoss } from '../../domain/build-profit-and-loss';
+import { buildProfitAndLoss, type SaleInfo } from '../../domain/build-profit-and-loss';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
 import { hasDues, isInStock } from '../../domain/vehicle-report-rows';
 import type { FinanceSummaryDto, SummaryWindowDto } from '../dtos/finance-report.dto';
@@ -48,9 +48,9 @@ export class GetFinanceSummaryUseCase {
     const sold = await this.data.soldCarsBetween(cipher, lastFrom.value, today.value, showroomId);
     const entries = await this.data.entriesBetween(cipher, lastFrom.value, today.value, showroomId);
     const carIds = entries.rows.flatMap((e) => (e.vehicleId === null ? [] : [e.vehicleId]));
-    const saleDates = await this.data.saleDates(carIds as VehicleId[]);
+    const sales = await this.data.saleInfo(cipher, carIds as VehicleId[]);
     const window = (from: CalendarDate, to: CalendarDate): SummaryWindowDto =>
-      summarise(from, to, sold.rows, entries.rows, saleDates);
+      summarise(from, to, sold.rows, entries.rows, sales);
 
     const cars = await this.data.carsWithMoney(cipher, showroomId);
     const awaiting = (await this.vehicles.listSoldWithoutSale()).filter(
@@ -81,10 +81,10 @@ function summarise(
   to: CalendarDate,
   soldCars: readonly SoldCarRow[],
   entries: readonly FinanceEntry[],
-  saleDates: ReadonlyMap<string, string>,
+  sales: ReadonlyMap<string, SaleInfo>,
 ): SummaryWindowDto {
   const buckets = [{ start: from.value, end: to.value, label: from.value }];
-  const pnl = buildProfitAndLoss({ buckets, soldCars, entries, saleDates }).totals;
+  const pnl = buildProfitAndLoss({ buckets, soldCars, entries, sales }).totals;
   const cash = buildCashFlow({ buckets, entries }).totals;
   return {
     from: from.value,
@@ -94,6 +94,8 @@ function summarise(
     businessExpenses: pnl.businessExpenses / 100,
     cashIn: cash.in / 100,
     cashOut: cash.out / 100,
+    carsMissingPurchaseRate: pnl.carsMissingPurchaseRate,
+    uncountedSales: pnl.uncountedSales / 100,
   };
 }
 

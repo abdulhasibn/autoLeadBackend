@@ -124,7 +124,7 @@ describe('buildProfitAndLoss', () => {
       buckets,
       soldCars: [car.sold],
       entries,
-      saleDates: new Map([[SWIFT as string, '2026-10-25']]),
+      sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', hasPurchaseRate: true }]]),
     });
   }
 
@@ -149,17 +149,27 @@ describe('buildProfitAndLoss', () => {
     expect(rupees(nov?.netProfit ?? 0)).toBe(-2000 + 3000 - 85000);
   });
 
-  it('flags sold cars without a purchase rate', () => {
+  it('leaves a sold car without a purchase rate out of sales and profit, and its later costs', () => {
     const car = clientCar();
     const pnl = buildProfitAndLoss({
       buckets,
       soldCars: [{ ...car.sold, purchaseRate: null }],
-      entries: [],
-      saleDates: new Map(),
+      entries: [...car.entries, ...otherEntries()],
+      sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', hasPurchaseRate: false }]]),
     });
+    const [, oct, nov] = pnl.buckets;
 
-    expect(pnl.totals.carsMissingPurchaseRate).toBe(1);
-    expect(rupees(pnl.totals.costOfSales)).toBe(45000);
+    expect(oct).toMatchObject({
+      sales: 0,
+      costOfSales: 0,
+      grossProfit: 0,
+      carsSold: 1,
+      carsMissingPurchaseRate: 1,
+      uncountedSales: 56_000_000,
+    });
+    expect(rupees(oct?.netProfit ?? 0)).toBe(1500 - 85000);
+    expect(nov?.laterCarCosts).toBe(0);
+    expect(rupees(pnl.totals.uncountedSales)).toBe(560000);
   });
 
   it('over all time equals car profits + other income − business expenses', () => {
@@ -169,7 +179,7 @@ describe('buildProfitAndLoss', () => {
       buckets: ReportPeriod.create('year').bucketsBetween(d('2026-01-01'), d('2026-12-31')),
       soldCars: [car.sold],
       entries: all,
-      saleDates: new Map([[SWIFT as string, '2026-10-25']]),
+      sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', hasPurchaseRate: true }]]),
     });
     const carProfit = calculateVehicleMoney({
       purchaseRate: car.sold.purchaseRate,
