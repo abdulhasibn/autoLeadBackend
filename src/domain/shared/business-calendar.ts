@@ -97,3 +97,19 @@ export function startOfYear(date: CalendarDate): CalendarDate {
 export function daysBetween(from: CalendarDate, to: CalendarDate): number {
   return Math.round((Date.parse(to.value) - Date.parse(from.value)) / 86_400_000);
 }
+
+/**
+ * `date` at wall-clock `time` (HH:MM:SS) in `timeZone`, as ISO 8601 with that
+ * zone's offset, e.g. `2026-10-31T23:59:59+05:30`.
+ */
+export function zonedDateTimeString(date: CalendarDate, time: string, timeZone: string): string {
+  const [hours, minutes, seconds] = time.split(':').map(Number) as [number, number, number];
+  const instant =
+    zonedMidnight(date, timeZone).getTime() + ((hours * 60 + minutes) * 60 + seconds) * 1000;
+  const offsetMinutes = Math.round(offsetMs(instant, timeZone) / 60_000);
+  const sign = offsetMinutes < 0 ? '-' : '+';
+  const abs = Math.abs(offsetMinutes);
+  const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+  const mm = String(abs % 60).padStart(2, '0');
+  return `${date.value}T${time}${sign}${hh}:${mm}`;
+}

@@ -8,6 +8,7 @@ import type { AppConfig } from '../config/environment';
 import { composeAuth } from '../features/auth/composition';
 import { composeDashboard } from '../features/dashboard/composition';
 import { composeFinance } from '../features/finance/composition';
+import { composeInsights } from '../features/insights/composition';
 import { composeLeads } from '../features/leads/composition';
 import { composeMarketplace } from '../features/marketplace/composition';
 import { composeNotifications } from '../features/notifications/composition';
@@ -101,6 +102,11 @@ export function composeApp(config: AppConfig): AppDependencies {
     clock,
     timeZone: config.businessTimeZone,
   });
+  const insights = composeInsights(supabaseClient, {
+    bearerMiddleware: auth.bearerMiddleware,
+    clock,
+    timeZone: config.businessTimeZone,
+  });
   const siteAnalytics = composeSiteAnalytics(supabaseClient, {
     allowedOrigins: config.publicSiteOrigins,
     ipHashKey: config.supabase.serviceRoleKey,
@@ -147,6 +153,7 @@ export function composeApp(config: AppConfig): AppDependencies {
       dashboardRouter: dashboard.router,
       showroomsRouter: showrooms.router,
       financeRouter: finance.router,
+      insightsRouter: insights.router,
     }),
   );
 

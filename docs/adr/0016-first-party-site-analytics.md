@@ -12,6 +12,10 @@ We capture website traffic ourselves, in Supabase through this backend, in a new
 - **Listed-price history** is recorded by a trigger on `vehicle_financials.listed_price`, the only plaintext price. Demand insights never read the encrypted finance vault (ADR-0014).
 - **Storage rules:** `web_sessions`, `web_events`, `lead_attribution`, `listed_price_history` have RLS on with no policies and are reached only through `service_role` (`private.fn` wrapped by `public.fn`, as in the marketplace migration). Events older than 13 months are pruned on ingest.
 
+## Read side
+
+The owner's Insights page reads this data through `features/insights` (admin only): `/insights/traffic`, `/insights/vehicles`, `/insights/vehicles/:id`, `/insights/demand` and `/insights/leads/:id`. Read-only SQL functions (`insights_*`) return raw counts in one round-trip each; rates, pricing signals, budget bands and labels are computed in the use cases, as with the dashboard (ADR-0012). Periods follow the dashboard's rules.
+
 ## Transport details
 
 - The site sends with `navigator.sendBeacon` and a `text/plain` body holding JSON, so the request is CORS-simple and needs no preflight. The route parses `text/plain` as JSON.

@@ -1746,6 +1746,49 @@ export type Database = {
         Args: { p_events: Json; p_ip_hash: string; p_session: Json };
         Returns: number;
       };
+      insights_demand: {
+        Args: {
+          p_from: string;
+          p_showroom_id: string | null;
+          p_top_limit: number;
+          p_until: string;
+        };
+        Returns: Json;
+      };
+      insights_lead_journey: {
+        Args: { p_lead_id: string; p_other_limit: number };
+        Returns: Json;
+      };
+      insights_traffic: {
+        Args: {
+          p_campaign_limit: number;
+          p_from: string;
+          p_prev_from: string;
+          p_prev_until: string;
+          p_showroom_id: string | null;
+          p_until: string;
+        };
+        Returns: Json;
+      };
+      insights_vehicle_detail: {
+        Args: {
+          p_from: string;
+          p_series_from: string;
+          p_time_zone: string;
+          p_until: string;
+          p_vehicle_id: string;
+        };
+        Returns: Json;
+      };
+      insights_vehicle_stats: {
+        Args: {
+          p_from: string;
+          p_showroom_id: string | null;
+          p_until: string;
+          p_vehicle_id: string | null;
+        };
+        Returns: Json;
+      };
       save_lead: {
         Args: {
           p_actor_id?: string | null;

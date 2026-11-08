@@ -6,6 +6,7 @@ import {
   monthStart,
   startOfIsoWeek,
   startOfYear,
+  zonedDateTimeString,
 } from './business-calendar';
 import { CalendarDate } from './calendar-date.value-object';
 
@@ -35,5 +36,17 @@ describe('business calendar', () => {
 
     expect(localDate(lateUtc, 'UTC').value).toBe('2026-10-31');
     expect(localDate(lateUtc, 'Asia/Kolkata').value).toBe('2026-11-01');
+  });
+
+  it('writes a business date and time with the zone offset', () => {
+    expect(zonedDateTimeString(d('2026-10-31'), '23:59:59', 'Asia/Kolkata')).toBe(
+      '2026-10-31T23:59:59+05:30',
+    );
+    expect(zonedDateTimeString(d('2026-07-01'), '00:00:00', 'America/New_York')).toBe(
+      '2026-07-01T00:00:00-04:00',
+    );
+    expect(zonedDateTimeString(d('2026-01-01'), '00:00:00', 'UTC')).toBe(
+      '2026-01-01T00:00:00+00:00',
+    );
   });
 });

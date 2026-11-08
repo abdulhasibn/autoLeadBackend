@@ -84,6 +84,11 @@ const PROTECTED_ROUTES: ReadonlyArray<readonly [string, string]> = [
   ['get', '/finance/reports/dues'],
   ['get', '/finance/reports/stock'],
   ['get', '/finance/summary'],
+  ['get', '/insights/traffic'],
+  ['get', '/insights/vehicles'],
+  ['get', `/insights/vehicles/${ID}`],
+  ['get', '/insights/demand'],
+  ['get', `/insights/leads/${ID}`],
 ];
 
 function testConfig(): AppConfig {

@@ -182,7 +182,7 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 
 ## Endpoint catalogue
 
-**93 routes** are mounted (including `/health`).
+**98 routes** are mounted (including `/health`).
 
 ### Health — public
 
@@ -936,6 +936,148 @@ Each list holds at most 5 rows, oldest or most urgent first. `total` is the full
 
 Revenue, profit and average selling price arrive with finance (Stint 5).
 
+### Insights — Admin only (website analytics, ADR-0016)
+
+The owner's marketing and pricing view: where website visitors come from, which cars they look at, and what they search for. Data comes from the customer website's events (`POST /public/events`), lead attribution, leads and vehicles. The encrypted finance vault is never read; prices are the plaintext `listedPrice`.
+
+Salespeople get `403 FORBIDDEN` (`"Only admins can view insights"`).
+
+| Method | Path | Success |
+|--------|------|---------|
+| `GET` | `/insights/traffic?period=month&showroomId=` | `200` |
+| `GET` | `/insights/vehicles?period=month&showroomId=` | `200` |
+| `GET` | `/insights/vehicles/:vehicleId?period=month&showroomId=` | `200`, `404 NOT_FOUND` when the car is not in scope |
+| `GET` | `/insights/demand?period=month&showroomId=` | `200` |
+| `GET` | `/insights/leads/:leadId` | `200`, `404 NOT_FOUND` when the lead does not exist |
+
+- Every response carries `Cache-Control: private, max-age=60`.
+- `period` works as on `/dashboard`: `today`, `week` (Monday start), `month` or `quarter`, default `month`, business timezone (`Asia/Kolkata`), counted **period to date**. Any other value returns `422 VALIDATION_ERROR`. A malformed `showroomId`, `vehicleId` or `leadId` also returns `422`.
+- `period` in the response is the whole calendar period with the zone offset: `{ "from": "2026-11-01T00:00:00+05:30", "to": "2026-11-30T23:59:59+05:30" }`.
+- `showroomId` is optional. Website visits belong to no showroom, so it narrows **leads and vehicles only**; visitor and session counts are site-wide.
+- **Units:** `*Rate` fields are fractions (0–1, 4 places), `null` when the denominator is 0. `*Share` fields are whole percentages (0–100) that add up to 100 within a list.
+- `channel` is one of `instagram_ads`, `instagram_organic`, `facebook_ads`, `facebook_organic`, `google_ads`, `google_organic`, `whatsapp`, `direct`, `referral`, `other` (classified by the server, ADR-0016).
+
+**`GET /insights/traffic`**
+
+```json
+{
+  "period": { "from": "2026-10-01T00:00:00+05:30", "to": "2026-10-31T23:59:59+05:30" },
+  "visitors": 3412, "sessions": 4186, "leads": 74, "visitorToLeadRate": 0.0217,
+  "previous": { "visitors": 2310, "sessions": 2851, "leads": 51, "visitorToLeadRate": 0.0221 },
+  "channels": [
+    { "channel": "instagram_ads", "visitors": 1820, "carViews": 1240, "testDriveOpens": 212, "leads": 47, "bookings": 14, "sold": 6 }
+  ],
+  "campaigns": [
+    { "campaign": "Diwali SUVs", "content": "Creta reel", "visits": 742, "leads": 23, "leadRate": 0.031, "bookings": 7 }
+  ],
+  "devices": { "mobile": 2970, "desktop": 442 },
+  "cities": [ { "city": "Kochi", "visitors": 1420 }, { "city": "Other", "visitors": 693 } ]
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `visitors` / `sessions` | Distinct visitor ids / sessions that started in the period. `previous` is the same elapsed span of the previous period |
+| `leads` | Website test-drive leads **with attribution** created in the period (the sum of `channels[].leads`). Leads whose browser blocked analytics have no channel and are not counted here |
+| `channels[]` | Per landing channel: distinct `visitors`, `carViews` and `testDriveOpens` in those sessions, and attributed `leads` credited to it (last touch). `bookings`: those leads that reached `booking_confirmed` or `converted`; `sold`: those now `converted`. Most visitors first |
+| `campaigns[]` | Up to 10, by `utm_campaign` + `utm_content`. `visits` = sessions that landed with them; `leads` / `bookings` = attributed leads whose last touch carried them |
+| `devices` | Distinct visitors by device |
+| `cities` | Distinct visitors by edge city: top 4, then `Other` (the rest plus visits with no city) |
+
+**`GET /insights/vehicles`** — live stock (`open` + `linked`), most viewed first.
+
+```json
+{
+  "period": { "from": "…", "to": "…" },
+  "items": [
+    {
+      "vehicleId": "uuid", "title": "2021 Hyundai Creta SX", "listedPrice": 1240000, "daysInStock": 18,
+      "views": 486, "uniqueViewers": 312, "repeatViewers": 74, "testDriveOpens": 58, "contactClicks": 41,
+      "leads": 14, "leadRate": 0.0449, "topChannel": "instagram_ads",
+      "signal": { "code": "hot", "reason": "Strong demand. Hold firm, small or no discount." }
+    }
+  ]
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `title` | `year make model variant` |
+| `daysInStock` | Whole days since the vehicle was added |
+| `views` / `uniqueViewers` | `car_view` events / distinct visitors in the period |
+| `repeatViewers` | Visitors who viewed the car in 2 or more sessions |
+| `contactClicks` | WhatsApp and call clicks on the car page |
+| `leads` | Leads on this car created in the period, **any source** (walk-ins count as enquiries too) |
+| `leadRate` | `leads ÷ uniqueViewers`; `null` with no viewers |
+| `topChannel` | Channel with the most views; `null` with none |
+
+`signal.code`, first rule that matches (medians are over live stock with at least 30 views):
+
+| Code | Rule |
+|------|------|
+| `insufficient_data` | Fewer than 30 views |
+| `hot` | Lead rate ≥ 1.5 × median and views ≥ median |
+| `ageing_cooling` | 45 days or more in stock (the dashboard's aged-stock threshold) |
+| `low_visibility` | Views below half the median |
+| `seen_not_enquired` | Views ≥ median and lead rate ≤ half the median |
+| `normal` | Anything else |
+
+**`GET /insights/vehicles/:vehicleId`** — a vehicles row (any status, signal still judged against live stock) plus:
+
+```json
+{
+  "…row fields…": "",
+  "period": { "from": "…", "to": "…" },
+  "daily": [ { "date": "2026-10-05", "views": 8, "leads": 0 } ],
+  "priceChanges": [
+    { "at": "2026-10-20T05:45:00.000Z", "from": 940000, "to": 890000,
+      "before": { "viewsPerDay": 9, "leadsPerDay": 0 }, "after": { "viewsPerDay": 14.5, "leadsPerDay": 0.13 } }
+  ],
+  "channels": [ { "channel": "instagram_ads", "views": 198 } ],
+  "budgetContext": { "segment": "Sedan", "shareBelowPrice": 64 }
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `daily` | Every day from the period start to today, zero-filled |
+| `priceChanges` | Listed-price changes made in the period (setting the first price or clearing it is not a change). `before`: average per day over up to 14 days before the change day, never before the car was added. `after`: from the change day to today, up to 14 days. Rates have 2 places |
+| `channels` | Views by channel in the period |
+| `budgetContext.segment` | The car's body-type segment (`SUV`, `Hatchback`, `Sedan`, `MUV / MPV`, …, or `Other`) |
+| `budgetContext.shareBelowPrice` | Share of website budget searches in the period capped **below** this car's price; `null` without a price or searches |
+
+**`GET /insights/demand`**
+
+```json
+{
+  "period": { "from": "…", "to": "…" },
+  "budgetBands": [ { "band": "<4L", "searchShare": 18, "stockShare": 5 } ],
+  "segments": [ { "label": "SUV", "demandShare": 34, "stockShare": 18, "gap": "under" } ],
+  "zeroResultSearches": { "count": 63, "top": [ { "label": "Creta under ₹10L", "count": 18 } ] }
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `budgetBands` | Always the five bands `<4L`, `4-6L`, `6-8L`, `8-12L`, `12L+`, by inclusive ceiling (a "under ₹6L" search is `4-6L`). `searchShare`: website searches with a budget (`filter_apply` with `priceMax`); `stockShare`: live stock with a listed price |
+| `segments` | Body-type segments seen in searches or stock, by `demandShare`. `demandShare`: searches that picked a body type; `stockShare`: live stock. `gap`: `under` when demand is 10+ points above stock, `over` when 10+ below, else `null` (always `null` before anyone has searched) |
+| `zeroResultSearches` | Searches that found no car (`resultCount = 0`) in the period, and the top 3 by count, named from the filters (`Diesel Brezza`, `Automatic under ₹6L`) |
+
+**`GET /insights/leads/:leadId`** — the website journey behind one lead (lead detail card).
+
+```json
+{
+  "channel": "instagram_ads", "campaign": "Diwali SUVs", "content": "Creta reel",
+  "firstVisitAt": "2026-10-22T14:12:00.000Z", "visits": 4, "viewsOfThisCar": 6, "galleryOpens": 3,
+  "otherCarsViewed": [ { "vehicleId": "uuid", "title": "2019 Honda City VX", "listedPrice": 890000, "views": 2 } ],
+  "intent": "high"
+}
+```
+
+- A lead with no website attribution (walk-in, phone, or a visitor who blocked analytics) returns every field `null` / `0` / `[]`, with `intent: null`.
+- `channel`, `campaign`, `content` are the last touch the lead is credited to. `visits` and `firstVisitAt` cover all of the visitor's sessions; `otherCarsViewed` lists up to 5 other cars, most viewed first.
+- `intent`: `high` with 3+ visits, 4+ views of this car or 3+ gallery opens; `medium` with 2+ visits, 2+ views or a gallery open; else `low`.
+
 ### Finance — Admin only, encrypted (ADR-0014)
 
 Finance data is encrypted with a key only the admin holds. Shipped: the **vault** (setting up the keys, unlocking, locking, changing the key, recovering), the **ledger** (tags and income/expense entries), **car money** (purchase rate, sale, quotes, landing cost, profit, dues) and **reports** (profit & loss, cash flow, profit per car, dues, stock, dashboard summary).
@@ -1141,6 +1283,7 @@ Each window also has `carsMissingPurchaseRate` and `uncountedSales` (same rule a
 | Login | `POST /auth/login`, then `GET /auth/me` |
 | App shell | `GET /auth/me` for name + roles + home showroom; `GET /notifications` `unreadCount` badge |
 | Home | `GET /dashboard?period=` (admin: all; salesperson: mine) |
+| Insights (admin) | `GET /insights/traffic`, `/insights/vehicles`, `/insights/demand` (`?period=`); car detail `GET /insights/vehicles/:id`; lead detail card `GET /insights/leads/:id` |
 | Owners list / form | `GET/POST/PATCH /owners`, `GET /owners/:id` |
 | Vehicle create | `GET /catalog/makes` → models → variants, then `POST /vehicles` |
 | Vehicle list / detail | `GET /vehicles`, `GET /vehicles/:id`, `PATCH /vehicles/:id`, `POST /vehicles/:id/status`, `GET /vehicles/:id/status-history` |
