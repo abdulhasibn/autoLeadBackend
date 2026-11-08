@@ -98,7 +98,7 @@ Foundation (shipped)
 | 5.1 | Ledger: income/expense entries, tags, car links | `finance` | §27, §28, §29 | Done |
 | 5.2 | Car deal, sale, quotes, profit and dues (single formula) | `finance` | §27.3 | Done (absorbs Stint 2.3 acquisition prices) |
 | 5.3 | Reports: P&L, cash flow, per-car profit, dues, stock, summary | `finance` | §30 | Done |
-| 5.4 | Seeder, Postman, API docs | `scripts/`, `postman/`, `docs/` | — | Todo |
+| 5.4 | Seeder, Postman, API docs | `scripts/`, `postman/`, `docs/` | — | Done |
 
 **Exit criteria:** Sold vehicle shows cost breakdown, selling price, and computed profit; monthly P&L query returns expected totals.
 

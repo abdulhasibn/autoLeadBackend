@@ -1,6 +1,6 @@
 # Finance module plan (Stint 5, encrypted)
 
-**Status:** draft for review · **Updated:** 2026-11-02 (client requirements round 1) · **Roadmap:** Stint 5 (5.1–5.4), absorbs Stint 2.3 (acquisition prices)
+**Status:** done (phases 1–5 shipped; see `finance-phase-*.md`) · **Updated:** 2026-11-08 · **Roadmap:** Stint 5 (5.1–5.4), absorbs Stint 2.3 (acquisition prices)
 
 ## 1. Goal
 

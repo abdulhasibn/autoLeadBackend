@@ -15,11 +15,17 @@
 // with macOS `sips` into .scratch/seed-photos. Documents are a generated PDF.
 //
 // Every login it creates uses the password `secret12`; the admin is
-// admin@example.com. Refuses to run unless users, vehicles and leads are empty.
+// admin@example.com. Refuses to run unless users, vehicles, leads and the
+// finance tables are empty.
+//
+// Finance data (vault, tags, entries, deals, quotes) is encrypted through the
+// API's own finance code (scripts/lib/seed-finance.ts). The finance key is
+// SEED_FINANCE_KEY when set, otherwise generated; both keys are printed at the
+// end. They are test-only.
 //
 // Usage:
 //   pnpm seed:test-data
-//   pnpm seed:test-data --dry-run   (simulate and print a summary only)
+//   pnpm seed:test-data --dry-run   (simulate and print a summary only; writes nothing)
 
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -29,6 +35,7 @@ import { join } from 'node:path';
 
 import type { Json, TablesInsert } from '../src/infrastructure/supabase/database.types';
 import { createRandom, roundTo } from './lib/random';
+import { buildFinanceSeed, type FinanceSeedResult } from './lib/seed-finance';
 import { check, type Db, run, serviceRoleClient } from './lib/supabase';
 
 const SHOWROOM_ID = 'b0000000-0000-4000-8000-000000000001';
@@ -159,11 +166,15 @@ interface VehicleRow {
   deleted_at: string | null;
 }
 
-/** Plaintext car pricing only; sealed deal data is seeded by finance phase 5. */
+/** Plaintext listed price, plus the sealed finance deal merged in by seedFinance(). */
 interface FinancialsRow {
   vehicle_id: string;
   listed_price: number | null;
   updated_at: string;
+  payload?: string | null;
+  key_version?: number | null;
+  sold_on?: string | null;
+  sold_by?: string | null;
 }
 
 interface SimVehicle {
@@ -863,7 +874,8 @@ const rows = {
 // ---------------------------------------------------------------------------
 
 async function assertEmpty(): Promise<void> {
-  for (const table of ['users', 'vehicles', 'leads'] as const) {
+  if (DRY_RUN) return;
+  for (const table of ['users', 'vehicles', 'leads', 'finance_vault', 'finance_entries'] as const) {
     const { count, error } = await db.from(table).select('id', { count: 'exact', head: true });
     if (error) throw new Error(`count ${table}: ${error.message}`);
     if (count !== null && count > 0) {
@@ -2050,6 +2062,42 @@ function seedFollowUps(): void {
 // Buyer activity (encrypted finance seeding arrives with finance phase 5)
 // ---------------------------------------------------------------------------
 
+async function seedFinance(): Promise<FinanceSeedResult> {
+  const result = await buildFinanceSeed({
+    cars: vehicles.map((vehicle) => ({
+      id: vehicle.id,
+      registration: vehicle.row.registration_number,
+      createdAt: vehicle.created,
+      listedPrice: vehicle.listed,
+      deleted: vehicle.deleted,
+      soldAt: vehicle.status === 'sold' ? (vehicle.soldAt ?? null) : null,
+      soldLeadId: vehicle.soldLeadId,
+      leadIds: leads.filter((l) => l.vehicleId === vehicle.id && !l.deleted).map((l) => l.id),
+    })),
+    adminId: adminId(),
+    showroomId: SHOWROOM_ID,
+    start: START,
+    now: NOW,
+    financeKey: process.env.SEED_FINANCE_KEY?.trim() || undefined,
+  });
+  // Merge each car's sealed deal into its vehicle_financials row.
+  const byVehicle = new Map(rows.vehicle_financials.map((f) => [f.vehicle_id, f]));
+  for (const [vehicleId, deal] of result.deals) {
+    const row = byVehicle.get(vehicleId);
+    if (row === undefined) {
+      rows.vehicle_financials.push({
+        vehicle_id: vehicleId,
+        listed_price: null,
+        updated_at: iso(NOW),
+        ...deal,
+      });
+    } else {
+      Object.assign(row, deal);
+    }
+  }
+  return result;
+}
+
 function seedBuyerActivity(): void {
   for (const buyer of buyers) {
     const seen = vehicles.filter(
@@ -2338,7 +2386,10 @@ async function main(): Promise<void> {
   seedFollowUps();
   seedBuyerActivity();
   finaliseRows();
+  console.log('Sealing finance data…');
+  const finance = await seedFinance();
   printSummary();
+  for (const line of finance.summary) console.log(`  ${line}`);
   if (DRY_RUN) return;
 
   console.log('Writing rows…');
@@ -2362,6 +2413,10 @@ async function main(): Promise<void> {
     db.from('lead_status_history').insert(b),
   );
   await insert('audit_logs', rows.audit_logs, (b) => db.from('audit_logs').insert(b));
+  await insert('finance_vault', [finance.vault], (b) => db.from('finance_vault').insert(b));
+  await insert('finance_tags', finance.tags, (b) => db.from('finance_tags').insert(b));
+  await insert('finance_entries', finance.entries, (b) => db.from('finance_entries').insert(b));
+  await insert('vehicle_quotes', finance.quotes, (b) => db.from('vehicle_quotes').insert(b));
   for (const vehicle of vehicles.filter((v) => v.soldLeadId !== null)) {
     check(
       await db.from('vehicles').update({ sold_lead_id: vehicle.soldLeadId }).eq('id', vehicle.id),
@@ -2384,6 +2439,16 @@ async function main(): Promise<void> {
   );
 
   console.log(`Done. Log in as admin@example.com / ${PASSWORD} (every seeded login uses it).`);
+  console.log(
+    `Finance is set up (test-only keys). Finance key: ${finance.financeKey}` +
+      (finance.financeKeyGenerated
+        ? ' (generated; set SEED_FINANCE_KEY to fix it)'
+        : ' (from SEED_FINANCE_KEY)'),
+  );
+  console.log(`Recovery key: ${finance.recoveryKey}`);
+  if (finance.clientCarRegistration !== null) {
+    console.log(`The client's worked example is car ${finance.clientCarRegistration}.`);
+  }
 }
 
 run(main);

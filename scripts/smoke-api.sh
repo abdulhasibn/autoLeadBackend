@@ -3,6 +3,8 @@
 #
 #   BASE_URL=http://localhost:3000 scripts/smoke-api.sh
 #   BASE_URL=... ADMIN_EMAIL=... ADMIN_PASSWORD=... scripts/smoke-api.sh
+#   BASE_URL=... ADMIN_EMAIL=... ADMIN_PASSWORD=... FINANCE_KEY=FK-... scripts/smoke-api.sh
+#   FINANCE_ONLY=1 ... FINANCE_KEY=FK-... scripts/smoke-api.sh   (skip the staff flow)
 #
 # Without admin credentials it checks only what needs no database: health,
 # unknown routes, and that every protected route refuses a missing token.
@@ -10,7 +12,15 @@
 # database: it creates a temporary salesperson, owner, vehicle and leads
 # (names start with "ZZ Smoke"), then deactivates the salesperson and closes
 # the leads. The first vehicle ends `sold` (terminal); the second ends `dropped`.
+#
+# With FINANCE_KEY as well it unlocks finance and reads it: vault status,
+# tags, this month's entries, car money lists, every report and the summary,
+# then locks again. The finance checks only read, so they are safe to run on
+# production; FINANCE_ONLY=1 skips the staff flow (which writes test records).
 set -uo pipefail
+# No brace expansion: macOS bash 3.2 leaves the braces of JSON bodies built
+# inside "$(call ...)" unquoted, so `{"a":1,"b":2}` would split at the comma.
+set +B
 
 BASE_URL="${BASE_URL:-http://localhost:3000}"
 SHOWROOM_ID="${SHOWROOM_ID:-b0000000-0000-4000-8000-000000000001}"
@@ -41,6 +51,16 @@ call() {
 
 field() { jq -r "$1" /tmp/smoke-body.json; }
 
+# fcall METHOD PATH TOKEN SESSION [JSON] -> like call, with X-Finance-Session
+fcall() {
+  local method="$1" path="$2" token="$3" session="$4" body="${5:-}"
+  local args=(-sS -o /tmp/smoke-body.json -w '%{http_code}' -X "$method" "$BASE_URL$path"
+    -H "Authorization: Bearer $token")
+  [[ -n "$session" ]] && args+=(-H "X-Finance-Session: $session")
+  [[ -n "$body" ]] && args+=(-H 'Content-Type: application/json' -d "$body")
+  curl "${args[@]}"
+}
+
 echo "== Public and token-free checks against $BASE_URL"
 check 'GET /health' 200 "$(call GET /health)"
 check 'GET /health body status=ok' ok "$(field .status)"
@@ -64,6 +84,17 @@ PROTECTED=(
   "POST /leads" "GET /leads/$ID" "PATCH /leads/$ID/vehicle" "PUT /leads/$ID/assignment"
   "POST /leads/$ID/status" "POST /leads/$ID/follow-ups" "GET /notifications"
   "PATCH /notifications/$ID/read" "GET /dashboard"
+  "GET /finance/vault" "POST /finance/vault/setup" "POST /finance/vault/confirm"
+  "POST /finance/vault/change-key" "POST /finance/vault/recover" "POST /finance/unlock"
+  "POST /finance/lock" "GET /finance/tags" "POST /finance/tags" "PATCH /finance/tags/$ID"
+  "GET /finance/entries" "POST /finance/entries" "GET /finance/entries/$ID"
+  "PATCH /finance/entries/$ID" "DELETE /finance/entries/$ID" "GET /finance/vehicles"
+  "GET /finance/vehicles/awaiting-sale-price" "GET /finance/vehicles/$ID"
+  "PUT /finance/vehicles/$ID" "POST /finance/vehicles/$ID/sale" "DELETE /finance/vehicles/$ID/sale"
+  "GET /finance/vehicles/$ID/quotes" "POST /finance/vehicles/$ID/quotes"
+  "DELETE /finance/vehicles/$ID/quotes/$ID" "GET /finance/reports/pnl"
+  "GET /finance/reports/cash-flow" "GET /finance/reports/vehicle-profit"
+  "GET /finance/reports/dues" "GET /finance/reports/stock" "GET /finance/summary"
 )
 for route in "${PROTECTED[@]}"; do
   check "$route without token" 401 "$(call ${route% *} ${route#* })"
@@ -76,6 +107,51 @@ if [[ -z "${ADMIN_EMAIL:-}" || -z "${ADMIN_PASSWORD:-}" ]]; then
   exit $((FAIL > 0))
 fi
 
+# Read-only finance checks; needs $ADMIN and $FINANCE_KEY.
+finance_checks() {
+  if [[ -z "${FINANCE_KEY:-}" ]]; then
+    echo "Skipped finance checks: set FINANCE_KEY to run them."
+    return
+  fi
+    echo "== Finance (read-only)"
+    MONTH_START="$(date +%Y-%m-01)"
+    TODAY="$(date +%Y-%m-%d)"
+    RANGE="from=$MONTH_START&to=$TODAY"
+    check 'GET /finance/vault' 200 "$(fcall GET /finance/vault "$ADMIN" '')"
+    check '  ... confirmed' true "$(field .confirmed)"
+    check 'GET /finance/tags without a session' 423 "$(fcall GET /finance/tags "$ADMIN" '')"
+    check '  ... code FINANCE_LOCKED' FINANCE_LOCKED "$(field .error.code)"
+    check 'POST /finance/unlock' 200 \
+      "$(fcall POST /finance/unlock "$ADMIN" '' "$(jq -n --arg k "$FINANCE_KEY" '{financeKey: $k}')")"
+    FSESSION="$(field .sessionToken)"
+    check 'GET /finance/vault unlocked' true "$(fcall GET /finance/vault "$ADMIN" "$FSESSION" >/dev/null; field .unlocked)"
+    check 'GET /finance/tags' 200 "$(fcall GET /finance/tags "$ADMIN" "$FSESSION")"
+    check '  ... is a list' array "$(field 'type')"
+    check 'GET /finance/entries (this month)' 200 "$(fcall GET "/finance/entries?$RANGE" "$ADMIN" "$FSESSION")"
+    check '  ... has totals' true "$(field 'has("totals")')"
+    check 'GET /finance/entries without a range' 422 "$(fcall GET /finance/entries "$ADMIN" "$FSESSION")"
+    check '  ... code DATE_RANGE_REQUIRED' DATE_RANGE_REQUIRED "$(field .error.code)"
+    check 'GET /finance/vehicles/awaiting-sale-price' 200 \
+      "$(fcall GET /finance/vehicles/awaiting-sale-price "$ADMIN" "$FSESSION")"
+    for report in pnl cash-flow; do
+      check "GET /finance/reports/$report" 200 \
+        "$(fcall GET "/finance/reports/$report?$RANGE&period=day" "$ADMIN" "$FSESSION")"
+      check '  ... has buckets' true "$(field '.buckets | length > 0')"
+    done
+    check 'GET /finance/reports/pnl range too long' 422 \
+      "$(fcall GET "/finance/reports/pnl?from=2020-01-01&to=$TODAY&period=day" "$ADMIN" "$FSESSION")"
+    check 'GET /finance/reports/vehicle-profit' 200 \
+      "$(fcall GET "/finance/reports/vehicle-profit?$RANGE" "$ADMIN" "$FSESSION")"
+    for report in dues stock; do
+      check "GET /finance/reports/$report" 200 "$(fcall GET "/finance/reports/$report" "$ADMIN" "$FSESSION")"
+      check '  ... has totals' true "$(field 'has("totals")')"
+    done
+    check 'GET /finance/summary' 200 "$(fcall GET /finance/summary "$ADMIN" "$FSESSION")"
+    check '  ... has thisMonth' true "$(field 'has("thisMonth")')"
+    check 'POST /finance/lock' 204 "$(fcall POST /finance/lock "$ADMIN" "$FSESSION")"
+    check 'GET /finance/summary after lock' 423 "$(fcall GET /finance/summary "$ADMIN" "$FSESSION")"
+}
+
 echo
 echo "== Live staff flow"
 RUN="$(date +%s)"
@@ -86,6 +162,14 @@ check 'POST /auth/login (admin)' 200 \
 ADMIN="$(field .accessToken)"
 check 'GET /auth/me (admin)' 200 "$(call GET /auth/me "$ADMIN")"
 check 'me.roles includes admin' true "$(field '.roles | index("admin") != null')"
+
+if [[ "${FINANCE_ONLY:-}" == 1 ]]; then
+  echo
+  finance_checks
+  echo
+  echo "Result: $PASS passed, $FAIL failed"
+  exit $((FAIL > 0))
+fi
 
 for path in /users /owners /catalog/makes /vehicles /leads /notifications; do
   check "GET $path (admin baseline)" 200 "$(call GET "$path?limit=1" "$ADMIN")"
@@ -294,6 +378,9 @@ check 'close salesperson lead as lost' 200 \
 check 'close unassigned lead as lost' 200 \
   "$(call POST "/leads/$OTHER_LEAD_ID/status" "$ADMIN" '{"status":"lost","notes":"smoke cleanup"}')"
 check 'DELETE /users/:id (temporary salesperson)' 204 "$(call DELETE "/users/$SALES_ID" "$ADMIN")"
+
+echo
+finance_checks
 
 echo
 echo "Result: $PASS passed, $FAIL failed"

@@ -52,6 +52,8 @@ When a request returns `401 AUTHENTICATION_FAILED`, call `POST /auth/refresh` wi
 
 **Sign out:** call `POST /auth/logout`, then clear both tokens locally, even if the call fails. **Change password:** after `204`, keep the current tokens; every other device is signed out. **Forgot password:** `POST /auth/forgot-password` emails a 6-digit code, then `POST /auth/reset-password` sets the new password. After `204`, send the user to login: every session was ended.
 
+**Finance (encrypted, admin only).** Finance needs its own key on top of the login. On a database filled by `pnpm seed:test-data`, the seeder prints the finance key and recovery key at the end (and the registration of the car that holds the client's worked example). On any other database, the first admin runs **Finance › Vault › Setup** and keeps the two keys it shows once. See [Finance](#finance--admin-only-encrypted-adr-0014).
+
 ### 3. Build the admin screens in this order
 
 This matches the APIs that exist and the intended first-phase flow.
