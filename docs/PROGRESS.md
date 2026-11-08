@@ -56,6 +56,14 @@
 
 ## Log
 
+### 2026-11-08 — Insights read endpoints (website analytics, read side)
+
+- New feature `src/features/insights/` (admin only; salespeople get 403): `GET /insights/traffic`, `/insights/vehicles`, `/insights/vehicles/:vehicleId`, `/insights/demand` (all `?period=today|week|month|quarter&showroomId=`) and `GET /insights/leads/:leadId`. Shapes are the web app's contract (`autoLeadFrontend/src/features/insights/types.ts` and its fixtures); documented in `docs/api.md`, Postman folder **Insights** with 200 / 403 / 404 examples.
+- Periods reuse the dashboard's rules, moved to `src/domain/shared/reporting-period.ts` (`dashboard-window.ts` re-exports them unchanged): business timezone, period to date, previous = same elapsed span.
+- Migration `20261108120000_insights_reads.sql` (**not applied to hosted yet**): read-only `insights_traffic`, `insights_vehicle_stats`, `insights_vehicle_detail`, `insights_demand`, `insights_lead_journey` (private + public wrapper, service_role only) and one index `web_sessions (visitor_id, started_at)`. No table or column changes. Raw counts only; rates, signals, bands and labels live in the use cases.
+- Approximations: traffic `leads` counts attributed website leads only (visitors who block beacons have no channel); vehicle `leads` counts every lead on the car, any source; segments are catalog body types (`SUV`, not the fixture's `Compact SUV` / `Premium SUV` split, which has no data source); demand comes from `filter_apply` props (`priceMax`, `bodyType`, `resultCount`).
+- Verified: unit, use-case and route tests (shapes, periods, 401/403/422/404); every migration replayed on local Postgres 17 and the five functions run against seeded rows. Hosted has 0 web sessions/events so far, so every endpoint returns zero counts until the site sends traffic.
+
 ### 2026-11-08 — Dealer app handoff: finance fixes and two list filters
 
 - **Fix (finance reports):** a sold car without a purchase rate counted its whole finalised price as sales with ₹0 cost of sales, inflating P&L, the summary and the dashboard tiles. It now stays out of sales, cost of sales and profit (and its later costs too), is counted in `carsMissingPurchaseRate`, and its price is reported as `uncountedSales`. Profit-per-car totals follow the same rule. Raised by the dealer app team in `wheels-expert-dealer/docs/BACKEND_HANDOFF.md`.

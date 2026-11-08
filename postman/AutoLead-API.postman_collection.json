@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "AutoLead API",
-    "description": "AutoLead backend — used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only). **Catalog, Vehicles, Leads, Notifications, Dashboard, Showrooms** accept Admin or Salesperson; lead assignment, vehicle status changes, and media/document deletes are Admin-only. A salesperson only sees leads assigned to them.\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login → create owner → pick catalog variant → create vehicle → create lead → associate vehicle → assign lead → schedule follow-up → change status → inbox.",
+    "description": "AutoLead backend — used-car brokerage API.\n\n**Auth:** email + password. JWT is identity only; live roles come from `user_roles` on each request.\n\n**Staff routes** require Bearer + Admin role. **Owner routes** require Bearer + Admin or Salesperson (deactivate is Admin-only). **Catalog, Vehicles, Leads, Notifications, Dashboard, Showrooms** accept Admin or Salesperson; **Insights** and **Finance** are Admin-only; lead assignment, vehicle status changes, and media/document deletes are Admin-only. A salesperson only sees leads assigned to them.\n\nError envelope: `{ \"error\": { \"code\": string, \"message\": string } }`\nPagination: `limit` default 20 max 100; `offset` default 0; page `{ items, total, limit, offset }`.\n\nFlow: Login → create owner → pick catalog variant → create vehicle → create lead → associate vehicle → assign lead → schedule follow-up → change status → inbox.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -1693,6 +1693,619 @@
                 }
               ],
               "body": "{\n  \"generatedAt\": \"2026-10-05T09:30:00.000Z\",\n  \"period\": {\n    \"key\": \"month\",\n    \"from\": \"2026-10-01\",\n    \"to\": \"2026-10-31\",\n    \"timezone\": \"Asia/Kolkata\"\n  },\n  \"kpis\": {\n    \"carsSold\": {\n      \"value\": 1,\n      \"previous\": 1\n    },\n    \"newLeads\": {\n      \"value\": 2,\n      \"previous\": 2\n    },\n    \"conversionRate\": {\n      \"value\": 0.5,\n      \"previous\": null\n    },\n    \"inStock\": {\n      \"value\": 3\n    }\n  },\n  \"attention\": {\n    \"overdueFollowUps\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"followUpId\": \"a7237a73-60c0-435b-9217-a1f96c375db6\",\n          \"leadId\": \"00000000-0000-4000-8000-0000000000e2\",\n          \"taskType\": \"call\",\n          \"scheduledAt\": \"2026-10-04T05:00:00.000Z\",\n          \"contactName\": \"Vikram\",\n          \"contactPhone\": \"+919800000002\",\n          \"vehicleLabel\": null\n        }\n      ]\n    },\n    \"leadsWithoutFollowUp\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"leadId\": \"00000000-0000-4000-8000-0000000000e3\",\n          \"status\": \"booking_confirmed\",\n          \"source\": \"phone\",\n          \"contactName\": \"Meera\",\n          \"contactPhone\": \"+919800000003\",\n          \"vehicleLabel\": null,\n          \"createdAt\": \"2026-09-10T05:00:00.000Z\"\n        }\n      ]\n    },\n    \"agedStock\": {\n      \"total\": 1,\n      \"items\": [\n        {\n          \"vehicleId\": \"00000000-0000-4000-8000-0000000000c1\",\n          \"vehicleLabel\": \"2019 Hyundai Santro Era Mt · KA01AB1234\",\n          \"status\": \"open\",\n          \"daysListed\": 96,\n          \"activeLeads\": 0\n        }\n      ]\n    }\n  },\n  \"today\": {\n    \"total\": 1,\n    \"items\": [\n      {\n        \"followUpId\": \"7e397f2c-5f2f-4cce-aaa0-7016995b4208\",\n        \"leadId\": \"00000000-0000-4000-8000-0000000000e1\",\n        \"taskType\": \"test_drive\",\n        \"scheduledAt\": \"2026-10-05T12:00:00.000Z\",\n        \"contactName\": \"Asha\",\n        \"contactPhone\": \"+919800000001\",\n        \"vehicleLabel\": \"2019 Hyundai Santro Era Mt · KA02CD5678\"\n      }\n    ]\n  },\n  \"pipeline\": {\n    \"new\": 1,\n    \"not_now\": 1,\n    \"booking_confirmed\": 1\n  },\n  \"inventory\": {\n    \"open\": 1,\n    \"linked\": 1\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Insights",
+      "description": "Admin only (salespeople get 403). Website analytics read side (ADR-0016): traffic, vehicle demand, search demand and lead journeys. `period` = today | week | month | quarter (default month), business timezone, period to date. `*Rate` = fraction 0–1; `*Share` = whole percent 0–100. See docs/api.md#insights--admin-only-website-analytics-adr-0016.",
+      "item": [
+        {
+          "name": "Get Traffic Insights",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('matches the insights contract', () => {",
+                  "  pm.expect(body).to.include.keys('period', 'visitors', 'sessions', 'leads', 'visitorToLeadRate', 'previous', 'channels', 'campaigns', 'devices', 'cities');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/insights/traffic?period=month",
+              "host": ["{{baseUrl}}"],
+              "path": ["insights", "traffic"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month",
+                  "description": "today | week | month | quarter (default month)"
+                },
+                {
+                  "key": "showroomId",
+                  "value": "",
+                  "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /insights/traffic — Admin only. Visitors, sessions and attributed website leads with the same span of the previous period; per-channel funnel (visitors → car views → test-drive opens → leads → bookings → sold); top 10 UTM campaigns; devices; top 4 cities + Other."
+          },
+          "response": [
+            {
+              "name": "200 Get Traffic Insights",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/traffic?period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "traffic"],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "today | week | month | quarter (default month)"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "",
+                      "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "private, max-age=60"
+                }
+              ],
+              "body": "{\n  \"period\": {\n    \"from\": \"2026-10-01T00:00:00+05:30\",\n    \"to\": \"2026-10-31T23:59:59+05:30\"\n  },\n  \"visitors\": 3412,\n  \"sessions\": 4186,\n  \"leads\": 74,\n  \"visitorToLeadRate\": 0.0217,\n  \"previous\": {\n    \"visitors\": 2310,\n    \"sessions\": 2851,\n    \"leads\": 51,\n    \"visitorToLeadRate\": 0.0221\n  },\n  \"channels\": [\n    {\n      \"channel\": \"instagram_ads\",\n      \"visitors\": 1820,\n      \"carViews\": 1240,\n      \"testDriveOpens\": 212,\n      \"leads\": 47,\n      \"bookings\": 14,\n      \"sold\": 6\n    },\n    {\n      \"channel\": \"google_organic\",\n      \"visitors\": 604,\n      \"carViews\": 410,\n      \"testDriveOpens\": 48,\n      \"leads\": 11,\n      \"bookings\": 4,\n      \"sold\": 2\n    },\n    {\n      \"channel\": \"direct\",\n      \"visitors\": 415,\n      \"carViews\": 260,\n      \"testDriveOpens\": 15,\n      \"leads\": 2,\n      \"bookings\": 1,\n      \"sold\": 0\n    },\n    {\n      \"channel\": \"whatsapp\",\n      \"visitors\": 312,\n      \"carViews\": 240,\n      \"testDriveOpens\": 22,\n      \"leads\": 5,\n      \"bookings\": 2,\n      \"sold\": 1\n    },\n    {\n      \"channel\": \"instagram_organic\",\n      \"visitors\": 261,\n      \"carViews\": 190,\n      \"testDriveOpens\": 31,\n      \"leads\": 9,\n      \"bookings\": 3,\n      \"sold\": 2\n    }\n  ],\n  \"campaigns\": [\n    {\n      \"campaign\": \"Diwali SUVs\",\n      \"content\": \"Creta reel\",\n      \"visits\": 742,\n      \"leads\": 23,\n      \"leadRate\": 0.031,\n      \"bookings\": 7\n    },\n    {\n      \"campaign\": \"Under 5 lakh\",\n      \"content\": \"carousel\",\n      \"visits\": 655,\n      \"leads\": 16,\n      \"leadRate\": 0.0244,\n      \"bookings\": 5\n    },\n    {\n      \"campaign\": \"Swift story\",\n      \"content\": null,\n      \"visits\": 423,\n      \"leads\": 8,\n      \"leadRate\": 0.0189,\n      \"bookings\": 2\n    }\n  ],\n  \"devices\": {\n    \"mobile\": 2970,\n    \"desktop\": 442\n  },\n  \"cities\": [\n    {\n      \"city\": \"Kochi\",\n      \"visitors\": 1420\n    },\n    {\n      \"city\": \"Thrissur\",\n      \"visitors\": 610\n    },\n    {\n      \"city\": \"Kottayam\",\n      \"visitors\": 388\n    },\n    {\n      \"city\": \"Kozhikode\",\n      \"visitors\": 301\n    },\n    {\n      \"city\": \"Other\",\n      \"visitors\": 693\n    }\n  ]\n}"
+            },
+            {
+              "name": "403 Salesperson",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/traffic?period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "traffic"],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "today | week | month | quarter (default month)"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "",
+                      "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Only admins can view insights\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Vehicle Insights",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('matches the insights contract', () => {",
+                  "  pm.expect(body).to.include.keys('period', 'items');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/insights/vehicles?period=month",
+              "host": ["{{baseUrl}}"],
+              "path": ["insights", "vehicles"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month",
+                  "description": "today | week | month | quarter (default month)"
+                },
+                {
+                  "key": "showroomId",
+                  "value": "",
+                  "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /insights/vehicles — Admin only. Live stock (open + linked), most viewed first: views, unique and repeat viewers, test-drive opens, contact clicks, leads (any source), leadRate = leads ÷ uniqueViewers, top channel and a pricing signal judged against the stock medians."
+          },
+          "response": [
+            {
+              "name": "200 Get Vehicle Insights",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/vehicles?period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "vehicles"],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "today | week | month | quarter (default month)"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "",
+                      "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "private, max-age=60"
+                }
+              ],
+              "body": "{\n  \"period\": {\n    \"from\": \"2026-10-01T00:00:00+05:30\",\n    \"to\": \"2026-10-31T23:59:59+05:30\"\n  },\n  \"items\": [\n    {\n      \"vehicleId\": \"7c1e2b8a-3f41-4d2a-9b6e-2a1f0c9d4e01\",\n      \"title\": \"2021 Hyundai Creta SX\",\n      \"listedPrice\": 1240000,\n      \"daysInStock\": 18,\n      \"views\": 486,\n      \"uniqueViewers\": 312,\n      \"repeatViewers\": 74,\n      \"testDriveOpens\": 58,\n      \"contactClicks\": 41,\n      \"leads\": 14,\n      \"leadRate\": 0.0449,\n      \"topChannel\": \"instagram_ads\",\n      \"signal\": {\n        \"code\": \"hot\",\n        \"reason\": \"Strong demand. Hold firm, small or no discount.\"\n      }\n    },\n    {\n      \"vehicleId\": \"7c1e2b8a-3f41-4d2a-9b6e-2a1f0c9d4e02\",\n      \"title\": \"2019 Honda City VX\",\n      \"listedPrice\": 890000,\n      \"daysInStock\": 34,\n      \"views\": 352,\n      \"uniqueViewers\": 260,\n      \"repeatViewers\": 22,\n      \"testDriveOpens\": 9,\n      \"contactClicks\": 6,\n      \"leads\": 2,\n      \"leadRate\": 0.0077,\n      \"topChannel\": \"instagram_ads\",\n      \"signal\": {\n        \"code\": \"seen_not_enquired\",\n        \"reason\": \"Price may look high, or the photos may be weak.\"\n      }\n    },\n    {\n      \"vehicleId\": \"7c1e2b8a-3f41-4d2a-9b6e-2a1f0c9d4e06\",\n      \"title\": \"2020 Maruti Swift VXI\",\n      \"listedPrice\": 510000,\n      \"daysInStock\": 26,\n      \"views\": 268,\n      \"uniqueViewers\": 201,\n      \"repeatViewers\": 19,\n      \"testDriveOpens\": 21,\n      \"contactClicks\": 12,\n      \"leads\": 8,\n      \"leadRate\": 0.0398,\n      \"topChannel\": \"instagram_ads\",\n      \"signal\": {\n        \"code\": \"normal\",\n        \"reason\": \"Demand in line with similar stock.\"\n      }\n    },\n    {\n      \"vehicleId\": \"7c1e2b8a-3f41-4d2a-9b6e-2a1f0c9d4e04\",\n      \"title\": \"2017 Toyota Innova Crysta 2.4 VX\",\n      \"listedPrice\": 1580000,\n      \"daysInStock\": 63,\n      \"views\": 138,\n      \"uniqueViewers\": 110,\n      \"repeatViewers\": 9,\n      \"testDriveOpens\": 6,\n      \"contactClicks\": 5,\n      \"leads\": 2,\n      \"leadRate\": 0.0182,\n      \"topChannel\": \"google_organic\",\n      \"signal\": {\n        \"code\": \"ageing_cooling\",\n        \"reason\": \"Negotiate flexibly or review the price.\"\n      }\n    },\n    {\n      \"vehicleId\": \"7c1e2b8a-3f41-4d2a-9b6e-2a1f0c9d4e03\",\n      \"title\": \"2018 Maruti Ciaz Alpha\",\n      \"listedPrice\": 720000,\n      \"daysInStock\": 21,\n      \"views\": 41,\n      \"uniqueViewers\": 36,\n      \"repeatViewers\": 2,\n      \"testDriveOpens\": 3,\n      \"contactClicks\": 2,\n      \"leads\": 1,\n      \"leadRate\": 0.0278,\n      \"topChannel\": \"google_organic\",\n      \"signal\": {\n        \"code\": \"low_visibility\",\n        \"reason\": \"Reach problem, not price. Feature it in an ad.\"\n      }\n    },\n    {\n      \"vehicleId\": \"7c1e2b8a-3f41-4d2a-9b6e-2a1f0c9d4e05\",\n      \"title\": \"2023 Kia Sonet HTX\",\n      \"listedPrice\": 940000,\n      \"daysInStock\": 4,\n      \"views\": 22,\n      \"uniqueViewers\": 19,\n      \"repeatViewers\": 1,\n      \"testDriveOpens\": 2,\n      \"contactClicks\": 1,\n      \"leads\": 0,\n      \"leadRate\": 0,\n      \"topChannel\": \"instagram_ads\",\n      \"signal\": {\n        \"code\": \"insufficient_data\",\n        \"reason\": \"Fewer than 30 views so far. Check back later.\"\n      }\n    }\n  ]\n}"
+            },
+            {
+              "name": "403 Salesperson",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/vehicles?period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "vehicles"],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "today | week | month | quarter (default month)"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "",
+                      "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Only admins can view insights\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Vehicle Insight Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('matches the insights contract', () => {",
+                  "  pm.expect(body).to.include.keys('vehicleId', 'title', 'signal', 'period', 'daily', 'priceChanges', 'channels', 'budgetContext');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/insights/vehicles/{{vehicleId}}?period=month",
+              "host": ["{{baseUrl}}"],
+              "path": ["insights", "vehicles", "{{vehicleId}}"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month",
+                  "description": "today | week | month | quarter (default month)"
+                },
+                {
+                  "key": "showroomId",
+                  "value": "",
+                  "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /insights/vehicles/:vehicleId — Admin only. The vehicles row plus a zero-filled daily views/leads series from the period start to today, listed-price changes in the period with views/leads per day 14 days either side, views by channel, and budgetContext (segment, share of website budget searches below this price). 404 when the car is not in scope."
+          },
+          "response": [
+            {
+              "name": "200 Get Vehicle Insight Detail",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/vehicles/{{vehicleId}}?period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "vehicles", "{{vehicleId}}"],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "today | week | month | quarter (default month)"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "",
+                      "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "private, max-age=60"
+                }
+              ],
+              "body": "{\n  \"vehicleId\": \"7c1e2b8a-3f41-4d2a-9b6e-2a1f0c9d4e02\",\n  \"title\": \"2019 Honda City VX\",\n  \"listedPrice\": 890000,\n  \"daysInStock\": 34,\n  \"views\": 352,\n  \"uniqueViewers\": 260,\n  \"repeatViewers\": 22,\n  \"testDriveOpens\": 9,\n  \"contactClicks\": 6,\n  \"leads\": 2,\n  \"leadRate\": 0.0077,\n  \"topChannel\": \"instagram_ads\",\n  \"signal\": {\n    \"code\": \"seen_not_enquired\",\n    \"reason\": \"Price may look high, or the photos may be weak.\"\n  },\n  \"period\": {\n    \"from\": \"2026-10-05T00:00:00+05:30\",\n    \"to\": \"2026-11-03T23:59:59+05:30\"\n  },\n  \"daily\": [\n    {\n      \"date\": \"2026-10-05\",\n      \"views\": 8,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-06\",\n      \"views\": 10,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-07\",\n      \"views\": 9,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-08\",\n      \"views\": 7,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-09\",\n      \"views\": 11,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-10\",\n      \"views\": 9,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-11\",\n      \"views\": 8,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-12\",\n      \"views\": 10,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-13\",\n      \"views\": 9,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-14\",\n      \"views\": 12,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-15\",\n      \"views\": 8,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-16\",\n      \"views\": 9,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-17\",\n      \"views\": 10,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-18\",\n      \"views\": 8,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-19\",\n      \"views\": 7,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-20\",\n      \"views\": 13,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-21\",\n      \"views\": 15,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-22\",\n      \"views\": 14,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-23\",\n      \"views\": 16,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-24\",\n      \"views\": 12,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-25\",\n      \"views\": 15,\n      \"leads\": 1\n    },\n    {\n      \"date\": \"2026-10-26\",\n      \"views\": 14,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-27\",\n      \"views\": 17,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-28\",\n      \"views\": 13,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-29\",\n      \"views\": 15,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-30\",\n      \"views\": 14,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-10-31\",\n      \"views\": 16,\n      \"leads\": 1\n    },\n    {\n      \"date\": \"2026-11-01\",\n      \"views\": 13,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-11-02\",\n      \"views\": 15,\n      \"leads\": 0\n    },\n    {\n      \"date\": \"2026-11-03\",\n      \"views\": 15,\n      \"leads\": 0\n    }\n  ],\n  \"priceChanges\": [\n    {\n      \"at\": \"2026-10-20T11:15:00+05:30\",\n      \"from\": 940000,\n      \"to\": 890000,\n      \"before\": {\n        \"viewsPerDay\": 9,\n        \"leadsPerDay\": 0\n      },\n      \"after\": {\n        \"viewsPerDay\": 14.5,\n        \"leadsPerDay\": 0.13\n      }\n    }\n  ],\n  \"channels\": [\n    {\n      \"channel\": \"instagram_ads\",\n      \"views\": 198\n    },\n    {\n      \"channel\": \"google_organic\",\n      \"views\": 72\n    },\n    {\n      \"channel\": \"direct\",\n      \"views\": 48\n    },\n    {\n      \"channel\": \"whatsapp\",\n      \"views\": 34\n    }\n  ],\n  \"budgetContext\": {\n    \"segment\": \"Sedan\",\n    \"shareBelowPrice\": 64\n  }\n}"
+            },
+            {
+              "name": "403 Salesperson",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/vehicles/{{vehicleId}}?period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "vehicles", "{{vehicleId}}"],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "today | week | month | quarter (default month)"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "",
+                      "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Only admins can view insights\"\n  }\n}"
+            },
+            {
+              "name": "404 Vehicle not found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/vehicles/{{vehicleId}}?period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "vehicles", "{{vehicleId}}"],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "today | week | month | quarter (default month)"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "",
+                      "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Vehicle not found\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Demand Insights",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('matches the insights contract', () => {",
+                  "  pm.expect(body).to.include.keys('period', 'budgetBands', 'segments', 'zeroResultSearches');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/insights/demand?period=month",
+              "host": ["{{baseUrl}}"],
+              "path": ["insights", "demand"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month",
+                  "description": "today | week | month | quarter (default month)"
+                },
+                {
+                  "key": "showroomId",
+                  "value": "",
+                  "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /insights/demand — Admin only. Website searches (filter_apply) against live stock: five budget bands, body-type segments with an under/over gap (10+ points apart) and searches that found no car."
+          },
+          "response": [
+            {
+              "name": "200 Get Demand Insights",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/demand?period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "demand"],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "today | week | month | quarter (default month)"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "",
+                      "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "private, max-age=60"
+                }
+              ],
+              "body": "{\n  \"period\": {\n    \"from\": \"2026-10-01T00:00:00+05:30\",\n    \"to\": \"2026-10-31T23:59:59+05:30\"\n  },\n  \"budgetBands\": [\n    {\n      \"band\": \"<4L\",\n      \"searchShare\": 18,\n      \"stockShare\": 5\n    },\n    {\n      \"band\": \"4-6L\",\n      \"searchShare\": 31,\n      \"stockShare\": 15\n    },\n    {\n      \"band\": \"6-8L\",\n      \"searchShare\": 27,\n      \"stockShare\": 20\n    },\n    {\n      \"band\": \"8-12L\",\n      \"searchShare\": 17,\n      \"stockShare\": 40\n    },\n    {\n      \"band\": \"12L+\",\n      \"searchShare\": 7,\n      \"stockShare\": 20\n    }\n  ],\n  \"segments\": [\n    {\n      \"label\": \"Compact SUV\",\n      \"demandShare\": 34,\n      \"stockShare\": 18,\n      \"gap\": \"under\"\n    },\n    {\n      \"label\": \"Hatchback\",\n      \"demandShare\": 29,\n      \"stockShare\": 22,\n      \"gap\": null\n    },\n    {\n      \"label\": \"Premium SUV\",\n      \"demandShare\": 14,\n      \"stockShare\": 14,\n      \"gap\": null\n    },\n    {\n      \"label\": \"Sedan\",\n      \"demandShare\": 14,\n      \"stockShare\": 26,\n      \"gap\": \"over\"\n    },\n    {\n      \"label\": \"MUV / MPV\",\n      \"demandShare\": 9,\n      \"stockShare\": 20,\n      \"gap\": \"over\"\n    }\n  ],\n  \"zeroResultSearches\": {\n    \"count\": 63,\n    \"top\": [\n      {\n        \"label\": \"Creta under ₹10L\",\n        \"count\": 18\n      },\n      {\n        \"label\": \"Automatic under ₹6L\",\n        \"count\": 14\n      },\n      {\n        \"label\": \"Diesel Brezza\",\n        \"count\": 9\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "403 Salesperson",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/demand?period=month",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "demand"],
+                  "query": [
+                    {
+                      "key": "period",
+                      "value": "month",
+                      "description": "today | week | month | quarter (default month)"
+                    },
+                    {
+                      "key": "showroomId",
+                      "value": "",
+                      "description": "Optional showroom UUID; narrows leads and vehicles (website visits are site-wide)",
+                      "disabled": true
+                    }
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Only admins can view insights\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Lead Journey",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('matches the insights contract', () => {",
+                  "  pm.expect(body).to.include.keys('channel', 'campaign', 'content', 'firstVisitAt', 'visits', 'viewsOfThisCar', 'galleryOpens', 'otherCarsViewed', 'intent');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/insights/leads/{{leadId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["insights", "leads", "{{leadId}}"]
+            },
+            "description": "GET /insights/leads/:leadId — Admin only. The website visits behind a lead: last-touch channel / campaign / content, first visit, visits, views and gallery opens of the lead's car, up to 5 other cars viewed, and intent (high | medium | low). A lead without attribution returns null / 0 / [] fields and intent null. 404 when the lead does not exist."
+          },
+          "response": [
+            {
+              "name": "200 Get Lead Journey",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/leads/{{leadId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "leads", "{{leadId}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "private, max-age=60"
+                }
+              ],
+              "body": "{\n  \"channel\": \"instagram_ads\",\n  \"campaign\": \"Diwali SUVs\",\n  \"content\": \"Creta reel\",\n  \"firstVisitAt\": \"2026-10-22T19:42:00+05:30\",\n  \"visits\": 4,\n  \"viewsOfThisCar\": 6,\n  \"galleryOpens\": 3,\n  \"otherCarsViewed\": [\n    {\n      \"vehicleId\": \"7c1e2b8a-3f41-4d2a-9b6e-2a1f0c9d4e02\",\n      \"title\": \"2019 Honda City VX\",\n      \"listedPrice\": 890000,\n      \"views\": 2\n    },\n    {\n      \"vehicleId\": \"7c1e2b8a-3f41-4d2a-9b6e-2a1f0c9d4e05\",\n      \"title\": \"2023 Kia Sonet HTX\",\n      \"listedPrice\": 940000,\n      \"views\": 1\n    }\n  ],\n  \"intent\": \"high\"\n}"
+            },
+            {
+              "name": "403 Salesperson",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/leads/{{leadId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "leads", "{{leadId}}"]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Only admins can view insights\"\n  }\n}"
+            },
+            {
+              "name": "200 No website journey",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/insights/leads/{{leadId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["insights", "leads", "{{leadId}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "private, max-age=60"
+                }
+              ],
+              "body": "{\n  \"channel\": null,\n  \"campaign\": null,\n  \"content\": null,\n  \"firstVisitAt\": null,\n  \"visits\": 0,\n  \"viewsOfThisCar\": 0,\n  \"galleryOpens\": 0,\n  \"otherCarsViewed\": [],\n  \"intent\": null\n}"
             }
           ]
         }
