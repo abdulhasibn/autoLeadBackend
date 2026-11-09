@@ -32,20 +32,21 @@
 | Postman collection (Health, Auth, Users, Owners, Catalog, Vehicles, Leads, Notifications, Dashboard, Showrooms, Finance › Vault / Tags / Entries / Car money) | Done — local `postman/`, GitHub repo, cloud My Workspace |
 | Frontend API guide (`docs/api.md`) | Done — current endpoints + how to start |
 | HTTP integration tests (local Docker Supabase) | Not started |
-| Vercel production host | Done — `autolead-backend` (`bom1`), `https://autolead-backend-lyart.vercel.app` |
+| Vercel hosts | Done — `autolead-backend` (`bom1`, `main`) at `https://api.wheelsexperts.in`; `autolead-backend-dev` (`bom1`, `dev`) at `https://dev-api.wheelsexperts.in` |
 
-**Supabase project**
+**Supabase projects**
 
-| Field | Value |
-|-------|-------|
-| Name | `autolead` |
-| Ref | `pptljtbxqzmjossuamve` |
-| Region | `ap-south-1` (Mumbai) |
-| URL | `https://pptljtbxqzmjossuamve.supabase.co` |
-| Dashboard | [Project settings](https://supabase.com/dashboard/project/pptljtbxqzmjossuamve) |
-| Tables | 29 |
-| Migrations applied | 24 hosted rows (23 repo migrations + `lead_assignment_fix_user_id`) |
-| Roles seeded | admin, salesperson, owner, buyer |
+| Field | Production | Dev |
+|-------|------------|-----|
+| Name | `lms_prod` | `lms_dev` |
+| Ref | `tvfizfkunkcamrphrknc` | `rytaokimqywrzztepncc` |
+| Region | Singapore | Sydney |
+| URL | `https://tvfizfkunkcamrphrknc.supabase.co` | `https://rytaokimqywrzztepncc.supabase.co` |
+| Used by | `main` deploys | `dev` deploys and local `.env` |
+| Migrations applied | 26 (the 25 repo migrations + `lead_assignment_fix_user_id`, which is not in the repo) | same |
+| Roles seeded | admin, salesperson, owner, buyer | same |
+
+Apply migrations to `lms_dev` first and to `lms_prod` only when the change is promoted to `main`.
 
 ## Next up
 
@@ -55,6 +56,19 @@
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-11-09 — New Supabase and Vercel accounts, dev and prod split
+
+- Moved from the old Supabase project `autolead` (`pptljtbxqzmjossuamve`) to two projects
+  on a new account: `lms_prod` and `lms_dev`, restored from a dump of the old schema
+  (26 migrations, 35 tables). Both start with only the reference data (roles, showroom,
+  catalog) and one admin login; no client data was carried over.
+- Moved Vercel to a new account. Five projects: `autolead-backend`, `autolead-frontend`,
+  `wheels-experts-web` deploy from `main`; `autolead-backend-dev` and
+  `autolead-frontend-dev` deploy from `dev`. Previews of other branches use `lms_dev`.
+- Backend hosts: `https://api.wheelsexperts.in` (prod) and
+  `https://dev-api.wheelsexperts.in` (dev). Dashboards: `app.` and `dev.wheelsexperts.in`.
+- Branch flow for every AutoLead repo: feature → `dev` → `main` after checking on dev.
 
 ### 2026-11-08 — Insights read endpoints (website analytics, read side)
 

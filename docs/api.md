@@ -5,7 +5,8 @@ What is live today, and how a frontend (admin web first) can start against it.
 **Current phase:** staff (admin + salesperson) vehicle intake, inspection, inventory listing statuses, and walk-in lead management with assignment. The customer website reads Listed stock and files test-drive requests through the anonymous `/public` routes. There is no buyer login or owner portal yet.
 
 **Base URL:** `http://localhost:3000`  
-**Production:** `https://autolead-backend-lyart.vercel.app` (deploys from `main`)  
+**Production:** `https://api.wheelsexperts.in` (deploys from `main`)  
+**Dev:** `https://dev-api.wheelsexperts.in` (deploys from `dev`)  
 **Postman:** `postman/` in this repo, mirrored at [autoLeadBackend-postman](https://github.com/abdulhasibn/autoLeadBackend-postman) (also **AutoLead API** + **AutoLead Local** in Postman *My Workspace*)
 
 ---

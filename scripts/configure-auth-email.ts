@@ -15,7 +15,7 @@
  *   SMTP_ADMIN_EMAIL       — sender address, e.g. the Gmail account itself
  *
  * Optional:
- *   SUPABASE_PROJECT_REF   — defaults to pptljtbxqzmjossuamve (autolead)
+ *   SUPABASE_PROJECT_REF   — defaults to rytaokimqywrzztepncc (lms_dev); prod is tvfizfkunkcamrphrknc
  *   SMTP_HOST              — default smtp.gmail.com
  *   SMTP_PORT              — default 587
  *   SMTP_USER              — default SMTP_ADMIN_EMAIL
@@ -62,7 +62,7 @@ function requiredEnv(): { accessToken: string; smtpPass: string; smtpAdminEmail:
 }
 
 async function main(): Promise<void> {
-  const projectRef = process.env.SUPABASE_PROJECT_REF ?? 'pptljtbxqzmjossuamve';
+  const projectRef = process.env.SUPABASE_PROJECT_REF ?? 'rytaokimqywrzztepncc';
   const { accessToken, smtpPass, smtpAdminEmail } = requiredEnv();
 
   const body: AuthEmailConfig = {
