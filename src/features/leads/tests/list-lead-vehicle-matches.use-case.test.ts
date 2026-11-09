@@ -113,6 +113,29 @@ describe('ListLeadVehicleMatchesUseCase', () => {
     expect(result.suggested).toEqual([]);
   });
 
+  it('suggests a car that arrives later when the lead only named the model', async () => {
+    const IGNIS = 'c0000000-0000-4000-8000-000000000042';
+    queries.seed(
+      leadReadModel({
+        id: LEAD_ID,
+        preferredMakeId: MAKE,
+        preferredModelId: IGNIS,
+        budget: 500000,
+      }),
+    );
+    expect((await useCase.execute(QUERY, ADMIN)).suggested).toEqual([]);
+
+    // Two days later the Ignis comes in, not yet priced (budget cannot be scored).
+    vehicles.seed(vehicle(1, { modelId: IGNIS, modelName: 'Ignis', listedPrice: null }));
+    // Same make, other model: a partial catalog fit alone is not enough.
+    vehicles.seed(vehicle(2, { listedPrice: null }));
+
+    const result = await useCase.execute(QUERY, ADMIN);
+
+    expect(result.suggested.map(tail)).toEqual(['1']);
+    expect(result.suggested[0]?.match?.evaluatedCriteria).toBe(1);
+  });
+
   it('honours minScore and limit', async () => {
     vehicles.seed(vehicle(1, { fuelType: 'diesel' }));
     vehicles.seed(vehicle(2));

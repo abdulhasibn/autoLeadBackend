@@ -9,13 +9,16 @@ import type {
 } from '../dtos/lead-vehicle-matches.dto';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
 import { hasMatchCriteria, toMatchPreference } from '../services/lead-match-preference';
-import { type MatchPreference, scoreLeadAgainstVehicle } from '../../domain/lead-vehicle-match';
+import {
+  type MatchPreference,
+  isSuggestibleMatch,
+  scoreLeadAgainstVehicle,
+} from '../../domain/lead-vehicle-match';
 import type { ILeadQueries } from '../../domain/lead.queries';
 import type {
   IMatchableVehicleLookup,
   MatchableVehicle,
 } from '../../domain/matchable-vehicle.port';
-import { MIN_SUGGESTION_CRITERIA } from './list-vehicle-lead-matches.use-case';
 
 /** Newest linkable vehicles scored for suggestions; older ones are left out. */
 export const VEHICLE_MATCH_CANDIDATE_CAP = 1000;
@@ -60,12 +63,7 @@ export class ListLeadVehicleMatchesUseCase {
     });
     const suggested = candidates.vehicles
       .map((vehicle) => withMatch(vehicle, preference))
-      .filter(
-        (candidate) =>
-          candidate.match !== null &&
-          candidate.match.score >= query.minScore &&
-          candidate.match.evaluatedCriteria >= MIN_SUGGESTION_CRITERIA,
-      )
+      .filter((candidate) => isSuggestibleMatch(candidate.match, query.minScore))
       .sort((a, b) => (b.match?.score ?? -1) - (a.match?.score ?? -1))
       .slice(0, query.limit);
 

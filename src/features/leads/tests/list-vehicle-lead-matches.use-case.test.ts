@@ -122,6 +122,18 @@ describe('ListVehicleLeadMatchesUseCase', () => {
     expect(result.truncated).toBe(false);
   });
 
+  it('suggests a lead that only named the make or model of this car', async () => {
+    queries.seed(lead(1, { preferredMakeId: MAKE, preferredModelId: MODEL }));
+    // Same make, other model: a partial catalog fit alone is not enough.
+    queries.seed(
+      lead(2, { preferredMakeId: MAKE, preferredModelId: 'c0000000-0000-4000-8000-000000000099' }),
+    );
+
+    const result = await useCase.execute(QUERY, ADMIN);
+
+    expect(result.suggested.map((l) => l.id.slice(-1))).toEqual(['1']);
+  });
+
   it('honours minScore and limit', async () => {
     queries.seed(lead(1, { preferredMakeId: MAKE, preferredFuelTypes: ['diesel'] }));
     queries.seed(lead(2, { preferredMakeId: MAKE, preferredFuelTypes: ['petrol'] }));

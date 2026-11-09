@@ -5,10 +5,9 @@ import type { VehicleMatchDto } from '../dtos/lead-vehicle-matches.dto';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
 import { hasMatchCriteria } from '../services/lead-match-preference';
 import type { MatchPreference } from '../../domain/lead-vehicle-match';
-import { scoreLeadAgainstVehicle } from '../../domain/lead-vehicle-match';
+import { isSuggestibleMatch, scoreLeadAgainstVehicle } from '../../domain/lead-vehicle-match';
 import type { IMatchableVehicleLookup } from '../../domain/matchable-vehicle.port';
 import { VEHICLE_MATCH_CANDIDATE_CAP } from './list-lead-vehicle-matches.use-case';
-import { MIN_SUGGESTION_CRITERIA } from './list-vehicle-lead-matches.use-case';
 
 export class SuggestVehiclesUseCase {
   constructor(
@@ -54,12 +53,7 @@ export class SuggestVehiclesUseCase {
         vehicle,
         match: scoreLeadAgainstVehicle(preference, vehicle),
       }))
-      .filter(
-        (candidate) =>
-          candidate.match !== null &&
-          candidate.match.score >= query.minScore &&
-          candidate.match.evaluatedCriteria >= MIN_SUGGESTION_CRITERIA,
-      )
+      .filter((candidate) => isSuggestibleMatch(candidate.match, query.minScore))
       .sort((a, b) => (b.match?.score ?? -1) - (a.match?.score ?? -1))
       .slice(0, query.limit);
 

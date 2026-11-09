@@ -161,6 +161,23 @@ export function scoreLeadAgainstVehicle(
   };
 }
 
+/** A suggestion must rest on at least this many criteria, so one lucky colour is not a 100% fit. */
+export const MIN_SUGGESTION_CRITERIA = 2;
+
+/**
+ * Whether a match is strong enough to suggest. It must reach the score floor
+ * and rest on two criteria, except that getting exactly the car the lead asked
+ * for (make, model or variant) is enough on its own: a lead that only says
+ * "Ignis" must still see the Ignis that arrives later.
+ */
+export function isSuggestibleMatch(match: LeadMatch | null, minScore: number): boolean {
+  if (match === null || match.score < minScore) return false;
+  if (match.evaluatedCriteria >= MIN_SUGGESTION_CRITERIA) return true;
+  return match.breakdown.some(
+    (result) => result.criterion === 'catalog' && result.outcome === 'match',
+  );
+}
+
 function catalogFraction(preference: MatchPreference, vehicle: MatchVehicle): number {
   const sameMake = vehicle.makeId !== null && vehicle.makeId === preference.makeId;
   const sameModel = vehicle.modelId !== null && vehicle.modelId === preference.modelId;
