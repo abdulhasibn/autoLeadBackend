@@ -7,6 +7,8 @@ import { VehicleDeal, type DealTerms } from '../../domain/vehicle-deal.entity';
 
 interface DealPayload {
   readonly purchaseRate: number | null;
+  /** Missing on payloads sealed before commission sales (ADR-0017). */
+  readonly commissionBasisPoints?: number | null;
   readonly purchasedOn: string | null;
   readonly ownerExpectedPrice: number | null;
   readonly minimumSellingPrice: number | null;
@@ -33,7 +35,8 @@ export class VehicleDealSealer {
     }
     const terms = deal.terms;
     const payload: DealPayload = {
-      purchaseRate: terms?.purchaseRate.paise ?? null,
+      purchaseRate: terms?.purchaseRate?.paise ?? null,
+      commissionBasisPoints: terms?.commissionBasisPoints ?? null,
       purchasedOn: terms?.purchasedOn?.value ?? null,
       ownerExpectedPrice: terms?.ownerExpectedPrice?.paise ?? null,
       minimumSellingPrice: terms?.minimumSellingPrice?.paise ?? null,
@@ -65,11 +68,13 @@ export class VehicleDealSealer {
     }
 
     const p = parsePayload(cipher.open(record.payload, aad(record.vehicleId)), record.vehicleId);
+    const commissionBasisPoints = p.commissionBasisPoints ?? null;
     const terms: DealTerms | null =
-      p.purchaseRate === null
+      p.purchaseRate === null && commissionBasisPoints === null
         ? null
         : {
-            purchaseRate: Money.ofPaise(p.purchaseRate),
+            purchaseRate: p.purchaseRate === null ? null : Money.ofPaise(p.purchaseRate),
+            commissionBasisPoints,
             purchasedOn: p.purchasedOn === null ? null : CalendarDate.create(p.purchasedOn),
             ownerExpectedPrice:
               p.ownerExpectedPrice === null ? null : Money.ofPaise(p.ownerExpectedPrice),
@@ -113,10 +118,13 @@ function parsePayload(json: string, vehicleId: string): DealPayload {
   const amount = (v: unknown): boolean =>
     v === null || (typeof v === 'number' && Number.isSafeInteger(v) && v > 0);
   const text = (v: unknown): boolean => v === null || typeof v === 'string';
+  const basisPoints = (v: unknown): boolean =>
+    v === undefined || v === null || (typeof v === 'number' && Number.isSafeInteger(v) && v > 0);
   if (
     typeof value !== 'object' ||
     value === null ||
     !amount(p.purchaseRate) ||
+    !basisPoints(p.commissionBasisPoints) ||
     !amount(p.ownerExpectedPrice) ||
     !amount(p.minimumSellingPrice) ||
     !amount(p.finalisedPrice) ||

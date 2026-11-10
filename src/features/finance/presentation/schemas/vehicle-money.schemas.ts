@@ -16,8 +16,20 @@ export const vehicleQuoteParamSchema = z.object({
   quoteId: uuidSchema('quoteId'),
 });
 
+/** 0 < % ≤ 100, at most two decimals; sent on as basis points. */
+const commissionPercentSchema = z
+  .number({ error: 'commissionPercent must be a number' })
+  .gt(0, 'commissionPercent must be greater than 0')
+  .max(100, 'commissionPercent must be at most 100')
+  .refine((v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6, {
+    message: 'commissionPercent can have at most two decimals',
+  })
+  .transform((v) => Math.round(v * 100));
+
+/** Purchase cars send `purchaseRate`; commission cars send `commissionPercent`. */
 export const setVehicleDealBodySchema = z.object({
-  purchaseRate: amountSchema,
+  purchaseRate: amountSchema.nullable().default(null),
+  commissionPercent: commissionPercentSchema.nullable().default(null),
   purchasedOn: calendarDateSchema.nullable().default(null),
   ownerExpectedPrice: amountSchema.nullable().default(null),
   minimumSellingPrice: amountSchema.nullable().default(null),

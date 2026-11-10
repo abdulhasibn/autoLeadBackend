@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import { ForbiddenActionError } from '../../../domain/errors/forbidden-action.error';
 import { NotFoundError } from '../../../domain/errors/not-found.error';
 import type { CreateFinanceEntryCommand } from '../application/dtos/create-finance-entry-command';
@@ -24,6 +25,7 @@ import { toVehicleQuoteId } from '../domain/vehicle-quote-id';
 import { VehicleQuote } from '../domain/vehicle-quote.entity';
 import {
   ADMIN,
+  BALENO,
   LEAD_ANIL,
   LEAD_DELETED,
   CRETA,
@@ -165,6 +167,7 @@ describe('car money', () => {
       k.deals,
       k.entries,
       k.quotes,
+      k.vehicles,
       k.dealSealer,
       k.entrySealer,
       k.quoteSealer,
@@ -198,6 +201,7 @@ describe('car money', () => {
         sessionToken: token,
         vehicleId,
         purchaseRatePaise,
+        commissionBasisPoints: null,
         purchasedOn: '2026-10-01',
         ownerExpectedPricePaise: null,
         minimumSellingPricePaise: null,
@@ -444,7 +448,9 @@ describe('car money', () => {
     expect(rows).toEqual([
       {
         vehicleId: CRETA,
+        saleModel: 'purchase',
         purchaseRate: 700000,
+        commissionPercent: null,
         landingCost: 720000,
         currentQuote: null,
         finalisedPrice: null,
@@ -454,7 +460,9 @@ describe('car money', () => {
       },
       {
         vehicleId: SWIFT,
+        saleModel: 'purchase',
         purchaseRate: 500000,
+        commissionPercent: null,
         landingCost: 545000,
         currentQuote: 585000,
         finalisedPrice: 560000,
@@ -464,7 +472,9 @@ describe('car money', () => {
       },
       {
         vehicleId: DELETED_CAR,
+        saleModel: 'purchase',
         purchaseRate: null,
+        commissionPercent: null,
         landingCost: 0,
         currentQuote: null,
         finalisedPrice: null,
@@ -473,6 +483,74 @@ describe('car money', () => {
         owedByBuyer: null,
       },
     ]);
+  });
+
+  it('a commission car takes a %, earns it on the sale and owes the owner the rest', async () => {
+    const baleno = kit.vehicles.cars.get(BALENO);
+    if (baleno === undefined) throw new Error('missing BALENO');
+    baleno.saleModel = 'commission';
+    const setCommission = (
+      commissionBasisPoints: number | null,
+      purchaseRatePaise: number | null,
+    ) =>
+      setDeal.execute(
+        {
+          sessionToken: token,
+          vehicleId: BALENO,
+          purchaseRatePaise,
+          commissionBasisPoints,
+          purchasedOn: null,
+          ownerExpectedPricePaise: null,
+          minimumSellingPricePaise: null,
+          note: null,
+        },
+        ADMIN,
+      );
+
+    await expect(setCommission(null, 50_000_000)).rejects.toBeInstanceOf(
+      BusinessRuleViolationError,
+    );
+    const set = await setCommission(400, 50_000_000);
+    expect(set.deal).toMatchObject({ commissionPercent: 4, purchaseRate: null });
+
+    await entry({ vehicleId: BALENO, amountPaise: 1_000_000 }); // ₹10,000 cost
+    await recordSale.execute(
+      {
+        sessionToken: token,
+        vehicleId: BALENO,
+        finalisedPricePaise: 50_000_000,
+        soldOn: '2026-10-25',
+      },
+      ADMIN,
+    );
+
+    const money = await getFinance.execute({ sessionToken: token, vehicleId: BALENO }, ADMIN);
+    expect(money).toMatchObject({
+      vehicle: { saleModel: 'commission' },
+      commission: 20000,
+      profit: 20000,
+      landingCost: 10000,
+      owedToSeller: 500000 - 20000 - 10000,
+      flags: { purchaseRateMissing: false, saleRecorded: true },
+    });
+  });
+
+  it('a purchase car needs a purchase rate', async () => {
+    await expect(
+      setDeal.execute(
+        {
+          sessionToken: token,
+          vehicleId: SWIFT,
+          purchaseRatePaise: null,
+          commissionBasisPoints: 300,
+          purchasedOn: null,
+          ownerExpectedPricePaise: null,
+          minimumSellingPricePaise: null,
+          note: null,
+        },
+        ADMIN,
+      ),
+    ).rejects.toBeInstanceOf(BusinessRuleViolationError);
   });
 
   it('rejects writes to unknown or deleted cars, is locked without a session and admin-only', async () => {

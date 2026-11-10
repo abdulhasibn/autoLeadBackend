@@ -2,7 +2,10 @@ import type { VehicleDeal } from '../../domain/vehicle-deal.entity';
 
 /** Rupee amounts. */
 export interface VehicleDealTermsDto {
-  readonly purchaseRate: number;
+  /** Purchase cars. */
+  readonly purchaseRate: number | null;
+  /** Commission cars: our % of the finalised price (e.g. 3.5). */
+  readonly commissionPercent: number | null;
   readonly purchasedOn: string | null;
   readonly ownerExpectedPrice: number | null;
   readonly minimumSellingPrice: number | null;
@@ -31,7 +34,9 @@ export function toVehicleDealStateDto(deal: VehicleDeal): VehicleDealStateDto {
       terms === null
         ? null
         : {
-            purchaseRate: terms.purchaseRate.rupees,
+            purchaseRate: terms.purchaseRate?.rupees ?? null,
+            commissionPercent:
+              terms.commissionBasisPoints === null ? null : terms.commissionBasisPoints / 100,
             purchasedOn: terms.purchasedOn?.value ?? null,
             ownerExpectedPrice: terms.ownerExpectedPrice?.rupees ?? null,
             minimumSellingPrice: terms.minimumSellingPrice?.rupees ?? null,

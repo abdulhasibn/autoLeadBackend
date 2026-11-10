@@ -486,7 +486,7 @@ A min above its max is `422 VALIDATION_ERROR`. Price filters arrive with acquisi
 |-------|--------|
 | `fuelType` | `petrol`, `diesel`, `cng`, `electric`, `hybrid` |
 | `transmission` | `manual`, `automatic`, `amt`, `cvt`, `dct` |
-| `acquisitionType` | `dealership_purchase`, `consignment`, `intermediary_sale` |
+| `acquisitionType` | `dealership_purchase` (bought outright), `consignment` (sold for a commission) |
 | `rcStatus` | `clear`, `hypothecation`, `under_transfer` (or `null`) |
 | `serviceHistory` | `full`, `partial`, `none`, `unknown` (or `null`) |
 | `loanStatus` | `clear`, `active` (or `null`) |
@@ -1189,7 +1189,7 @@ One car's buy-and-sell numbers (ADR-0015). Every request needs `X-Finance-Sessio
 | Method | Path | Body / query | Success |
 |--------|------|--------------|---------|
 | GET | `/finance/vehicles/:vehicleId` | — | `200` car money (below) |
-| PUT | `/finance/vehicles/:vehicleId` | `{ purchaseRate, purchasedOn?, ownerExpectedPrice?, minimumSellingPrice?, note?, listedPrice? }` | `200` `{ vehicleId, deal, sale, listedPrice }` |
+| PUT | `/finance/vehicles/:vehicleId` | `{ purchaseRate? \| commissionPercent?, purchasedOn?, ownerExpectedPrice?, minimumSellingPrice?, note?, listedPrice? }` | `200` `{ vehicleId, deal, sale, listedPrice }` |
 | POST | `/finance/vehicles/:vehicleId/sale` | `{ finalisedPrice, soldOn }` | `200` same shape |
 | DELETE | `/finance/vehicles/:vehicleId/sale` | — | `204` |
 | GET | `/finance/vehicles/:vehicleId/quotes` | — | `200` quotes, newest first |
@@ -1199,6 +1199,10 @@ One car's buy-and-sell numbers (ADR-0015). Every request needs `X-Finance-Sessio
 | GET | `/finance/vehicles/awaiting-sale-price` | — | `200` `[{ vehicleId, label, soldLeadId }]` |
 
 All amounts are rupees.
+
+**Two sale models (ADR-0017).** A car's `acquisitionType` decides its terms. A **purchase car** (`dealership_purchase`) sends `purchaseRate`. A **commission car** (`consignment`) sends `commissionPercent`: more than 0, at most 100, with up to two decimals (e.g. `3.5`). Sending the wrong one, or neither, is `422 INVALID_DEAL_TERMS`. The car money response carries `vehicle.saleModel` (`purchase` | `commission`) and `commission`.
+
+For a commission car: `profit` = `commission` = % × finalised price. Its `cost` entries are recovered from the owner, so `owedToSeller` = finalised − commission − costs − payouts to the owner (`purchase` expenses), and is `null` until the sale is recorded. `landingCost` is the costs alone. `flags.purchaseRateMissing` means the purchase rate or the commission % is missing.
 
 - **Deal (`PUT`).** The purchase rate agreed with the seller, plus optional purchase date, owner's expected price, minimum selling price and note. `PUT` replaces these fields; it never touches the sale. `listedPrice` is the public asking price (plaintext, used by lead matching): omit it to keep the current one, send `null` to clear it.
 - **Sale.** `POST …/sale` records the finalised price and date. It doesn't change the car's status (that still follows leads), and it can be recorded before the deal. `DELETE …/sale` removes a sale recorded by mistake.
@@ -1210,7 +1214,7 @@ All amounts are rupees.
 ```json
 {
   "vehicleId": "…", "vehicle": { "id": "…", "label": "Maruti Swift · KA01AB1234" },
-  "deal": { "purchaseRate": 500000, "purchasedOn": "2026-10-01", "ownerExpectedPrice": null, "minimumSellingPrice": null, "note": null },
+  "deal": { "purchaseRate": 500000, "commissionPercent": null, "purchasedOn": "2026-10-01", "ownerExpectedPrice": null, "minimumSellingPrice": null, "note": null },
   "sale": { "finalisedPrice": 560000, "soldOn": "2026-10-25", "soldBy": "…" },
   "listedPrice": 585000,
   "quotes": [ … ], "currentQuote": { "amount": 585000, "quotedOn": "2026-10-18", "leadId": "…", "lead": { "id": "…", "name": "Anil Kumar", "phone": "+919876500001" }, "quotedTo": null, … },
@@ -1245,22 +1249,23 @@ All amounts are rupees; profits can be negative. Every request needs `X-Finance-
 - `from` / `to`: `YYYY-MM-DD`, inclusive, required for the first three. `period`: `day`, `week` (Monday start), `month` (default) or `year`. `day`/`week` reports cover at most 366 days; `month`/`year` at most 5 years (`422 DATE_RANGE_TOO_LONG`).
 - `pnl` and `cash-flow` return `{ period, from, to, buckets, totals, truncated }`. Every period in the range has a bucket (`start`, `end`, `label`), even when empty, so a chart has every bar. Labels: `2026-10-25` (day, or the Monday of a week), `2026-10` (month), `2026` (year).
 
-**Profit & loss** (per bucket: `sales, costOfSales, grossProfit, laterCarCosts, otherIncome, businessExpenses, netProfit, carsSold, carsMissingPurchaseRate, uncountedSales`):
+**Profit & loss** (per bucket: `sales, costOfSales, commissions, grossProfit, laterCarCosts, otherIncome, businessExpenses, netProfit, carsSold, carsMissingPurchaseRate, uncountedSales`):
 
 - A car counts in the period of its **sale date**: its finalised price is `sales`; its purchase rate plus the cost entries dated on or before the sale date are `costOfSales`.
 - Cost entries dated **after** the sale count in their own period as `laterCarCosts`.
 - `otherIncome` = car income with purpose `other` + income with no car. `businessExpenses` = expenses with no car.
 - `netProfit` = gross profit − later car costs + other income − business expenses.
 - Payments to sellers and from buyers are not in profit & loss (they settle prices already counted), and costs of unsold cars aren't either (they're in stock).
-- **A sold car without a purchase rate has unknown profit.** It counts in `carsSold` and `carsMissingPurchaseRate`, but stays out of `sales`, `costOfSales`, gross and net profit, and so do its later costs. Its finalised price is in `uncountedSales`; show e.g. "₹X of sales not counted until a purchase rate is entered". It joins the numbers as soon as the purchase rate is set.
+- **A sold commission car adds its commission** (`commissions`, part of `grossProfit`) on its sale date. Its costs are recovered from the owner, so they never appear in P&L.
+- **A sold car without a purchase rate (or commission %) has unknown profit.** It counts in `carsSold` and `carsMissingPurchaseRate`, but stays out of `sales`, `costOfSales`, gross and net profit, and so do its later costs. Its finalised price is in `uncountedSales`; show e.g. "₹X of sales not counted until a purchase rate is entered". It joins the numbers as soon as the purchase rate is set.
 
 **Cash flow** (per bucket: `in, out, net, cumulative, inFromBuyers, inOther, outToSellers, outCarCosts, outBusiness`): every entry on its own date, including payments to sellers and from buyers. `cumulative` is the running net from the first bucket.
 
-**Profit per car**: cars sold in the range, `{ vehicle, soldOn, purchaseRate, costs, landingCost, finalisedPrice, profit }`. `sort`: `profit` (biggest first, default), `-profit`, `date` (newest first), `-date`. Car profit includes every cost on the car, also ones paid after the sale. Cars without a purchase rate are listed with `profit: null`; `totals` (`sales`, `landingCost`, `profit`) cover only cars with a purchase rate, and `totals.carsMissingPurchaseRate` / `totals.uncountedSales` show what was left out. `totals.cars` counts every row.
+**Profit per car**: cars sold in the range, `{ vehicle, soldOn, saleModel, purchaseRate, commissionPercent, commission, costs, landingCost, finalisedPrice, profit }`. A commission car's profit is its commission; `totals.commissions` sums them. `sort`: `profit` (biggest first, default), `-profit`, `date` (newest first), `-date`. Car profit includes every cost on the car, also ones paid after the sale. Cars without a purchase rate are listed with `profit: null`; `totals` (`sales`, `landingCost`, `profit`) cover only cars with a purchase rate, and `totals.carsMissingPurchaseRate` / `totals.uncountedSales` show what was left out. `totals.cars` counts every row.
 
-**Dues**: cars where something is still owed, `{ vehicle, purchaseRate, paidToSeller, owedToSeller, finalisedPrice, receivedFromBuyer, owedByBuyer }`, largest first. Negative means overpaid. `totals` add up only what is still owed.
+**Dues**: cars where something is still owed, `{ vehicle, saleModel, purchaseRate, commissionPercent, commission, costs, paidToSeller, owedToSeller, finalisedPrice, receivedFromBuyer, owedByBuyer }`, largest first. Negative means overpaid. `totals` add up only what is still owed.
 
-**Stock**: cars with money in them, no recorded sale and status other than `sold`, `{ vehicle, status, purchaseRate, costs, landingCost, currentQuote, listedPrice }`. Dropped cars stay listed (with `status: "dropped"`) until dealt with. `totals.moneyInStock` is the sum of landing costs.
+**Stock**: cars with money in them, no recorded sale and status other than `sold`, `{ vehicle, status, saleModel, purchaseRate, commissionPercent, costs, landingCost, currentQuote, listedPrice }`. Dropped cars stay listed (with `status: "dropped"`) until dealt with. `totals.moneyInStock` is the sum of landing costs.
 
 **Summary** (`GET /finance/summary`):
 

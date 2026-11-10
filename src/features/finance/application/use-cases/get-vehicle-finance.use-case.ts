@@ -68,7 +68,8 @@ export class GetVehicleFinanceUseCase {
       vehicle,
       deal,
       money: calculateVehicleMoney({
-        purchaseRate: deal.terms?.purchaseRate ?? null,
+        saleModel: vehicle.saleModel,
+        terms: deal.terms,
         finalisedPrice: deal.sale?.finalisedPrice ?? null,
         entries,
       }),

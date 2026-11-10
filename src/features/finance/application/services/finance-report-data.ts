@@ -11,7 +11,7 @@ import type {
 import { MAX_LEDGER_ROWS } from '../../domain/finance.constants';
 import type { VehicleDeal } from '../../domain/vehicle-deal.entity';
 import type { IVehicleDealQueries } from '../../domain/vehicle-deal.queries';
-import { calculateVehicleMoney, type VehicleMoney } from '../../domain/vehicle-money';
+import { calculateVehicleMoney, hasDealTerms, type VehicleMoney } from '../../domain/vehicle-money';
 import { compareQuotesNewestFirst, type VehicleQuote } from '../../domain/vehicle-quote.entity';
 import type { IVehicleQuoteQueries } from '../../domain/vehicle-quote.queries';
 import type { EntrySealer } from './entry.sealer';
@@ -80,7 +80,8 @@ export class FinanceReportData {
           vehicleId: deal.vehicleId,
           soldOn: sale.soldOn.value,
           finalisedPrice: sale.finalisedPrice,
-          purchaseRate: deal.terms?.purchaseRate ?? null,
+          saleModel: vehicle.saleModel,
+          terms: deal.terms,
           entries: byCar.get(deal.vehicleId) ?? [],
           vehicle,
           deal,
@@ -110,18 +111,26 @@ export class FinanceReportData {
   }
 
   /**
-   * Sale date and whether a purchase rate is known, for these cars' recorded
-   * sales. The date is plaintext; the purchase rate needs the deal opened.
+   * Sale date and later-cost rule for these cars' recorded sales. The date is
+   * plaintext; the terms need the deal opened.
    */
   async saleInfo(
     cipher: FinanceCipher,
     vehicleIds: readonly VehicleId[],
   ): Promise<Map<string, SaleInfo>> {
     const sales = new Map<string, SaleInfo>();
-    for (const row of await this.deals.findMany([...new Set(vehicleIds)])) {
+    const rows = (await this.deals.findMany([...new Set(vehicleIds)])).filter(
+      (row) => row.soldOn !== null,
+    );
+    const facts = await this.factsById(rows.map((row) => row.vehicleId));
+    for (const row of rows) {
       if (row.soldOn === null) continue;
       const deal = this.dealSealer.open(row, cipher);
-      sales.set(row.vehicleId, { soldOn: row.soldOn, hasPurchaseRate: deal.terms !== null });
+      const saleModel = facts.get(row.vehicleId)?.saleModel ?? 'purchase';
+      sales.set(row.vehicleId, {
+        soldOn: row.soldOn,
+        countsLaterCosts: saleModel === 'purchase' && hasDealTerms(saleModel, deal.terms),
+      });
     }
     return sales;
   }
@@ -159,7 +168,8 @@ export class FinanceReportData {
           deal,
           entries,
           money: calculateVehicleMoney({
-            purchaseRate: deal?.terms?.purchaseRate ?? null,
+            saleModel: vehicle.saleModel,
+            terms: deal?.terms ?? null,
             finalisedPrice: deal?.sale?.finalisedPrice ?? null,
             entries,
           }),

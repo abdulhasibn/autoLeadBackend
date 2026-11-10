@@ -19,6 +19,7 @@ export class SetVehicleDealController {
             sessionToken: readFinanceSessionToken(req),
             vehicleId: params.vehicleId,
             purchaseRatePaise: body.purchaseRate,
+            commissionBasisPoints: body.commissionPercent,
             purchasedOn: body.purchasedOn,
             ownerExpectedPricePaise: body.ownerExpectedPrice,
             minimumSellingPricePaise: body.minimumSellingPrice,

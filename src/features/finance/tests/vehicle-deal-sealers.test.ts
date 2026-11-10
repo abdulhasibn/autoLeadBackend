@@ -11,7 +11,7 @@ import { VehicleDeal } from '../domain/vehicle-deal.entity';
 import { toVehicleQuoteId } from '../domain/vehicle-quote-id';
 import { VehicleQuote } from '../domain/vehicle-quote.entity';
 import { NodeFinanceCrypto } from '../infrastructure/node-finance-crypto';
-import { CRETA, SWIFT } from './fakes';
+import { CRETA, dealTerms, SWIFT } from './fakes';
 
 const crypto = new NodeFinanceCrypto();
 const cipher = crypto.cipherFor(crypto.newDataKey(), 1);
@@ -23,6 +23,7 @@ function dealWithSale(): VehicleDeal {
   deal.setTerms(
     {
       purchaseRate: Money.fromRupees(500000),
+      commissionBasisPoints: null,
       purchasedOn: CalendarDate.create('2026-10-01'),
       ownerExpectedPrice: Money.fromRupees(520000),
       minimumSellingPrice: null,
@@ -42,6 +43,7 @@ describe('VehicleDeal', () => {
       deal.setTerms(
         {
           purchaseRate: Money.zero(),
+          commissionBasisPoints: null,
           purchasedOn: null,
           ownerExpectedPrice: null,
           minimumSellingPrice: null,
@@ -55,12 +57,28 @@ describe('VehicleDeal', () => {
     ).toThrow(BusinessRuleViolationError);
   });
 
+  it('needs exactly one of a purchase rate or a commission % in range', () => {
+    const deal = VehicleDeal.empty(SWIFT, null, NOW);
+    const bad = [
+      dealTerms(),
+      dealTerms({ purchaseRate: Money.fromRupees(1), commissionBasisPoints: 100 }),
+      dealTerms({ commissionBasisPoints: 0 }),
+      dealTerms({ commissionBasisPoints: 10_001 }),
+      dealTerms({ commissionBasisPoints: 2.5 }),
+    ];
+    for (const terms of bad) {
+      expect(() => deal.setTerms(terms, NOW)).toThrow(BusinessRuleViolationError);
+    }
+    deal.setTerms(dealTerms({ commissionBasisPoints: 10_000 }), NOW);
+    expect(deal.terms?.commissionBasisPoints).toBe(10_000);
+  });
+
   it('records and clears a sale without touching the terms', () => {
     const deal = dealWithSale();
     deal.clearSale(NOW);
 
     expect(deal.sale).toBeNull();
-    expect(deal.terms?.purchaseRate.rupees).toBe(500000);
+    expect(deal.terms?.purchaseRate?.rupees).toBe(500000);
     expect(deal.terms?.note).toBe('bought from Mr Rao');
   });
 });
@@ -76,7 +94,7 @@ describe('VehicleDealSealer', () => {
     expect(sealed.soldOn).toBe('2026-10-25');
     expect(sealed.payload).not.toContain('Rao');
     expect(JSON.stringify({ ...sealed, payload: null })).not.toMatch(/500000|560000|Rao/);
-    expect(opened.terms?.purchaseRate.rupees).toBe(500000);
+    expect(opened.terms?.purchaseRate?.rupees).toBe(500000);
     expect(opened.terms?.ownerExpectedPrice?.rupees).toBe(520000);
     expect(opened.sale?.finalisedPrice.rupees).toBe(560000);
     expect(opened.sale?.soldBy).toBe(ADMIN_ID);
@@ -88,6 +106,40 @@ describe('VehicleDealSealer', () => {
     expect(sealed.payload).toBeNull();
     expect(sealed.keyVersion).toBeNull();
     expect(sealer.open(sealed, cipher).terms).toBeNull();
+  });
+
+  it('round-trips commission terms', () => {
+    const deal = VehicleDeal.empty(SWIFT, null, NOW);
+    deal.setTerms(dealTerms({ commissionBasisPoints: 350 }), NOW);
+
+    const opened = sealer.open(sealer.seal(deal, cipher), cipher);
+    expect(opened.terms?.commissionBasisPoints).toBe(350);
+    expect(opened.terms?.purchaseRate).toBeNull();
+  });
+
+  it('reads payloads sealed before commission sales', () => {
+    const old = JSON.stringify({
+      purchaseRate: 50_000_000,
+      purchasedOn: null,
+      ownerExpectedPrice: null,
+      minimumSellingPrice: null,
+      note: null,
+      finalisedPrice: null,
+    });
+    const opened = sealer.open(
+      {
+        vehicleId: SWIFT,
+        listedPrice: null,
+        soldOn: null,
+        soldBy: null,
+        updatedAt: NOW,
+        payload: cipher.seal(old, `vehicle_financials:${SWIFT}`),
+        keyVersion: cipher.keyVersion,
+      },
+      cipher,
+    );
+    expect(opened.terms?.purchaseRate?.rupees).toBe(500000);
+    expect(opened.terms?.commissionBasisPoints).toBeNull();
   });
 
   it("refuses another car's payload or a sale date without a price", () => {

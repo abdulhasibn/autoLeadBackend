@@ -178,7 +178,7 @@ Table vehicles {
   description text
   status text [not null, default: 'open', note: 'open | linked | dropped | sold (ADR-0011): linked/sold follow the leads']
   sold_lead_id uuid [ref: - leads.id, note: 'the lead that bought it; set only when status = sold']
-  acquisition_type text [not null, note: 'dealership_purchase | consignment | intermediary_sale']
+  acquisition_type text [not null, note: 'dealership_purchase (bought outright) | consignment (sold for a commission), ADR-0017']
   submitted_by uuid [not null, ref: > users.id]
   created_at timestamptz [not null, default: `now()`]
   updated_at timestamptz [not null, default: `now()`]

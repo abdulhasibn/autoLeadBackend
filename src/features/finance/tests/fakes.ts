@@ -1,4 +1,7 @@
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
+import type { Money } from '../domain/money.value-object';
+import type { SaleModel } from '../domain/sale-model';
+import type { DealTerms } from '../domain/vehicle-deal.entity';
 import { toUserId } from '../../../domain/shared/user-id';
 import type { Clock } from '../../../shared/clock/clock';
 import type { IdGenerator } from '../../../shared/ids/id-generator';
@@ -273,7 +276,7 @@ function car(
   status: string,
   deleted: boolean,
 ): FinanceVehicleFacts {
-  return { id, showroomId, label, status, deleted };
+  return { id, showroomId, label, status, deleted, saleModel: 'purchase' };
 }
 
 export class FakeFinanceVehicleLookup implements IFinanceVehicleLookup {
@@ -445,4 +448,39 @@ function copySession(session: FinanceSession): FinanceSession {
     idleExpiresAt: session.idleExpiresAt,
     expiresAt: session.expiresAt,
   });
+}
+
+/** Deal terms with everything optional left empty. */
+export function dealTerms(overrides: Partial<DealTerms> = {}): DealTerms {
+  return {
+    purchaseRate: null,
+    commissionBasisPoints: null,
+    purchasedOn: null,
+    ownerExpectedPrice: null,
+    minimumSellingPrice: null,
+    note: null,
+    ...overrides,
+  };
+}
+
+/** A purchase car's money inputs; null rate = no terms recorded. */
+export function bought(purchaseRate: Money | null): {
+  readonly saleModel: SaleModel;
+  readonly terms: DealTerms | null;
+} {
+  return {
+    saleModel: 'purchase',
+    terms: purchaseRate === null ? null : dealTerms({ purchaseRate }),
+  };
+}
+
+/** A commission car's money inputs; null = no % recorded. */
+export function onCommission(commissionBasisPoints: number | null): {
+  readonly saleModel: SaleModel;
+  readonly terms: DealTerms | null;
+} {
+  return {
+    saleModel: 'commission',
+    terms: commissionBasisPoints === null ? null : dealTerms({ commissionBasisPoints }),
+  };
 }

@@ -5,6 +5,7 @@ import { isInStock } from '../../domain/vehicle-report-rows';
 import type { StockReportDto, StockRowDto } from '../dtos/finance-report.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
 import type { FinanceReportData } from '../services/finance-report-data';
+import { commissionPercentOf } from '../dtos/vehicle-finance.dto';
 import type { FinanceSessionService } from '../services/finance-session.service';
 
 /** Money tied up in cars not yet sold, biggest first. */
@@ -35,7 +36,9 @@ export class GetStockReportUseCase {
       .map(({ vehicle, deal, money }) => ({
         vehicle: { id: vehicle.id, label: vehicle.label },
         status: vehicle.status,
-        purchaseRate: deal?.terms?.purchaseRate.rupees ?? null,
+        saleModel: vehicle.saleModel,
+        purchaseRate: deal?.terms?.purchaseRate?.rupees ?? null,
+        commissionPercent: commissionPercentOf(deal),
         costs: money.costs / 100,
         landingCost: money.landingCost / 100,
         currentQuote: quotes.get(vehicle.id)?.amount.rupees ?? null,

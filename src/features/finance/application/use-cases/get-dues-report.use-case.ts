@@ -4,6 +4,7 @@ import { hasDues } from '../../domain/vehicle-report-rows';
 import type { DuesReportDto, DuesRowDto } from '../dtos/finance-report.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
 import type { FinanceReportData } from '../services/finance-report-data';
+import { commissionPercentOf } from '../dtos/vehicle-finance.dto';
 import type { FinanceSessionService } from '../services/finance-session.service';
 
 /** Cars where money is still owed to the seller or by the buyer (either sign). */
@@ -29,7 +30,11 @@ export class GetDuesReportUseCase {
       .filter((car) => hasDues(car.money))
       .map(({ vehicle, deal, money }) => ({
         vehicle: { id: vehicle.id, label: vehicle.label },
-        purchaseRate: deal?.terms?.purchaseRate.rupees ?? null,
+        saleModel: vehicle.saleModel,
+        purchaseRate: deal?.terms?.purchaseRate?.rupees ?? null,
+        commissionPercent: commissionPercentOf(deal),
+        commission: money.commission === null ? null : money.commission / 100,
+        costs: money.costs / 100,
         paidToSeller: money.paidToSeller / 100,
         owedToSeller: money.owedToSeller === null ? null : money.owedToSeller / 100,
         finalisedPrice: deal?.sale?.finalisedPrice.rupees ?? null,

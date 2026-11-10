@@ -227,6 +227,7 @@ export async function buildFinanceSeed(input: FinanceSeedInput): Promise<Finance
       deal.setTerms(
         {
           purchaseRate: Money.fromRupees(500_000),
+          commissionBasisPoints: null,
           purchasedOn: CalendarDate.create(dateOnly(bought)),
           ownerExpectedPrice: Money.fromRupees(520_000),
           minimumSellingPrice: null,
@@ -333,6 +334,7 @@ export async function buildFinanceSeed(input: FinanceSeedInput): Promise<Finance
     deal.setTerms(
       {
         purchaseRate: Money.fromRupees(rate),
+        commissionBasisPoints: null,
         purchasedOn: CalendarDate.create(dateOnly(car.createdAt)),
         ownerExpectedPrice: chance(0.6) ? Money.fromRupees(roundTo(rate * 1.05, 5_000)) : null,
         minimumSellingPrice: chance(0.4)
@@ -542,7 +544,9 @@ export async function buildFinanceSeed(input: FinanceSeedInput): Promise<Finance
   if (clientCar !== null) {
     const clientDeal = openedDeals.get(clientCar.id);
     const money = calculateVehicleMoney({
-      purchaseRate: clientDeal?.terms?.purchaseRate ?? null,
+      // Seeded deals are all purchase terms.
+      saleModel: 'purchase',
+      terms: clientDeal?.terms ?? null,
       finalisedPrice: clientDeal?.sale?.finalisedPrice ?? null,
       entries: opened.filter((e) => e.vehicleId === clientCar.id && !e.isDeleted),
     });
@@ -565,7 +569,8 @@ export async function buildFinanceSeed(input: FinanceSeedInput): Promise<Finance
   for (const car of live) {
     const deal = openedDeals.get(car.id);
     const money = calculateVehicleMoney({
-      purchaseRate: deal?.terms?.purchaseRate ?? null,
+      saleModel: 'purchase',
+      terms: deal?.terms ?? null,
       finalisedPrice: deal?.sale?.finalisedPrice ?? null,
       entries: liveEntries.filter((e) => e.vehicleId === car.id),
     });

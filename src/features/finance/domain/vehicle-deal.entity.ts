@@ -5,10 +5,18 @@ import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Money } from './money.value-object';
 
 export const MAX_DEAL_NOTE_LENGTH = 1000;
+/** 100% in basis points (1 bp = 0.01%). */
+export const MAX_COMMISSION_BASIS_POINTS = 10_000;
 
-/** The agreed terms of buying the car. */
+/**
+ * The terms agreed with the owner. Exactly one of `purchaseRate` (bought
+ * outright) or `commissionBasisPoints` (sold for a commission) is set,
+ * matching the car's sale model (ADR-0017).
+ */
 export interface DealTerms {
-  readonly purchaseRate: Money;
+  readonly purchaseRate: Money | null;
+  /** Our cut of the finalised price, in basis points (350 = 3.5%). */
+  readonly commissionBasisPoints: number | null;
   readonly purchasedOn: CalendarDate | null;
   readonly ownerExpectedPrice: Money | null;
   readonly minimumSellingPrice: Money | null;
@@ -68,7 +76,16 @@ export class VehicleDeal {
   }
 
   setTerms(terms: DealTerms, now: Date): void {
-    requirePositive(terms.purchaseRate, 'purchaseRate');
+    if ((terms.purchaseRate === null) === (terms.commissionBasisPoints === null)) {
+      throw new BusinessRuleViolationError(
+        'INVALID_DEAL_TERMS',
+        'Set either a purchase rate or a commission percentage',
+      );
+    }
+    if (terms.purchaseRate !== null) requirePositive(terms.purchaseRate, 'purchaseRate');
+    if (terms.commissionBasisPoints !== null) {
+      requireCommission(terms.commissionBasisPoints);
+    }
     if (terms.ownerExpectedPrice !== null)
       requirePositive(terms.ownerExpectedPrice, 'ownerExpectedPrice');
     if (terms.minimumSellingPrice !== null) {
@@ -100,6 +117,19 @@ export class VehicleDeal {
 
   clearSale(now: Date): void {
     this.props = { ...this.props, sale: null, updatedAt: now };
+  }
+}
+
+function requireCommission(basisPoints: number): void {
+  if (
+    !Number.isInteger(basisPoints) ||
+    basisPoints <= 0 ||
+    basisPoints > MAX_COMMISSION_BASIS_POINTS
+  ) {
+    throw new BusinessRuleViolationError(
+      'INVALID_COMMISSION',
+      'Commission must be more than 0% and at most 100%, to two decimals',
+    );
   }
 }
 

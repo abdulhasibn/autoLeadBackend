@@ -10,6 +10,7 @@ import type {
   IFinanceVehicleLookup,
   SoldVehicleFacts,
 } from '../domain/finance-vehicle-lookup.port';
+import { saleModelOf } from '../domain/sale-model';
 import { inBatches } from './in-batches';
 
 type VehicleListRow = Pick<
@@ -21,9 +22,11 @@ type VehicleListRow = Pick<
   | 'registration_number'
   | 'status'
   | 'deleted_at'
+  | 'acquisition_type'
 >;
 
-const COLUMNS = 'id, showroom_id, make_name, model_name, registration_number, status, deleted_at';
+const COLUMNS =
+  'id, showroom_id, make_name, model_name, registration_number, status, deleted_at, acquisition_type';
 
 /**
  * Reads car facts from the `vehicle_list` view for finance (ADR-0006
@@ -115,5 +118,6 @@ function toFacts(row: VehicleListRow): FinanceVehicleFacts | null {
     label: label.length === 0 ? 'Vehicle' : label,
     status: row.status ?? 'open',
     deleted: row.deleted_at !== null,
+    saleModel: saleModelOf(row.acquisition_type),
   };
 }

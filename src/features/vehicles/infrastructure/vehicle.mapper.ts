@@ -88,7 +88,7 @@ export function toVehicle(row: VehicleRow): Vehicle {
     status: mapVo(row.status, row.id, 'status', (value) => VehicleStatus.create(value)),
     soldLeadId: row.sold_lead_id === null ? null : toLeadId(row.sold_lead_id),
     acquisitionType: mapVo(row.acquisition_type, row.id, 'acquisition_type', (value) =>
-      AcquisitionType.create(value),
+      AcquisitionType.fromStored(value),
     ),
     submittedBy: toUserId(row.submitted_by),
     createdAt: new Date(row.created_at),

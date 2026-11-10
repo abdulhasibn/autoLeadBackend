@@ -1,6 +1,7 @@
 import type { LeadId } from '../../../domain/shared/lead-id';
 import type { ShowroomId } from '../../../domain/shared/showroom-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
+import type { SaleModel } from './sale-model';
 
 /** The car facts finance needs. Read from the vehicles data, never amounts. */
 export interface FinanceVehicleFacts {
@@ -11,6 +12,8 @@ export interface FinanceVehicleFacts {
   /** Car status (`open`, `linked`, `dropped`, `sold`). */
   readonly status: string;
   readonly deleted: boolean;
+  /** Bought outright or sold for a commission. */
+  readonly saleModel: SaleModel;
 }
 
 /**

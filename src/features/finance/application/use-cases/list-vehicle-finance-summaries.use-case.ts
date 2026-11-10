@@ -3,6 +3,7 @@ import { toVehicleId } from '../../../../domain/shared/vehicle-id';
 import type { Clock } from '../../../../shared/clock/clock';
 import type { FinanceEntry } from '../../domain/finance-entry.entity';
 import type { IFinanceEntryQueries } from '../../domain/finance-entry.queries';
+import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
 import { MAX_LEDGER_ROWS } from '../../domain/finance.constants';
 import { VehicleDeal } from '../../domain/vehicle-deal.entity';
 import type { IVehicleDealQueries } from '../../domain/vehicle-deal.queries';
@@ -27,6 +28,7 @@ export class ListVehicleFinanceSummariesUseCase {
     private readonly deals: IVehicleDealQueries,
     private readonly entries: IFinanceEntryQueries,
     private readonly quotes: IVehicleQuoteQueries,
+    private readonly vehicles: IFinanceVehicleLookup,
     private readonly dealSealer: VehicleDealSealer,
     private readonly entrySealer: EntrySealer,
     private readonly quoteSealer: QuoteSealer,
@@ -67,14 +69,20 @@ export class ListVehicleFinanceSummariesUseCase {
       }
     }
 
+    const saleModels = new Map(
+      (await this.vehicles.findMany(ids)).map((car) => [car.id as string, car.saleModel]),
+    );
     const now = this.clock.now();
     return ids.map((vehicleId) => {
       const deal = deals.get(vehicleId) ?? VehicleDeal.empty(vehicleId, null, now);
+      const saleModel = saleModels.get(vehicleId) ?? 'purchase';
       return toVehicleFinanceSummaryDto({
         vehicleId,
+        saleModel,
         deal,
         money: calculateVehicleMoney({
-          purchaseRate: deal.terms?.purchaseRate ?? null,
+          saleModel,
+          terms: deal.terms,
           finalisedPrice: deal.sale?.finalisedPrice ?? null,
           entries: entriesByCar.get(vehicleId) ?? [],
         }),

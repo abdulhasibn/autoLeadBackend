@@ -13,7 +13,7 @@ import { FinanceEntry } from '../domain/finance-entry.entity';
 import { Money } from '../domain/money.value-object';
 import { ReportPeriod } from '../domain/report-period.value-object';
 import { calculateVehicleMoney } from '../domain/vehicle-money';
-import { CRETA, SHOWROOM_A, SWIFT } from './fakes';
+import { bought, CRETA, onCommission, SHOWROOM_A, SWIFT } from './fakes';
 
 const d = (value: string): CalendarDate => CalendarDate.create(value);
 
@@ -59,7 +59,7 @@ function clientCar(): { entries: FinanceEntry[]; sold: SoldCar } {
       vehicleId: SWIFT,
       soldOn: '2026-10-25',
       finalisedPrice: Money.fromRupees(560000),
-      purchaseRate: Money.fromRupees(500000),
+      ...bought(Money.fromRupees(500000)),
       entries,
     },
   };
@@ -124,7 +124,7 @@ describe('buildProfitAndLoss', () => {
       buckets,
       soldCars: [car.sold],
       entries,
-      sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', hasPurchaseRate: true }]]),
+      sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', countsLaterCosts: true }]]),
     });
   }
 
@@ -153,9 +153,9 @@ describe('buildProfitAndLoss', () => {
     const car = clientCar();
     const pnl = buildProfitAndLoss({
       buckets,
-      soldCars: [{ ...car.sold, purchaseRate: null }],
+      soldCars: [{ ...car.sold, ...bought(null) }],
       entries: [...car.entries, ...otherEntries()],
-      sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', hasPurchaseRate: false }]]),
+      sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', countsLaterCosts: false }]]),
     });
     const [, oct, nov] = pnl.buckets;
 
@@ -179,10 +179,11 @@ describe('buildProfitAndLoss', () => {
       buckets: ReportPeriod.create('year').bucketsBetween(d('2026-01-01'), d('2026-12-31')),
       soldCars: [car.sold],
       entries: all,
-      sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', hasPurchaseRate: true }]]),
+      sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', countsLaterCosts: true }]]),
     });
     const carProfit = calculateVehicleMoney({
-      purchaseRate: car.sold.purchaseRate,
+      saleModel: car.sold.saleModel,
+      terms: car.sold.terms,
       finalisedPrice: car.sold.finalisedPrice,
       entries: car.entries,
     }).profit;
@@ -194,6 +195,50 @@ describe('buildProfitAndLoss', () => {
       .reduce((t, x) => t + x.amount.paise, 0);
 
     expect(pnl.totals.netProfit).toBe((carProfit ?? 0) + other - business);
+  });
+});
+
+describe('buildProfitAndLoss with a commission car', () => {
+  const buckets = ReportPeriod.create('month').bucketsBetween(d('2026-10-01'), d('2026-11-30'));
+  const car = () => clientCar();
+
+  it('adds the commission to gross profit; its costs never reach P&L', () => {
+    const { sold, entries } = car();
+    const pnl = buildProfitAndLoss({
+      buckets,
+      soldCars: [{ ...sold, ...onCommission(500) }],
+      entries,
+      sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', countsLaterCosts: false }]]),
+    });
+    const [oct, nov] = pnl.buckets;
+
+    expect(rupees(oct?.commissions ?? 0)).toBe(28000); // 5% of 560000
+    expect(oct).toMatchObject({
+      sales: 0,
+      costOfSales: 0,
+      carsSold: 1,
+      carsMissingPurchaseRate: 0,
+    });
+    expect(rupees(oct?.grossProfit ?? 0)).toBe(28000);
+    expect(rupees(oct?.netProfit ?? 0)).toBe(28000);
+    expect(nov?.laterCarCosts).toBe(0);
+  });
+
+  it('flags a commission car sold without its %', () => {
+    const { sold, entries } = car();
+    const pnl = buildProfitAndLoss({
+      buckets,
+      soldCars: [{ ...sold, ...onCommission(null) }],
+      entries,
+      sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', countsLaterCosts: false }]]),
+    });
+
+    expect(pnl.totals).toMatchObject({
+      commissions: 0,
+      grossProfit: 0,
+      carsMissingPurchaseRate: 1,
+      uncountedSales: 56_000_000,
+    });
   });
 });
 

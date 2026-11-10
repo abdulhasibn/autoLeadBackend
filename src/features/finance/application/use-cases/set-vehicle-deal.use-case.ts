@@ -1,3 +1,4 @@
+import { BusinessRuleViolationError } from '../../../../domain/errors/business-rule-violation.error';
 import { NotFoundError } from '../../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { CalendarDate } from '../../../../domain/shared/calendar-date.value-object';
@@ -13,7 +14,11 @@ import type { FinancePolicy } from '../policies/finance.policy';
 import type { FinanceSessionService } from '../services/finance-session.service';
 import type { VehicleDealSealer } from '../services/vehicle-deal.sealer';
 
-/** Sets the purchase terms (and optionally the listed price). The sale is untouched. */
+/**
+ * Sets the terms agreed with the owner (and optionally the listed price): a
+ * purchase rate for a purchase car, a commission % for a commission car
+ * (ADR-0017). The sale is untouched.
+ */
 export class SetVehicleDealUseCase {
   constructor(
     private readonly policy: FinancePolicy,
@@ -32,8 +37,18 @@ export class SetVehicleDealUseCase {
     const { cipher } = await this.sessions.open(ctx, command.sessionToken);
 
     const vehicleId = toVehicleId(command.vehicleId);
-    if ((await this.vehicles.findLinkable(vehicleId)) === null) {
+    const vehicle = await this.vehicles.findLinkable(vehicleId);
+    if (vehicle === null) {
       throw new NotFoundError(`Vehicle not found for id ${command.vehicleId}`);
+    }
+    const commission = vehicle.saleModel === 'commission';
+    if (commission ? command.commissionBasisPoints === null : command.purchaseRatePaise === null) {
+      throw new BusinessRuleViolationError(
+        'INVALID_DEAL_TERMS',
+        commission
+          ? 'This car is sold for a commission: set commissionPercent'
+          : 'This car is bought outright: set purchaseRate',
+      );
     }
     const now = this.clock.now();
     const sealed = await this.deals.find(vehicleId);
@@ -42,7 +57,11 @@ export class SetVehicleDealUseCase {
 
     deal.setTerms(
       {
-        purchaseRate: Money.ofPaise(command.purchaseRatePaise),
+        purchaseRate:
+          commission || command.purchaseRatePaise === null
+            ? null
+            : Money.ofPaise(command.purchaseRatePaise),
+        commissionBasisPoints: commission ? command.commissionBasisPoints : null,
         purchasedOn: command.purchasedOn === null ? null : CalendarDate.create(command.purchasedOn),
         ownerExpectedPrice:
           command.ownerExpectedPricePaise === null

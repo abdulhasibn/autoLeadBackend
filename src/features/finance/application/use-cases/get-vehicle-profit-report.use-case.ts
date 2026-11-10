@@ -4,6 +4,7 @@ import { toShowroomId } from '../../../../domain/shared/showroom-id';
 import { ReportPeriod } from '../../domain/report-period.value-object';
 import { calculateVehicleMoney } from '../../domain/vehicle-money';
 import type { VehicleProfitReportDto, VehicleProfitRowDto } from '../dtos/finance-report.dto';
+import { commissionPercentOf } from '../dtos/vehicle-finance.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
 import type { FinanceReportData } from '../services/finance-report-data';
 import type { FinanceSessionService } from '../services/finance-session.service';
@@ -39,14 +40,18 @@ export class GetVehicleProfitReportUseCase {
     const sold = await this.data.soldCarsBetween(cipher, from.value, to.value, showroomId);
     const items: VehicleProfitRowDto[] = sold.rows.map((car) => {
       const money = calculateVehicleMoney({
-        purchaseRate: car.purchaseRate,
+        saleModel: car.saleModel,
+        terms: car.terms,
         finalisedPrice: car.finalisedPrice,
         entries: car.entries,
       });
       return {
         vehicle: { id: car.vehicle.id, label: car.vehicle.label },
         soldOn: car.soldOn,
-        purchaseRate: car.purchaseRate?.rupees ?? null,
+        saleModel: car.saleModel,
+        purchaseRate: car.terms?.purchaseRate?.rupees ?? null,
+        commissionPercent: commissionPercentOf(car.deal),
+        commission: money.commission === null ? null : money.commission / 100,
         costs: money.costs / 100,
         landingCost: money.landingCost / 100,
         finalisedPrice: car.finalisedPrice.rupees,
@@ -54,8 +59,9 @@ export class GetVehicleProfitReportUseCase {
       };
     });
     items.sort(comparators[query.sort]);
-    // Profit is unknown without a purchase rate, so those cars stay out of the money totals.
-    const counted = items.filter((i) => i.purchaseRate !== null);
+    // Profit is unknown without the deal terms, so those cars stay out of the money totals.
+    const counted = items.filter((i) => i.profit !== null);
+    const uncounted = items.filter((i) => i.profit === null);
 
     return {
       from: from.value,
@@ -65,11 +71,10 @@ export class GetVehicleProfitReportUseCase {
         cars: items.length,
         sales: sum(counted.map((i) => i.finalisedPrice)),
         landingCost: sum(counted.map((i) => i.landingCost)),
+        commissions: sum(counted.map((i) => i.commission ?? 0)),
         profit: sum(counted.map((i) => i.profit ?? 0)),
         carsMissingPurchaseRate: items.length - counted.length,
-        uncountedSales: sum(
-          items.filter((i) => i.purchaseRate === null).map((i) => i.finalisedPrice),
-        ),
+        uncountedSales: sum(uncounted.map((i) => i.finalisedPrice)),
       },
       truncated: sold.truncated,
     };

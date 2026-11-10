@@ -310,6 +310,7 @@ export function composeFinance(
         dealQueries,
         entryQueries,
         quoteQueries,
+        vehicles,
         dealSealer,
         entrySealer,
         quoteSealer,
