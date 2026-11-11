@@ -10,7 +10,6 @@ const EMPTY: LeadPreferenceProps = {
   transmissions: [],
   bodyTypes: [],
   yearMin: null,
-  yearMax: null,
   kmMax: null,
   maxOwners: null,
 };
@@ -40,12 +39,9 @@ describe('LeadPreference', () => {
     expect(() => LeadPreference.create({ ...EMPTY, bodyTypes: ['tank'] })).toThrow();
   });
 
-  it('rejects a year window that runs backwards or out of range', () => {
-    expect(() => LeadPreference.create({ ...EMPTY, yearMin: 2022, yearMax: 2018 })).toThrow(
-      'cannot be after',
-    );
+  it('rejects a minimum year out of range', () => {
     expect(() => LeadPreference.create({ ...EMPTY, yearMin: 1900 })).toThrow();
-    expect(() => LeadPreference.create({ ...EMPTY, yearMax: 2020.5 })).toThrow();
+    expect(() => LeadPreference.create({ ...EMPTY, yearMin: 2020.5 })).toThrow();
   });
 
   it('rejects negative or fractional km and owner limits', () => {

@@ -31,7 +31,6 @@ export function toLeadDto(lead: Lead, contact: Contact): LeadDto {
     preferredTransmissions: lead.preference.transmissions,
     preferredBodyTypes: lead.preference.bodyTypes,
     preferredYearMin: lead.preference.yearMin,
-    preferredYearMax: lead.preference.yearMax,
     preferredKmMax: lead.preference.kmMax,
     preferredMaxOwners: lead.preference.maxOwners,
     purchaseTimeline: lead.purchaseTimeline,

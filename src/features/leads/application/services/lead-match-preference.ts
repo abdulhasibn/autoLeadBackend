@@ -13,7 +13,6 @@ export function toMatchPreference(lead: LeadReadModel): MatchPreference {
     transmissions: lead.preferredTransmissions,
     bodyTypes: lead.preferredBodyTypes,
     yearMin: lead.preferredYearMin,
-    yearMax: lead.preferredYearMax,
     kmMax: lead.preferredKmMax,
     maxOwners: lead.preferredMaxOwners,
   };
@@ -25,7 +24,6 @@ export function hasMatchCriteria(preference: MatchPreference): boolean {
     preference.makeId !== null ||
     preference.budget !== null ||
     preference.yearMin !== null ||
-    preference.yearMax !== null ||
     preference.kmMax !== null ||
     preference.maxOwners !== null ||
     preference.colours.length > 0 ||

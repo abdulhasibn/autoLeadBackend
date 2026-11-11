@@ -195,7 +195,6 @@ update public.leads l
               and demo.n % 2 = 0
            then array[trim(demo.body_type)] else '{}' end,
        preferred_year_min = case when demo.n % 5 <> 0 then (2015 + (demo.n % 5))::smallint end,
-       preferred_year_max = case when demo.n % 7 = 0 then 2023::smallint end,
        preferred_km_max = case when demo.n % 3 <> 1 then (40000 + (demo.n % 4) * 15000) end,
        preferred_max_owners = case when demo.n % 4 = 1 then 1::smallint end
   from demo

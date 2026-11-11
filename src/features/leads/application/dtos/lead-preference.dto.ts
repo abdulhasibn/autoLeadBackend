@@ -9,7 +9,6 @@ export interface LeadPreferenceDto {
   readonly preferredTransmissions: readonly string[];
   readonly preferredBodyTypes: readonly string[];
   readonly preferredYearMin: number | null;
-  readonly preferredYearMax: number | null;
   readonly preferredKmMax: number | null;
   readonly preferredMaxOwners: number | null;
 }
@@ -24,7 +23,6 @@ export function toLeadPreferenceDto(preference: LeadPreference): LeadPreferenceD
     preferredTransmissions: preference.transmissions,
     preferredBodyTypes: preference.bodyTypes,
     preferredYearMin: preference.yearMin,
-    preferredYearMax: preference.yearMax,
     preferredKmMax: preference.kmMax,
     preferredMaxOwners: preference.maxOwners,
   };

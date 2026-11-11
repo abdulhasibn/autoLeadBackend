@@ -14,7 +14,6 @@ describe('lead preference schemas', () => {
       preferredTransmissions: [],
       preferredBodyTypes: [],
       preferredYearMin: null,
-      preferredYearMax: null,
       preferredKmMax: null,
       preferredMaxOwners: null,
     });
@@ -24,10 +23,7 @@ describe('lead preference schemas', () => {
     expect(setLeadPreferenceBodySchema.safeParse({ preferredFuelTypes: ['steam'] }).success).toBe(
       false,
     );
-    expect(
-      setLeadPreferenceBodySchema.safeParse({ preferredYearMin: 2022, preferredYearMax: 2018 })
-        .success,
-    ).toBe(false);
+    expect(setLeadPreferenceBodySchema.safeParse({ preferredYearMin: 1900 }).success).toBe(false);
     expect(setLeadPreferenceBodySchema.safeParse({ preferredKmMax: -5 }).success).toBe(false);
   });
 

@@ -20,7 +20,6 @@ export async function buildLeadPreference(
     transmissions: fields.preferredTransmissions,
     bodyTypes: fields.preferredBodyTypes,
     yearMin: fields.preferredYearMin,
-    yearMax: fields.preferredYearMax,
     kmMax: fields.preferredKmMax,
     maxOwners: fields.preferredMaxOwners,
   });

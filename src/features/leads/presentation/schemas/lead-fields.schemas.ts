@@ -177,7 +177,6 @@ export const leadPreferenceShape = {
   preferredTransmissions: optionalStringListSchema,
   preferredBodyTypes: optionalStringListSchema,
   preferredYearMin: optionalWholeNumberSchema,
-  preferredYearMax: optionalWholeNumberSchema,
   preferredKmMax: optionalWholeNumberSchema,
   preferredMaxOwners: optionalWholeNumberSchema,
 };
@@ -188,7 +187,6 @@ interface ParsedPreferenceFields {
   readonly preferredTransmissions: string[];
   readonly preferredBodyTypes: string[];
   readonly preferredYearMin: number | null;
-  readonly preferredYearMax: number | null;
   readonly preferredKmMax: number | null;
   readonly preferredMaxOwners: number | null;
 }
@@ -203,7 +201,6 @@ export function refineLeadPreference(val: ParsedPreferenceFields, ctx: z.Refinem
       transmissions: val.preferredTransmissions,
       bodyTypes: val.preferredBodyTypes,
       yearMin: val.preferredYearMin,
-      yearMax: val.preferredYearMax,
       kmMax: val.preferredKmMax,
       maxOwners: val.preferredMaxOwners,
     });

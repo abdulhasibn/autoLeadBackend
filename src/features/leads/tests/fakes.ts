@@ -364,7 +364,6 @@ export function leadReadModel(overrides: Partial<LeadReadModel> = {}): LeadReadM
     preferredTransmissions: [],
     preferredBodyTypes: [],
     preferredYearMin: null,
-    preferredYearMax: null,
     preferredKmMax: null,
     preferredMaxOwners: null,
     purchaseTimeline: null,
@@ -387,7 +386,6 @@ export const EMPTY_PREFERENCE_EXTRAS = {
   preferredTransmissions: [],
   preferredBodyTypes: [],
   preferredYearMin: null,
-  preferredYearMax: null,
   preferredKmMax: null,
   preferredMaxOwners: null,
 };

@@ -50,7 +50,6 @@ export interface LeadReadModel {
   readonly preferredTransmissions: readonly string[];
   readonly preferredBodyTypes: readonly string[];
   readonly preferredYearMin: number | null;
-  readonly preferredYearMax: number | null;
   readonly preferredKmMax: number | null;
   readonly preferredMaxOwners: number | null;
   readonly purchaseTimeline: string | null;

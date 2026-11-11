@@ -11,7 +11,6 @@ export interface SuggestVehiclesQuery {
   readonly preferredTransmissions: string[];
   readonly preferredBodyTypes: string[];
   readonly preferredYearMin: number | null;
-  readonly preferredYearMax: number | null;
   readonly preferredKmMax: number | null;
   readonly preferredMaxOwners: number | null;
   readonly minScore: number;

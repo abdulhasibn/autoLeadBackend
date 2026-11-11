@@ -13,7 +13,6 @@ export interface MatchPreference {
   readonly transmissions: readonly string[];
   readonly bodyTypes: readonly string[];
   readonly yearMin: number | null;
-  readonly yearMax: number | null;
   readonly kmMax: number | null;
   readonly maxOwners: number | null;
 }
@@ -118,8 +117,8 @@ export function scoreLeadAgainstVehicle(
         : budgetFraction(preference.budget, vehicle.listedPrice),
     );
   }
-  if (preference.yearMin !== null || preference.yearMax !== null) {
-    add('year', yearFraction(preference.yearMin, preference.yearMax, vehicle.year));
+  if (preference.yearMin !== null) {
+    add('year', yearFraction(preference.yearMin, vehicle.year));
   }
   if (preference.kmMax !== null) {
     add('km', kmFraction(preference.kmMax, vehicle.kmDriven));
@@ -201,10 +200,9 @@ function budgetFraction(budget: number, price: number): number {
   return 1 - over / BUDGET_TOLERANCE;
 }
 
-function yearFraction(min: number | null, max: number | null, year: number): number {
-  const below = min !== null && year < min ? min - year : 0;
-  const above = max !== null && year > max ? year - max : 0;
-  return 1 - Math.max(below, above) / YEAR_TOLERANCE;
+function yearFraction(min: number, year: number): number {
+  const below = year < min ? min - year : 0;
+  return 1 - below / YEAR_TOLERANCE;
 }
 
 function kmFraction(kmMax: number, kmDriven: number): number {

@@ -33,7 +33,6 @@ export class SuggestVehiclesUseCase {
       transmissions: query.preferredTransmissions,
       bodyTypes: query.preferredBodyTypes,
       yearMin: query.preferredYearMin,
-      yearMax: query.preferredYearMax,
       kmMax: query.preferredKmMax,
       maxOwners: query.preferredMaxOwners,
     };

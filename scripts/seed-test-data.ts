@@ -204,7 +204,6 @@ interface LeadPreference {
   preferred_transmissions: string[];
   preferred_body_types: string[];
   preferred_year_min: number | null;
-  preferred_year_max: number | null;
   preferred_km_max: number | null;
   preferred_max_owners: number | null;
   preferred_vehicle: string | null;
@@ -1464,7 +1463,6 @@ function preferenceFor(vehicle: SimVehicle | null): LeadPreference {
     preferred_transmissions: [],
     preferred_body_types: [],
     preferred_year_min: null,
-    preferred_year_max: null,
     preferred_km_max: null,
     preferred_max_owners: null,
     preferred_vehicle: null,
@@ -1510,7 +1508,6 @@ function preferenceFor(vehicle: SimVehicle | null): LeadPreference {
   p.preferred_body_types = bodies.length > 0 && chance(0.6) ? bodies.slice(0, 1) : [];
   const yearMin = chance(0.7) ? between(2014, 2021) : null;
   p.preferred_year_min = yearMin;
-  p.preferred_year_max = chance(0.5) ? between(yearMin ?? 2016, 2025) : null;
   p.preferred_km_max = chance(0.6) ? pick([30_000, 50_000, 60_000, 80_000, 100_000]) : null;
   p.preferred_max_owners = chance(0.5) ? pick([1, 2, 3]) : null;
   p.preferred_vehicle = `${model.make} ${model.model}`;

@@ -34,7 +34,6 @@ const NOTHING: MatchPreference = {
   transmissions: [],
   bodyTypes: [],
   yearMin: null,
-  yearMax: null,
   kmMax: null,
   maxOwners: null,
 };
@@ -61,7 +60,6 @@ describe('scoreLeadAgainstVehicle', () => {
         transmissions: ['manual'],
         bodyTypes: ['hatchback'],
         yearMin: 2018,
-        yearMax: 2021,
         kmMax: 50000,
         maxOwners: 1,
       },
@@ -111,10 +109,10 @@ describe('scoreLeadAgainstVehicle', () => {
     });
   });
 
-  it('loses a third of the year credit per year outside the window', () => {
-    expect(outcome({ yearMin: 2019, yearMax: 2019 })?.outcome).toBe('match');
+  it('loses a third of the year credit per year older than the minimum', () => {
+    expect(outcome({ yearMin: 2019 })?.outcome).toBe('match');
     expect(outcome({ yearMin: 2020 })?.earned).toBeCloseTo(6.67);
-    expect(outcome({ yearMax: 2016 })?.outcome).toBe('miss');
+    expect(outcome({ yearMin: 2022 })?.outcome).toBe('miss');
   });
 
   it('fades km credit to nothing at 25% over the ceiling', () => {

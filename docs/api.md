@@ -642,7 +642,6 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
   "preferredTransmissions": [],
   "preferredBodyTypes": ["hatchback"],
   "preferredYearMin": 2018,
-  "preferredYearMax": null,
   "preferredKmMax": 60000,
   "preferredMaxOwners": 1,
   "purchaseTimeline": null,
@@ -667,7 +666,7 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 | `preferredFuelTypes` | string[] | `petrol`, `diesel`, `cng`, `electric`, `hybrid` |
 | `preferredTransmissions` | string[] | `manual`, `automatic`, `amt`, `cvt`, `dct` |
 | `preferredBodyTypes` | string[] | `hatchback`, `sedan`, `suv`, `muv`, `mpv`, `crossover`, `coupe`, `convertible`, `sports`, `pick-up` (from the variant's catalog body type) |
-| `preferredYearMin` / `preferredYearMax` | int | Model-year window, 1950–2100; either side may be `null`; min ≤ max |
+| `preferredYearMin` | int | Oldest acceptable model year, 1950–2100, or `null` |
 | `preferredKmMax` | int | Highest odometer reading, ≥ 0 |
 | `preferredMaxOwners` | int | Most previous owners, ≥ 0 |
 
@@ -782,7 +781,6 @@ Closing a follow-up that is already completed or cancelled answers `422 FOLLOW_U
   "preferredTransmissions": [],
   "preferredBodyTypes": [],
   "preferredYearMin": 2018,
-  "preferredYearMax": null,
   "preferredKmMax": 60000,
   "preferredMaxOwners": null,
   "purchaseTimeline": null,

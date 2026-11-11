@@ -18,7 +18,6 @@ export interface LeadPreferenceProps {
   readonly transmissions: readonly string[];
   readonly bodyTypes: readonly string[];
   readonly yearMin: number | null;
-  readonly yearMax: number | null;
   readonly kmMax: number | null;
   readonly maxOwners: number | null;
 }
@@ -36,13 +35,12 @@ export class LeadPreference {
     readonly transmissions: readonly TransmissionValue[],
     readonly bodyTypes: readonly BodyTypeValue[],
     readonly yearMin: number | null,
-    readonly yearMax: number | null,
     readonly kmMax: number | null,
     readonly maxOwners: number | null,
   ) {}
 
   static none(): LeadPreference {
-    return new LeadPreference(PreferredCatalog.none(), [], [], [], [], null, null, null, null);
+    return new LeadPreference(PreferredCatalog.none(), [], [], [], [], null, null, null);
   }
 
   static create(props: LeadPreferenceProps): LeadPreference {
@@ -54,10 +52,6 @@ export class LeadPreference {
       throw new Error(`A preferred colour must be at most ${MAX_COLOUR_LENGTH} characters`);
     }
     requireYear('Preferred minimum year', props.yearMin);
-    requireYear('Preferred maximum year', props.yearMax);
-    if (props.yearMin !== null && props.yearMax !== null && props.yearMin > props.yearMax) {
-      throw new Error('Preferred minimum year cannot be after the maximum year');
-    }
     requireNonNegativeInteger('Preferred maximum km', props.kmMax);
     requireNonNegativeInteger('Preferred maximum previous owners', props.maxOwners);
 
@@ -68,7 +62,6 @@ export class LeadPreference {
       dedupe(props.transmissions.map((value) => Transmission.create(value).value)),
       dedupe(props.bodyTypes.map((value) => BodyType.create(value).value)),
       props.yearMin,
-      props.yearMax,
       props.kmMax,
       props.maxOwners,
     );
@@ -82,7 +75,6 @@ export class LeadPreference {
       this.transmissions.length === 0 &&
       this.bodyTypes.length === 0 &&
       this.yearMin === null &&
-      this.yearMax === null &&
       this.kmMax === null &&
       this.maxOwners === null
     );
@@ -97,7 +89,6 @@ export class LeadPreference {
       this.transmissions,
       this.bodyTypes,
       this.yearMin,
-      this.yearMax,
       this.kmMax,
       this.maxOwners,
     );
@@ -111,7 +102,6 @@ export class LeadPreference {
       sameSet(this.transmissions, other.transmissions) &&
       sameSet(this.bodyTypes, other.bodyTypes) &&
       this.yearMin === other.yearMin &&
-      this.yearMax === other.yearMax &&
       this.kmMax === other.kmMax &&
       this.maxOwners === other.maxOwners
     );

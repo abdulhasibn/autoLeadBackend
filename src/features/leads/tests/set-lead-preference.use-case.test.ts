@@ -185,7 +185,6 @@ describe('SetLeadPreferenceUseCase', () => {
         preferredTransmissions: ['amt', 'manual'],
         preferredBodyTypes: ['hatchback'],
         preferredYearMin: 2018,
-        preferredYearMax: 2022,
         preferredKmMax: 60000,
         preferredMaxOwners: 1,
       },

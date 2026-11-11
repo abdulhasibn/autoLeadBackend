@@ -23,7 +23,7 @@ import { toLeadReadModel, type LeadListRow } from './lead.mapper';
 const LEAD_LIST_COLUMNS = [
   'id, showroom_id, vehicle_id, assigned_to, contact_id, source, status, budget',
   'preferred_vehicle, preferred_make_id, preferred_model_id, preferred_variant_id',
-  'preferred_colours, preferred_fuel_types, preferred_transmissions, preferred_body_types, preferred_year_min, preferred_year_max, preferred_km_max, preferred_max_owners',
+  'preferred_colours, preferred_fuel_types, preferred_transmissions, preferred_body_types, preferred_year_min, preferred_km_max, preferred_max_owners',
   'purchase_timeline, finance_required, current_vehicle, trade_in_required, notes',
   'created_by, created_at, updated_at, deleted_at',
   'contacts ( full_name, phone, email, deleted_at )',
@@ -40,7 +40,6 @@ const HAS_PREFERENCE = [
   'preferred_make_id.not.is.null',
   'budget.not.is.null',
   'preferred_year_min.not.is.null',
-  'preferred_year_max.not.is.null',
   'preferred_km_max.not.is.null',
   'preferred_max_owners.not.is.null',
   'preferred_colours.neq.{}',

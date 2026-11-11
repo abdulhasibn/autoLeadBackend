@@ -47,7 +47,6 @@ export interface LeadRow {
   readonly preferred_transmissions: string[];
   readonly preferred_body_types: string[];
   readonly preferred_year_min: number | null;
-  readonly preferred_year_max: number | null;
   readonly preferred_km_max: number | null;
   readonly preferred_max_owners: number | null;
   readonly purchase_timeline: string | null;
@@ -176,7 +175,6 @@ export function toLeadReadModel(row: LeadListRow): LeadReadModel | null {
     preferredTransmissions: row.preferred_transmissions,
     preferredBodyTypes: row.preferred_body_types,
     preferredYearMin: row.preferred_year_min,
-    preferredYearMax: row.preferred_year_max,
     preferredKmMax: row.preferred_km_max,
     preferredMaxOwners: row.preferred_max_owners,
     purchaseTimeline: row.purchase_timeline,
@@ -203,7 +201,6 @@ function toLeadPreference(row: LeadRow): LeadPreference {
     transmissions: row.preferred_transmissions,
     bodyTypes: row.preferred_body_types,
     yearMin: row.preferred_year_min,
-    yearMax: row.preferred_year_max,
     kmMax: row.preferred_km_max,
     maxOwners: row.preferred_max_owners,
   });
