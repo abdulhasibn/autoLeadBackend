@@ -1,0 +1,15 @@
+{
+  "protectedBranches": ["main", "dev"],
+  "branchPattern": "^(feat|fix|chore|docs|refactor|test|perf|db|ci|hotfix|claude)/[a-z0-9][a-z0-9._/-]*$",
+  "prodProjectRefs": ["tvfizfkunkcamrphrknc"],
+  "migrationsDir": "supabase/migrations",
+  "migrationsLog": "docs/MIGRATIONS_LOG.md",
+  "guardPaths": [
+    "scripts/guard/",
+    ".claude/settings.json",
+    ".husky/pre-commit",
+    ".husky/pre-merge-commit",
+    ".husky/pre-push",
+    ".github/workflows/branch-guard.yml"
+  ]
+}
