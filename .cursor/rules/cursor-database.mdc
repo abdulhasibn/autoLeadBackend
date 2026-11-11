@@ -105,4 +105,5 @@ Every Supabase/PostgreSQL error must be caught and re-thrown as a typed infrastr
 - Schema changes are forward-only SQL migration files — never hand-edit applied migrations.
 - Every migration must add indexes for foreign keys, status/date filters, and pagination access paths.
 - Destructive changes require a compatibility plan in the migration file header comment.
+- Apply to dev (`lms_dev`) first, then prod (`lms_prod`), using migration tooling, never the SQL editor. Record every apply in `docs/MIGRATIONS_LOG.md`.
 - Partial unique indexes for soft-deletable tables use `WHERE deleted_at IS NULL`.
