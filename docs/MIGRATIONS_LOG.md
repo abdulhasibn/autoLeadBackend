@@ -33,6 +33,8 @@ The backend's local `.env` points at **dev**. Check `SUPABASE_URL` before runnin
 
 ## Pending on prod
 
+Apply these before merging the next `dev` → `main` release (see `docs/RELEASE_CHECKLIST.md`).
+
 | Date (dev) | Migration | Dev version | Notes |
 |---|---|---|---|
 | 2026-11-12 | `lead_flow_gaps` | `20261112174824` | Replaces the bodies of `private.save_lead` (close follow-ups on converted/lost; notify assignee on `vehicle_unavailable` / car removed) and `private.save_vehicle` (updates `acquisition_type`). One-off: cancels open follow-ups on already-closed leads (0 on dev). Backward-compatible: signatures unchanged. Checked on dev in a rolled-back block: close cancels follow-ups + reads reminders; vehicle_unavailable notifies the assignee with lead_id. |

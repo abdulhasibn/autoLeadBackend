@@ -17,6 +17,9 @@ skipped, the next layer still catches it.
    `supabase/migrations/` with an entry in `docs/MIGRATIONS_LOG.md`.
    Migrations already merged are immutable. Before any database task, read the
    log and the latest migrations, check dev and prod are in sync, then plan.
+5. **Releases:** before opening or merging a `dev` → `main` PR, work through
+   `docs/RELEASE_CHECKLIST.md`. Everything under "Next release" (prod migrations
+   first) is done and ticked in that PR before it merges.
 
 ## Skills (`.cursor/skills/`, shared with Claude via `.claude/skills`)
 
