@@ -27,6 +27,7 @@ import {
   SWIFT,
   TEST_KDF,
   createFinanceTestKit,
+  markCarSold,
   type FinanceTestKit,
 } from './fakes';
 
@@ -123,6 +124,7 @@ describe('finance reports', () => {
       k.policy,
       k.sessionService,
       k.vehicles,
+      k.leadConversion,
       k.deals,
       k.dealSealer,
       k.clock,
@@ -174,12 +176,14 @@ describe('finance reports', () => {
       purpose: 'purchase',
     });
     await entry({ vehicleId: SWIFT, amountPaise: 4_500_000, entryDate: '2026-10-10' });
+    markCarSold(kit, SWIFT);
     await recordSale.execute(
       {
         sessionToken: token,
         vehicleId: SWIFT,
         finalisedPricePaise: 56_000_000,
         soldOn: '2026-10-25',
+        leadId: null,
       },
       ADMIN,
     );
@@ -298,10 +302,12 @@ describe('finance reports', () => {
   });
 
   it('a car sold without a purchase rate stays out of sales and profit, and is flagged', async () => {
+    markCarSold(kit, BALENO);
     await new RecordVehicleSaleUseCase(
       kit.policy,
       kit.sessionService,
       kit.vehicles,
+      kit.leadConversion,
       kit.deals,
       kit.dealSealer,
       kit.clock,
@@ -311,6 +317,7 @@ describe('finance reports', () => {
         vehicleId: BALENO,
         finalisedPricePaise: 30_000_000,
         soldOn: '2026-10-28',
+        leadId: null,
       },
       ADMIN,
     );

@@ -23,6 +23,7 @@ export class RecordVehicleSaleController {
             vehicleId: params.vehicleId,
             finalisedPricePaise: body.finalisedPrice,
             soldOn: body.soldOn,
+            leadId: body.leadId,
           },
           ctx,
         );

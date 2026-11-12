@@ -41,6 +41,10 @@ export const setVehicleDealBodySchema = z.object({
 export const recordVehicleSaleBodySchema = z.object({
   finalisedPrice: amountSchema,
   soldOn: calendarDateSchema,
+  /** The buyer's booking-confirmed lead; required unless the car is already sold. */
+  leadId: uuidSchema('leadId')
+    .nullish()
+    .transform((v) => v ?? null),
 });
 
 export const addVehicleQuoteBodySchema = z.object({

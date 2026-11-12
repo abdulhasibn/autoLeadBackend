@@ -51,6 +51,7 @@ import { LockVaultUseCase } from './application/use-cases/lock-vault.use-case';
 import { RecoverVaultUseCase } from './application/use-cases/recover-vault.use-case';
 import { SetupVaultUseCase } from './application/use-cases/setup-vault.use-case';
 import { UnlockVaultUseCase } from './application/use-cases/unlock-vault.use-case';
+import type { IFinanceLeadConversion } from './domain/finance-lead-conversion.port';
 import type { KdfParams } from './domain/finance-crypto.port';
 import { DEFAULT_KDF_PARAMS } from './domain/finance.constants';
 import { NodeFinanceCrypto } from './infrastructure/node-finance-crypto';
@@ -110,6 +111,8 @@ export interface FinanceCompositionDeps {
   readonly clock: Clock;
   /** IANA timezone "today" is taken in for the summary (BUSINESS_TIMEZONE). */
   readonly timeZone: string;
+  /** Converts the buyer's booked lead when a sale is recorded (the leads feature). */
+  readonly leadConversion: IFinanceLeadConversion;
   /** Overridable so tests can use a cheap key derivation. */
   readonly kdf?: KdfParams;
 }
@@ -280,7 +283,15 @@ export function composeFinance(
       new SetVehicleDealUseCase(policy, sessionService, vehicles, deals, dealSealer, deps.clock),
     ),
     recordVehicleSaleController: new RecordVehicleSaleController(
-      new RecordVehicleSaleUseCase(policy, sessionService, vehicles, deals, dealSealer, deps.clock),
+      new RecordVehicleSaleUseCase(
+        policy,
+        sessionService,
+        vehicles,
+        deps.leadConversion,
+        deals,
+        dealSealer,
+        deps.clock,
+      ),
     ),
     clearVehicleSaleController: new ClearVehicleSaleController(
       new ClearVehicleSaleUseCase(policy, sessionService, deals, dealSealer, deps.clock),

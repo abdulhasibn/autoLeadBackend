@@ -34,6 +34,7 @@ import {
   SWIFT,
   TEST_KDF,
   createFinanceTestKit,
+  markCarSold,
   type FinanceTestKit,
 } from './fakes';
 
@@ -126,6 +127,7 @@ describe('car money', () => {
       k.policy,
       k.sessionService,
       k.vehicles,
+      k.leadConversion,
       k.deals,
       k.dealSealer,
       k.clock,
@@ -234,12 +236,14 @@ describe('car money', () => {
       },
       ADMIN,
     );
+    markCarSold(kit, SWIFT);
     await recordSale.execute(
       {
         sessionToken: token,
         vehicleId: SWIFT,
         finalisedPricePaise: 56_000_000,
         soldOn: '2026-10-25',
+        leadId: null,
       },
       ADMIN,
     );
@@ -298,12 +302,14 @@ describe('car money', () => {
 
   it('replaces terms, keeps the listed price unless sent, and keeps the sale', async () => {
     await deal(SWIFT, 50_000_000, 58_500_000);
+    markCarSold(kit, SWIFT);
     await recordSale.execute(
       {
         sessionToken: token,
         vehicleId: SWIFT,
         finalisedPricePaise: 56_000_000,
         soldOn: '2026-10-25',
+        leadId: null,
       },
       ADMIN,
     );
@@ -318,12 +324,14 @@ describe('car money', () => {
   });
 
   it('records the sale price before terms exist, and clears it', async () => {
+    markCarSold(kit, CRETA);
     const recorded = await recordSale.execute(
       {
         sessionToken: token,
         vehicleId: CRETA,
         finalisedPricePaise: 70_000_000,
         soldOn: '2026-10-30',
+        leadId: null,
       },
       ADMIN,
     );
@@ -336,6 +344,60 @@ describe('car money', () => {
       (await getFinance.execute({ sessionToken: token, vehicleId: CRETA }, ADMIN)).sale,
     ).toBeNull();
     expect(kit.deals.rows.get(CRETA)?.payload).toBeNull();
+  });
+
+  describe('closing the sale against a lead', () => {
+    const sale = (leadId: string | null, finalisedPricePaise = 70_000_000) =>
+      recordSale.execute(
+        {
+          sessionToken: token,
+          vehicleId: CRETA,
+          finalisedPricePaise,
+          soldOn: '2026-11-01',
+          leadId,
+        },
+        ADMIN,
+      );
+
+    it('needs a booked lead while the car is not sold, and saves nothing without one', async () => {
+      await expect(sale(null)).rejects.toMatchObject({ code: 'SALE_NEEDS_BOOKED_LEAD' });
+      await expect(sale(LEAD_ANIL)).rejects.toMatchObject({ code: 'SALE_LEAD_NOT_BOOKED' });
+      expect(kit.deals.rows.get(CRETA)).toBeUndefined();
+      expect(kit.vehicles.cars.get(CRETA)?.status).toBe('open');
+    });
+
+    it('shows the booked leads, converts the chosen one and records the price', async () => {
+      kit.leads.booked.set(CRETA, [LEAD_ANIL]);
+      const before = await getFinance.execute({ sessionToken: token, vehicleId: CRETA }, ADMIN);
+      expect(before.vehicle.status).toBe('open');
+      expect(before.bookedLeads).toEqual([
+        { id: LEAD_ANIL, name: 'Anil Kumar', phone: '+919876500001' },
+      ]);
+
+      const recorded = await sale(LEAD_ANIL);
+
+      expect(recorded.sale).toMatchObject({ finalisedPrice: 700000, soldOn: '2026-11-01' });
+      expect(kit.leadConversion.converted).toEqual([{ vehicleId: CRETA, leadId: LEAD_ANIL }]);
+      const after = await getFinance.execute({ sessionToken: token, vehicleId: CRETA }, ADMIN);
+      expect(after.vehicle.status).toBe('sold');
+      expect(after.bookedLeads).toEqual([]);
+    });
+
+    it('checks the price before converting the lead', async () => {
+      kit.leads.booked.set(CRETA, [LEAD_ANIL]);
+      await expect(sale(LEAD_ANIL, 0)).rejects.toBeInstanceOf(BusinessRuleViolationError);
+      expect(kit.leadConversion.converted).toEqual([]);
+      expect(kit.vehicles.cars.get(CRETA)?.status).toBe('open');
+    });
+
+    it('a car already sold through the CRM takes the price alone', async () => {
+      markCarSold(kit, CRETA);
+      await sale(null);
+      expect(kit.leadConversion.converted).toEqual([]);
+      expect(
+        (await getFinance.execute({ sessionToken: token, vehicleId: CRETA }, ADMIN)).sale,
+      ).toMatchObject({ finalisedPrice: 700000 });
+    });
   });
 
   it('lists sold cars without a recorded sale', async () => {
@@ -352,6 +414,7 @@ describe('car money', () => {
         vehicleId: CRETA,
         finalisedPricePaise: 70_000_000,
         soldOn: '2026-10-30',
+        leadId: null,
       },
       ADMIN,
     );
@@ -514,12 +577,14 @@ describe('car money', () => {
     expect(set.deal).toMatchObject({ commissionPercent: 4, purchaseRate: null });
 
     await entry({ vehicleId: BALENO, amountPaise: 1_000_000 }); // ₹10,000 cost
+    markCarSold(kit, BALENO);
     await recordSale.execute(
       {
         sessionToken: token,
         vehicleId: BALENO,
         finalisedPricePaise: 50_000_000,
         soldOn: '2026-10-25',
+        leadId: null,
       },
       ADMIN,
     );

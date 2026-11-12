@@ -14,6 +14,7 @@ import type { IVehicleLinkSync } from './domain/vehicle-link-sync.port';
 import type { IVehicleSale } from './domain/vehicle-sale.port';
 import { LeadManagementPolicy } from './application/policies/lead-management.policy';
 import { LeadLinkService } from './application/services/lead-link.service';
+import { BookedLeadConversionService } from './application/services/booked-lead-conversion.service';
 import { VehicleLinkRefresher } from './application/services/vehicle-link-refresher';
 import { AssignLeadUseCase } from './application/use-cases/assign-lead.use-case';
 import { CancelFollowUpUseCase } from './application/use-cases/cancel-follow-up.use-case';
@@ -61,6 +62,7 @@ export interface LeadsComposition {
   readonly errorMapper: ErrorMapper;
   readonly linkedLeads: LeadLinkService;
   readonly linkedLeadCounts: Pick<ILeadQueries, 'countActiveByVehicles'>;
+  readonly bookedLeadConversion: BookedLeadConversionService;
 }
 
 export interface LeadsCompositionDeps {
@@ -195,5 +197,6 @@ export function composeLeads(
     errorMapper,
     linkedLeads: new LeadLinkService(repo, deps.clock),
     linkedLeadCounts: queries,
+    bookedLeadConversion: new BookedLeadConversionService(repo, changeLeadStatusUseCase),
   };
 }
