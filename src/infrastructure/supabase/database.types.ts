@@ -181,6 +181,44 @@ export type Database = {
           },
         ];
       };
+      device_push_tokens: {
+        Row: {
+          created_at: string;
+          enabled: boolean;
+          expo_push_token: string;
+          id: string;
+          platform: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          enabled?: boolean;
+          expo_push_token: string;
+          id?: string;
+          platform: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          enabled?: boolean;
+          expo_push_token?: string;
+          id?: string;
+          platform?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'device_push_tokens_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       finance_entries: {
         Row: {
           created_at: string;
@@ -762,6 +800,7 @@ export type Database = {
           id: string;
           is_read: boolean;
           lead_id: string | null;
+          push_sent_at: string | null;
           title: string;
           type: string;
           user_id: string;
@@ -775,6 +814,7 @@ export type Database = {
           id?: string;
           is_read?: boolean;
           lead_id?: string | null;
+          push_sent_at?: string | null;
           title: string;
           type: string;
           user_id: string;
@@ -788,6 +828,7 @@ export type Database = {
           id?: string;
           is_read?: boolean;
           lead_id?: string | null;
+          push_sent_at?: string | null;
           title?: string;
           type?: string;
           user_id?: string;
@@ -1708,6 +1749,20 @@ export type Database = {
           p_id: string;
         };
         Returns: undefined;
+      };
+      claim_pending_pushes: {
+        Args: {
+          p_limit?: number;
+        };
+        Returns: {
+          body: string | null;
+          entity_id: string | null;
+          entity_type: string | null;
+          id: string;
+          title: string;
+          type: string;
+          user_id: string;
+        }[];
       };
       complete_follow_up: {
         Args: {

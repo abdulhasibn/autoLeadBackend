@@ -87,6 +87,9 @@ export function composeApp(config: AppConfig): AppDependencies {
   const notifications = composeNotifications(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,
     clock,
+    logger,
+    pushDispatchSecret: config.pushDispatchSecret,
+    expoAccessToken: config.expoAccessToken,
   });
   const dashboard = composeDashboard(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,
@@ -139,6 +142,7 @@ export function composeApp(config: AppConfig): AppDependencies {
     marketplace.router,
     siteAnalytics.router,
   );
+  app.use('/internal/push', notifications.pushDispatchRouter);
   app.use(cors());
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
