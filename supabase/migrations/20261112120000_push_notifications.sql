@@ -102,6 +102,8 @@ begin
   perform net.http_post(
     url := v_config.url,
     body := '{}'::jsonb,
+    -- A cold start plus several batches can pass pg_net's 5 s default.
+    timeout_milliseconds := 15000,
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-push-secret', v_config.secret
@@ -124,6 +126,19 @@ begin
   return null;
 end;
 $$;
+
+-- Only the API (service role) may touch the push objects; the public key must not
+-- be able to call request_push_dispatch() over PostgREST and make the database
+-- hit the API on demand.
+revoke all on function public.claim_pending_pushes(integer) from public, anon, authenticated;
+revoke all on function public.request_push_dispatch() from public, anon, authenticated;
+revoke all on function public.notifications_request_push() from public, anon, authenticated;
+grant execute on function public.claim_pending_pushes(integer) to service_role;
+grant execute on function public.request_push_dispatch() to service_role;
+revoke all on table public.device_push_tokens from public, anon, authenticated;
+revoke all on table public.push_dispatch_config from public, anon, authenticated;
+grant select, insert, update, delete on table public.device_push_tokens to service_role;
+grant select on table public.push_dispatch_config to service_role;
 
 create trigger notifications_request_push_trg
   after insert on public.notifications

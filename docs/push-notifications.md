@@ -46,3 +46,15 @@ Until this row exists nothing is pushed (the app still works).
 | `POST` | `/internal/push/dispatch` | `200 { notifications, pushes }`. Database only; `x-push-secret` header. |
 
 Push payload `data`: `notificationId`, `type`, `entityType`, `entityId`.
+
+## Rollout checks
+
+- Cron is scheduled (the migration only raises a notice if `pg_cron` is missing, so a
+  failure is silent): `select jobname from cron.job where jobname = 'push-dispatch-sweep';`
+  must return one row.
+- Config row exists: `select url from public.push_dispatch_config;`.
+- The push functions and tables are service-role only. `request_push_dispatch()`,
+  `claim_pending_pushes()`, `device_push_tokens` and `push_dispatch_config` are revoked from
+  `anon` and `authenticated`, so the public key cannot call them over PostgREST.
+- Failures: if the device lookup fails the claimed batch is released and retried next minute.
+  A failed Expo chunk is logged and does not stop the other chunks; those pushes are not retried.

@@ -38,6 +38,8 @@ export interface PendingPush {
 export interface IPendingPushRepository {
   /** Atomically marks due notifications as pushed and returns them. */
   claim(limit: number): Promise<readonly PendingPush[]>;
+  /** Gives claimed notifications back so the next run retries them. */
+  release(ids: readonly string[]): Promise<void>;
 }
 
 export interface PushMessage {

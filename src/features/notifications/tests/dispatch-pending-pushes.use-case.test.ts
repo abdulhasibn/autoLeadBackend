@@ -34,7 +34,11 @@ function pending(id: string, userId: UserId): PendingPush {
 }
 
 class FakePending implements IPendingPushRepository {
+  released: string[] = [];
   constructor(private queue: PendingPush[]) {}
+  async release(ids: readonly string[]): Promise<void> {
+    this.released.push(...ids);
+  }
   async claim(limit: number): Promise<readonly PendingPush[]> {
     return this.queue.splice(0, limit);
   }
@@ -65,6 +69,8 @@ class FakeSender implements IPushSender {
     return { invalidTokens: this.invalid };
   }
 }
+
+const pending_ = (id: string): PendingPush => pending(id, ANA);
 
 describe('DispatchPendingPushesUseCase', () => {
   it('pushes to every enabled device of the recipient', async () => {
@@ -109,5 +115,20 @@ describe('DispatchPendingPushesUseCase', () => {
     );
 
     await expect(useCase.execute()).resolves.toEqual({ notifications: 1, pushes: 1 });
+  });
+
+  it('hands the batch back when the device lookup fails, so it is retried', async () => {
+    const pending = new FakePending([pending_('n1'), pending_('n2')]);
+    const devices = new FakeDevices({});
+    devices.findEnabledTokens = async () => {
+      throw new Error('db down');
+    };
+    const sender = new FakeSender();
+    const useCase = new DispatchPendingPushesUseCase(pending, devices, sender, logger);
+
+    await expect(useCase.execute()).rejects.toThrow('db down');
+
+    expect(pending.released).toEqual(['n1', 'n2']);
+    expect(sender.sent).toEqual([]);
   });
 });

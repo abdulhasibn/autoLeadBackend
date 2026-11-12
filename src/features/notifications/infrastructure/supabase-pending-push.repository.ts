@@ -8,6 +8,17 @@ import type { IPendingPushRepository, PendingPush } from '../domain/push.ports';
 export class SupabasePendingPushRepository implements IPendingPushRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
+  async release(ids: readonly string[]): Promise<void> {
+    if (ids.length === 0) return;
+    const { error } = await this.db
+      .from('notifications')
+      .update({ push_sent_at: null })
+      .in('id', [...ids]);
+    if (error !== null) {
+      throw new DatabaseUnavailableError(`Failed to release pending pushes: ${error.message}`);
+    }
+  }
+
   async claim(limit: number): Promise<readonly PendingPush[]> {
     const { data, error } = await this.db.rpc('claim_pending_pushes', { p_limit: limit });
     if (error !== null) {

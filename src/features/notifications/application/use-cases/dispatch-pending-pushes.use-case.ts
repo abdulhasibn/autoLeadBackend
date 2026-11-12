@@ -37,7 +37,14 @@ export class DispatchPendingPushesUseCase {
       notifications += claimed.length;
 
       const userIds = [...new Set(claimed.map((item) => item.userId))];
-      const tokensByUser = await this.devices.findEnabledTokens(userIds);
+      let tokensByUser: ReadonlyMap<string, readonly string[]>;
+      try {
+        tokensByUser = await this.devices.findEnabledTokens(userIds);
+      } catch (err) {
+        // Nothing was sent yet, so hand the batch back for the next run.
+        await this.pending.release(claimed.map((item) => item.id));
+        throw err;
+      }
 
       const messages: PushMessage[] = claimed.flatMap((item) =>
         (tokensByUser.get(item.userId) ?? []).map((token) => ({
