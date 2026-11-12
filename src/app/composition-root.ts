@@ -59,6 +59,10 @@ export function composeApp(config: AppConfig): AppDependencies {
   const owners = composeOwners(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,
     clock,
+    // Vehicles is composed later (it depends on owners); resolve it per call.
+    ownerVehicleCount: {
+      countUnsold: (ownerId) => vehicles.ownerVehicleCount.countUnsold(ownerId),
+    },
   });
   // Vehicles and leads depend on each other at runtime (ADR-0011). Vehicles is
   // composed first, so its ILinkedLeads port resolves `leads` per call.
@@ -83,6 +87,10 @@ export function composeApp(config: AppConfig): AppDependencies {
     vehicleSale: vehicles.vehicleLeadLink,
     catalogLineage: vehicles.catalogLineage,
     matchableVehicles: vehicles.matchableVehicles,
+    // Finance is composed later (it depends on leads); resolve it per call.
+    recordedSales: {
+      hasRecordedSale: (vehicleId) => finance.recordedSales.hasRecordedSale(vehicleId),
+    },
   });
   const notifications = composeNotifications(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,

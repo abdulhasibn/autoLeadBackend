@@ -16,6 +16,8 @@ export interface FollowUpPlan {
 /**
  * A new follow-up on `lead` with its due reminder. It goes to the lead's
  * assignee so their reminder fires, or to the scheduler if unassigned.
+ * A converted or lost lead takes no new follow-ups (LEAD_CLOSED); closing a
+ * lead cancels its open ones.
  */
 export function buildScheduledFollowUp(
   lead: Lead,
@@ -24,6 +26,7 @@ export function buildScheduledFollowUp(
   now: Date,
   ids: IdGenerator,
 ): ScheduledFollowUp {
+  lead.ensureOpen('Cannot schedule a follow-up on a closed lead');
   const scheduledAt = ScheduledAt.create(plan.scheduledAt).value;
   return FollowUp.schedule({
     id: toFollowUpId(ids.generate()),

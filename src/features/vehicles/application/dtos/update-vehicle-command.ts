@@ -14,4 +14,6 @@ export interface UpdateVehicleCommand {
   readonly loanStatus: string | null;
   readonly location: string | null;
   readonly description: string | null;
+  /** Omitted (undefined): unchanged. */
+  readonly acquisitionType?: string;
 }

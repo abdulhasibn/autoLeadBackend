@@ -300,6 +300,17 @@ export class FakeVehicles implements ILinkableVehicleLookup, IVehicleLinkSync, I
     this.statuses.set(vehicleId, 'sold');
     this.soldTo.set(vehicleId, leadId);
   }
+
+  async unmarkSold(vehicleId: VehicleId, leadId: LeadId): Promise<void> {
+    if (this.statuses.get(vehicleId) !== 'sold') {
+      return;
+    }
+    if (this.soldTo.get(vehicleId) !== leadId) {
+      throw new Error('sold to another lead');
+    }
+    this.statuses.set(vehicleId, 'linked');
+    this.soldTo.delete(vehicleId);
+  }
 }
 
 /** A tiny live catalog: make → model → variant, keyed by id. */

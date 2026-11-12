@@ -140,6 +140,61 @@ describe('Vehicle entity', () => {
     ).toThrow(expect.objectContaining({ code: 'VEHICLE_ALREADY_SOLD' }));
   });
 
+  it('undoes a sale for its lead, idempotently, and refuses another lead', () => {
+    const vehicle = makeVehicle();
+    const lead = toLeadId('77777777-7777-4777-8777-777777777777');
+    vehicle.syncLinkState(true, NOW);
+    vehicle.markSold(lead, NOW, 'sold');
+
+    expect(() =>
+      vehicle.unmarkSold(toLeadId('88888888-8888-4888-8888-888888888888'), NOW, 'undo'),
+    ).toThrow(expect.objectContaining({ code: 'VEHICLE_SOLD_TO_ANOTHER_LEAD' }));
+
+    vehicle.unmarkSold(lead, NOW, '  Sale undone  ');
+    expect(vehicle.status.value).toBe('linked');
+    expect(vehicle.soldLeadId).toBeNull();
+    expect(vehicle.statusChangeReason).toBe('Sale undone');
+
+    vehicle.unmarkSold(lead, NOW, 'again');
+    expect(vehicle.status.value).toBe('linked');
+  });
+
+  it('corrects the acquisition type until the car is sold', () => {
+    const vehicle = makeVehicle();
+    const update = (acquisitionType?: AcquisitionType) =>
+      vehicle.updateDetails({
+        year: vehicle.year,
+        registrationNumber: vehicle.registrationNumber,
+        fuelType: vehicle.fuelType,
+        transmission: vehicle.transmission,
+        kmDriven: vehicle.kmDriven,
+        numPreviousOwners: vehicle.numPreviousOwners,
+        colour: vehicle.colour,
+        insuranceValidUntil: null,
+        rcStatus: null,
+        serviceHistory: null,
+        accidentHistory: false,
+        loanStatus: null,
+        location: null,
+        description: null,
+        updatedAt: NOW,
+        ...(acquisitionType === undefined ? {} : { acquisitionType }),
+      });
+
+    update(AcquisitionType.create('dealership_purchase'));
+    expect(vehicle.acquisitionType.value).toBe('dealership_purchase');
+    update();
+    expect(vehicle.acquisitionType.value).toBe('dealership_purchase');
+
+    vehicle.syncLinkState(true, NOW);
+    vehicle.markSold(toLeadId('77777777-7777-4777-8777-777777777777'), NOW, 'sold');
+    expect(() => update(AcquisitionType.create('consignment'))).toThrow(
+      expect.objectContaining({ code: 'VEHICLE_SOLD' }),
+    );
+    update(AcquisitionType.create('dealership_purchase'));
+    expect(vehicle.acquisitionType.value).toBe('dealership_purchase');
+  });
+
   it('refuses to sell a vehicle without a linked lead', () => {
     const vehicle = makeVehicle();
     expect(() =>

@@ -18,8 +18,8 @@ export class LeadManagementPolicy {
     requireAnyRole(ctx, STAFF_ROLES, 'Only staff can manage leads');
   }
 
-  requireAdmin(ctx: AuthenticatedContext): void {
-    requireAnyRole(ctx, [ROLE.ADMIN], 'Only an admin can assign leads');
+  requireAdmin(ctx: AuthenticatedContext, message = 'Only an admin can assign leads'): void {
+    requireAnyRole(ctx, [ROLE.ADMIN], message);
   }
 
   requireCanWork(ctx: AuthenticatedContext, lead: WorkableLead): void {

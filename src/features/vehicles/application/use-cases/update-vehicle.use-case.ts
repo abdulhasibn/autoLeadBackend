@@ -14,6 +14,7 @@ import { RegistrationNumber } from '../../domain/registration-number.value-objec
 import { Transmission } from '../../../../domain/shared/transmission.value-object';
 import { parseLoanStatus, parseRcStatus, parseServiceHistory } from '../../domain/vehicle-details';
 import type { IVehicleRepository } from '../../domain/vehicle.repository';
+import { AcquisitionType } from '../../domain/acquisition-type.value-object';
 import { VehicleYear } from '../../domain/vehicle-year.value-object';
 
 export class UpdateVehicleUseCase {
@@ -49,6 +50,10 @@ export class UpdateVehicleUseCase {
       loanStatus: parseLoanStatus(command.loanStatus),
       location: command.location,
       description: command.description,
+      acquisitionType:
+        command.acquisitionType === undefined
+          ? undefined
+          : AcquisitionType.create(command.acquisitionType),
       updatedAt: this.clock.now(),
     });
 
