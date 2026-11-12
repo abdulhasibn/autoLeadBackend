@@ -5,5 +5,10 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["scripts/**/*.ts", "src/infrastructure/supabase/database.types.ts"]
+  "include": [
+    "scripts/**/*.ts",
+    "tests/api/**/*.ts",
+    "vitest.api.config.ts",
+    "src/infrastructure/supabase/database.types.ts"
+  ]
 }
