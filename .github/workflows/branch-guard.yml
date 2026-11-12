@@ -1,0 +1,47 @@
+name: Branch guard
+
+# Server-side half of docs/WORKFLOW.md. This is a required status check in the
+# repo ruleset, so a PR that breaks these rules cannot be merged.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  branch-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name, PR base and branch reuse
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          HEAD: ${{ github.head_ref }}
+          BASE: ${{ github.base_ref }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+
+          case "$BASE" in
+            main)
+              [[ "$HEAD" == "dev" || "$HEAD" == hotfix/* ]] \
+                || fail "PRs into main must come from dev (a release) or a hotfix/* branch, not '$HEAD'." ;;
+            dev)
+              [[ "$HEAD" == "main" ]] && { echo "main -> dev back-merge: OK"; exit 0; } ;;
+            *)
+              fail "PRs must target dev (or main for releases/hotfixes), not '$BASE'." ;;
+          esac
+          [[ "$HEAD" == "dev" ]] && { echo "Release PR dev -> main: OK"; exit 0; }
+
+          [[ "$HEAD" =~ ^(feat|fix|chore|docs|refactor|test|perf|db|ci|hotfix|claude)/[a-z0-9][a-z0-9._/-]*$ ]] \
+            || fail "Branch '$HEAD' must look like <type>/<kebab-slug>, e.g. feat/lead-export."
+
+          reused=$(gh api "repos/$REPO/pulls?state=closed&head=$OWNER:$HEAD&per_page=100" \
+            --jq "[.[] | select(.merged_at != null and .number != $NUMBER) | .number] | join(\", #\")")
+          [[ -z "$reused" ]] \
+            || fail "Branch '$HEAD' was already merged in PR #$reused. Merged branches are never reused; start a new branch from dev."
+
+          echo "Branch '$HEAD' -> '$BASE': OK"

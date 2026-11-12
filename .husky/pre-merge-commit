@@ -1,0 +1,1 @@
+node scripts/guard/guard.mjs pre-merge-commit

@@ -1,3 +1,4 @@
+node scripts/guard/guard.mjs pre-push "$@"
 pnpm format:check
 pnpm typecheck
 pnpm lint
