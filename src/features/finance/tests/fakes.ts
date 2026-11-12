@@ -55,6 +55,8 @@ import { NodeFinanceCrypto } from '../infrastructure/node-finance-crypto';
 import { toLeadId, type LeadId } from '../../../domain/shared/lead-id';
 import { toShowroomId, type ShowroomId } from '../../../domain/shared/showroom-id';
 import type { FinanceLeadFacts, IFinanceLeadLookup } from '../domain/finance-lead-lookup.port';
+import type { IFinanceLeadConversion } from '../domain/finance-lead-conversion.port';
+import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import { toVehicleId, type VehicleId } from '../../../domain/shared/vehicle-id';
 
 /** Cheap scrypt cost so tests run fast; production uses DEFAULT_KDF_PARAMS. */
@@ -260,6 +262,12 @@ export class FakeFinanceLeadLookup implements IFinanceLeadLookup {
     [LEAD_ANIL, { id: LEAD_ANIL, name: 'Anil Kumar', phone: '+919876500001', deleted: false }],
     [LEAD_DELETED, { id: LEAD_DELETED, name: 'Old Lead', phone: '+919876500002', deleted: true }],
   ]);
+  /** Booking-confirmed leads per car; tests fill it in. */
+  readonly booked = new Map<string, LeadId[]>();
+
+  async listBookedForVehicle(vehicleId: VehicleId): Promise<readonly FinanceLeadFacts[]> {
+    return this.findMany(this.booked.get(vehicleId) ?? []);
+  }
 
   async findMany(ids: readonly LeadId[]): Promise<readonly FinanceLeadFacts[]> {
     return ids.flatMap((id) => {
@@ -311,6 +319,40 @@ export class FakeFinanceVehicleLookup implements IFinanceVehicleLookup {
       .filter((car) => (this.deals.rows.get(car.id)?.soldOn ?? null) === null)
       .map((car) => ({ ...car, soldLeadId: null }));
   }
+}
+
+/** Converts a booked lead the way the leads feature does: the car becomes sold. */
+export class FakeFinanceLeadConversion implements IFinanceLeadConversion {
+  readonly converted: { vehicleId: VehicleId; leadId: LeadId }[] = [];
+
+  constructor(
+    private readonly vehicles: FakeFinanceVehicleLookup,
+    private readonly leads: FakeFinanceLeadLookup,
+  ) {}
+
+  async convertBookedLead(vehicleId: VehicleId, leadId: LeadId): Promise<void> {
+    const booked = this.leads.booked.get(vehicleId) ?? [];
+    if (!booked.includes(leadId)) {
+      throw new BusinessRuleViolationError(
+        'SALE_LEAD_NOT_BOOKED',
+        'Lead is not booked for this car',
+      );
+    }
+    const car = this.vehicles.cars.get(vehicleId);
+    if (car !== undefined) car.status = 'sold';
+    this.leads.booked.set(
+      vehicleId,
+      booked.filter((id) => id !== leadId),
+    );
+    this.converted.push({ vehicleId, leadId });
+  }
+}
+
+/** Test shortcut: the car was sold through a lead converted from the CRM. */
+export function markCarSold(kit: FinanceTestKit, vehicleId: VehicleId): void {
+  const car = kit.vehicles.cars.get(vehicleId);
+  if (car === undefined) throw new Error(`No fake car ${vehicleId}`);
+  car.status = 'sold';
 }
 
 export class InMemoryVehicleDealStore implements IVehicleDealRepository, IVehicleDealQueries {
@@ -383,6 +425,7 @@ export interface FinanceTestKit {
   readonly dealSealer: VehicleDealSealer;
   readonly quoteSealer: QuoteSealer;
   readonly leads: FakeFinanceLeadLookup;
+  readonly leadConversion: FakeFinanceLeadConversion;
 }
 
 export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z')): FinanceTestKit {
@@ -395,6 +438,8 @@ export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z'))
   const tags = new InMemoryFinanceTagStore();
   const tagSealer = new TagSealer();
   const deals = new InMemoryVehicleDealStore();
+  const vehicles = new FakeFinanceVehicleLookup(deals);
+  const leads = new FakeFinanceLeadLookup();
   return {
     clock,
     ids,
@@ -408,7 +453,7 @@ export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z'))
     sessionService: new FinanceSessionService(sessions, crypto, clock, ids),
     entries: new InMemoryFinanceEntryStore(),
     tags,
-    vehicles: new FakeFinanceVehicleLookup(deals),
+    vehicles,
     entrySealer: new EntrySealer(),
     tagSealer,
     tagSeeder: new DefaultTagSeeder(tags, tagSealer, clock, ids),
@@ -416,7 +461,8 @@ export function createFinanceTestKit(now = new Date('2026-11-02T10:00:00.000Z'))
     quotes: new InMemoryVehicleQuoteStore(),
     dealSealer: new VehicleDealSealer(),
     quoteSealer: new QuoteSealer(),
-    leads: new FakeFinanceLeadLookup(),
+    leads,
+    leadConversion: new FakeFinanceLeadConversion(vehicles, leads),
   };
 }
 

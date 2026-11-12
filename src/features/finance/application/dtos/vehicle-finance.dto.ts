@@ -17,7 +17,18 @@ export interface CostGroupDto {
 
 /** Everything a car's money tab shows. Rupees; signed where noted. */
 export interface VehicleFinanceDto extends VehicleDealStateDto {
-  readonly vehicle: { readonly id: string; readonly label: string; readonly saleModel: SaleModel };
+  readonly vehicle: {
+    readonly id: string;
+    readonly label: string;
+    readonly saleModel: SaleModel;
+    /** Car status (`open`, `linked`, `dropped`, `sold`). */
+    readonly status: string;
+  };
+  /**
+   * Booking-confirmed leads on a car that isn't sold yet: recording the sale
+   * converts one of them. Empty once the car is sold.
+   */
+  readonly bookedLeads: readonly BookedLeadDto[];
   readonly quotes: readonly VehicleQuoteDto[];
   readonly currentQuote: VehicleQuoteDto | null;
   /** Purchase rate + cost entries (commission cars: cost entries only). */
@@ -39,6 +50,12 @@ export interface VehicleFinanceDto extends VehicleDealStateDto {
   readonly owedByBuyer: number | null;
   /** `purchaseRateMissing`: the purchase rate or commission % isn't recorded. */
   readonly flags: { readonly purchaseRateMissing: boolean; readonly saleRecorded: boolean };
+}
+
+export interface BookedLeadDto {
+  readonly id: string;
+  readonly name: string | null;
+  readonly phone: string | null;
 }
 
 export interface VehicleFinanceSummaryDto {
@@ -75,6 +92,7 @@ export function toVehicleFinanceDto(input: {
   readonly money: VehicleMoney;
   readonly quotes: readonly VehicleQuote[];
   readonly leadsById: ReadonlyMap<string, FinanceLeadFacts>;
+  readonly bookedLeads: readonly FinanceLeadFacts[];
   readonly tagsById: ReadonlyMap<string, FinanceTag>;
 }): VehicleFinanceDto {
   const { deal, money } = input;
@@ -85,7 +103,13 @@ export function toVehicleFinanceDto(input: {
       id: input.vehicle.id,
       label: input.vehicle.label,
       saleModel: input.vehicle.saleModel,
+      status: input.vehicle.status,
     },
+    bookedLeads: input.bookedLeads.map((lead) => ({
+      id: lead.id,
+      name: lead.name,
+      phone: lead.phone,
+    })),
     quotes,
     currentQuote: quotes[0] ?? null,
     landingCost: rupees(money.landingCost),

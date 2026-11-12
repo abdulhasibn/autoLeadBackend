@@ -75,6 +75,10 @@ export class GetVehicleFinanceUseCase {
       }),
       quotes,
       leadsById: await leadsOf(this.leads, quotes),
+      bookedLeads:
+        vehicle.status === 'sold' || vehicle.deleted
+          ? []
+          : await this.leads.listBookedForVehicle(vehicleId),
       tagsById: new Map(tags.map((tag) => [tag.id as string, tag])),
     });
   }

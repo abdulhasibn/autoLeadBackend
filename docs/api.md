@@ -1188,7 +1188,7 @@ One car's buy-and-sell numbers (ADR-0015). Every request needs `X-Finance-Sessio
 |--------|------|--------------|---------|
 | GET | `/finance/vehicles/:vehicleId` | — | `200` car money (below) |
 | PUT | `/finance/vehicles/:vehicleId` | `{ purchaseRate? \| commissionPercent?, purchasedOn?, ownerExpectedPrice?, minimumSellingPrice?, note?, listedPrice? }` | `200` `{ vehicleId, deal, sale, listedPrice }` |
-| POST | `/finance/vehicles/:vehicleId/sale` | `{ finalisedPrice, soldOn }` | `200` same shape |
+| POST | `/finance/vehicles/:vehicleId/sale` | `{ finalisedPrice, soldOn, leadId? }` | `200` same shape |
 | DELETE | `/finance/vehicles/:vehicleId/sale` | — | `204` |
 | GET | `/finance/vehicles/:vehicleId/quotes` | — | `200` quotes, newest first |
 | POST | `/finance/vehicles/:vehicleId/quotes` | `{ amount, quotedOn, leadId, quotedTo?, note? }` | `201` quote |
@@ -1203,7 +1203,7 @@ All amounts are rupees.
 For a commission car: `profit` = `commission` = % × finalised price. Its `cost` entries are recovered from the owner, so `owedToSeller` = finalised − commission − costs − payouts to the owner (`purchase` expenses), and is `null` until the sale is recorded. `landingCost` is the costs alone. `flags.purchaseRateMissing` means the purchase rate or the commission % is missing.
 
 - **Deal (`PUT`).** The purchase rate agreed with the seller, plus optional purchase date, owner's expected price, minimum selling price and note. `PUT` replaces these fields; it never touches the sale. `listedPrice` is the public asking price (plaintext, used by lead matching): omit it to keep the current one, send `null` to clear it.
-- **Sale.** `POST …/sale` records the finalised price and date. It doesn't change the car's status (that still follows leads), and it can be recorded before the deal. `DELETE …/sale` removes a sale recorded by mistake.
+- **Sale.** `POST …/sale` records the finalised price and date, and always closes against a lead. If the car is already `sold` (its lead was converted from the CRM), only the price is saved and `leadId` is ignored. Otherwise send `leadId`: one of the car's `bookedLeads`. That lead is converted first, which marks the car sold and moves its other active leads to `vehicle_unavailable` (ADR-0011), then the price is saved; repeating a failed request finishes the job. Without `leadId` it is `422 SALE_NEEDS_BOOKED_LEAD`; a lead that isn't linked to this car with its booking confirmed is `422 SALE_LEAD_NOT_BOOKED`. The price is checked before anything is converted. It can be recorded before the deal. `DELETE …/sale` removes a sale recorded by mistake; it doesn't un-sell the car or reopen the lead.
 - **Quotes** are prices offered to a lead. `leadId` is **required** and must be a live lead (else `404 NOT_FOUND`); it doesn't have to be the car's linked lead. `quotedTo` (display name) and `note` stay optional. Every quote comes back with `lead: { id, name, phone }` (the lead's contact, or registered buyer), so no per-quote lead lookup is needed; it is `null` only for older quotes recorded without a lead. The newest quote is the current one.
 - **Awaiting sale price** lists cars whose status is `sold` but whose finalised price isn't recorded yet. Show it as a to-do after converting a lead.
 
@@ -1211,7 +1211,8 @@ For a commission car: `profit` = `commission` = % × finalised price. Its `cost`
 
 ```json
 {
-  "vehicleId": "…", "vehicle": { "id": "…", "label": "Maruti Swift · KA01AB1234" },
+  "vehicleId": "…", "vehicle": { "id": "…", "label": "Maruti Swift · KA01AB1234", "saleModel": "purchase", "status": "sold" },
+  "bookedLeads": [],
   "deal": { "purchaseRate": 500000, "commissionPercent": null, "purchasedOn": "2026-10-01", "ownerExpectedPrice": null, "minimumSellingPrice": null, "note": null },
   "sale": { "finalisedPrice": 560000, "soldOn": "2026-10-25", "soldBy": "…" },
   "listedPrice": 585000,
@@ -1223,6 +1224,8 @@ For a commission car: `profit` = `commission` = % × finalised price. Its `cost`
   "flags": { "purchaseRateMissing": false, "saleRecorded": true }
 }
 ```
+
+`bookedLeads` (`{ id, name, phone }`) lists the car's live booking-confirmed leads while it isn't sold, oldest first: who a sale can be recorded against. It is empty once the car is sold.
 
 - `landingCost` = purchase rate + entries with purpose `cost`. `profit` = finalised price − landing cost (negative is a loss; `null` until both are known).
 - `owedToSeller` = purchase rate − `purchase` payments (negative means overpaid; `null` without a purchase rate). `owedByBuyer` = finalised price − `sale` payments (`null` until the sale is recorded).

@@ -1,4 +1,5 @@
 import type { LeadId } from '../../../domain/shared/lead-id';
+import type { VehicleId } from '../../../domain/shared/vehicle-id';
 
 /** The CRM facts a quote shows about the person quoted. Plain CRM data, never amounts. */
 export interface FinanceLeadFacts {
@@ -15,4 +16,6 @@ export interface FinanceLeadFacts {
  */
 export interface IFinanceLeadLookup {
   findMany(ids: readonly LeadId[]): Promise<readonly FinanceLeadFacts[]>;
+  /** Live leads linked to the car with their booking confirmed: who a sale can close against. */
+  listBookedForVehicle(vehicleId: VehicleId): Promise<readonly FinanceLeadFacts[]>;
 }
