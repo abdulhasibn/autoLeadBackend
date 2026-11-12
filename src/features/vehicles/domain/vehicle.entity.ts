@@ -50,6 +50,8 @@ export interface VehicleReconstituteProps extends VehicleCreateProps {
 }
 
 export interface VehicleDetailsUpdate {
+  /** Omitted: unchanged. Can't change once the car is sold. */
+  readonly acquisitionType?: AcquisitionType;
   readonly year: VehicleYear;
   readonly registrationNumber: RegistrationNumber;
   readonly fuelType: FuelType;
@@ -69,7 +71,8 @@ export interface VehicleDetailsUpdate {
 
 /**
  * Vehicle aggregate. Admins drop or re-list it; `linked` and `sold` follow the
- * vehicle's leads. Owner, showroom, variant, and acquisition type stay fixed.
+ * vehicle's leads. Owner, showroom and variant stay fixed; the acquisition
+ * type (purchase vs commission) can be corrected until the car is sold.
  */
 export class Vehicle {
   private constructor(
@@ -92,7 +95,7 @@ export class Vehicle {
     private locationValue: string | null,
     private descriptionValue: string | null,
     private statusValue: VehicleStatus,
-    readonly acquisitionType: AcquisitionType,
+    private acquisitionTypeValue: AcquisitionType,
     readonly submittedBy: UserId,
     readonly createdAt: Date,
     private updatedAtValue: Date,
@@ -165,6 +168,10 @@ export class Vehicle {
 
   get status(): VehicleStatus {
     return this.statusValue;
+  }
+
+  get acquisitionType(): AcquisitionType {
+    return this.acquisitionTypeValue;
   }
 
   get soldLeadId(): LeadId | null {
@@ -249,6 +256,16 @@ export class Vehicle {
 
   updateDetails(update: VehicleDetailsUpdate): void {
     this.assertLive();
+    const nextAcquisition = update.acquisitionType ?? this.acquisitionTypeValue;
+    if (nextAcquisition.value !== this.acquisitionTypeValue.value) {
+      if (this.statusValue.value === 'sold') {
+        throw new BusinessRuleViolationError(
+          'VEHICLE_SOLD',
+          'A sold car keeps its acquisition type: its profit is already counted that way',
+        );
+      }
+      this.acquisitionTypeValue = nextAcquisition;
+    }
     this.yearValue = update.year;
     this.registrationNumberValue = update.registrationNumber;
     this.fuelTypeValue = update.fuelType;
@@ -298,6 +315,29 @@ export class Vehicle {
     }
     this.transitionTo(VehicleStatus.sold(), at, reason);
     this.soldLeadIdValue = leadId;
+  }
+
+  /**
+   * An admin undid the conversion that sold this vehicle: back to `linked`
+   * (the reopened booking is active on it). A no-op unless it is sold to
+   * `leadId`, so the undo can be retried; refuses a sale to another lead.
+   * The only way out of `sold`.
+   */
+  unmarkSold(leadId: LeadId, at: Date, reason: string): void {
+    this.assertLive();
+    if (this.statusValue.value !== 'sold') {
+      return;
+    }
+    if (this.soldLeadIdValue !== leadId) {
+      throw new BusinessRuleViolationError(
+        'VEHICLE_SOLD_TO_ANOTHER_LEAD',
+        'This vehicle was sold through another lead',
+      );
+    }
+    this.statusValue = VehicleStatus.linked();
+    this.statusChangeReasonValue = normalizeOptionalText(reason);
+    this.soldLeadIdValue = null;
+    this.updatedAtValue = at;
   }
 
   private transitionTo(next: VehicleStatus, at: Date, reason: string | null): void {

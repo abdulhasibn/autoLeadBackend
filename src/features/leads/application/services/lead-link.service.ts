@@ -18,12 +18,21 @@ export class LeadLinkService {
     return active.length;
   }
 
+  /**
+   * Releases the vehicle's active leads. A confirmed booking can't stand
+   * without its car, so it becomes `vehicle_unavailable` (ready to re-match);
+   * other leads keep their status and just lose the link.
+   */
   async unlinkAll(vehicleId: VehicleId, actorId: UserId): Promise<void> {
     const active = await this.repo.findActiveByVehicle(vehicleId);
     const now = this.clock.now();
     for (const lead of active) {
-      lead.unlinkVehicle(now);
-      await this.repo.save(lead, { actorId });
+      if (lead.status.value === 'booking_confirmed') {
+        lead.markVehicleUnavailable(now);
+      } else {
+        lead.unlinkVehicle(now);
+      }
+      await this.repo.save(lead, { actorId, statusNotes: 'Car dropped' });
     }
   }
 }

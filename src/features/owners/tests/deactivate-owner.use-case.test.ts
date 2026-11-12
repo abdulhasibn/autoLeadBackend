@@ -41,12 +41,15 @@ function seedOwner(): Owner {
 describe('DeactivateOwnerUseCase', () => {
   let useCase: DeactivateOwnerUseCase;
   let repo: FakeOwnerRepository;
+  let unsold: number;
 
   beforeEach(() => {
     repo = new FakeOwnerRepository();
+    unsold = 0;
     useCase = new DeactivateOwnerUseCase(
       new OwnerManagementPolicy(),
       repo,
+      { countUnsold: async () => unsold },
       new FakeClock(new Date('2026-09-14T12:00:00.000Z')),
     );
   });
@@ -59,6 +62,17 @@ describe('DeactivateOwnerUseCase', () => {
     const stored = repo.store.get(OWNER_ID);
     expect(stored?.isDeactivated).toBe(true);
     expect(stored?.deletedAt?.toISOString()).toBe('2026-09-14T12:00:00.000Z');
+  });
+
+  it('refuses while the owner still has unsold cars, and keeps them active', async () => {
+    repo.seed(seedOwner());
+    unsold = 2;
+
+    await expect(useCase.execute(OWNER_ID, ADMIN)).rejects.toMatchObject({
+      code: 'OWNER_HAS_UNSOLD_VEHICLES',
+      details: { unsoldVehicleCount: 2 },
+    });
+    expect(repo.store.get(OWNER_ID)?.isDeactivated).toBe(false);
   });
 
   it('throws NotFoundError when the owner does not exist', async () => {

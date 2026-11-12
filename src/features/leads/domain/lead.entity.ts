@@ -278,6 +278,28 @@ export class Lead {
     this.transitionTo(next, at);
   }
 
+  /**
+   * An admin undoes a mistaken conversion: back to a confirmed booking on the
+   * same car. The only way out of `converted`.
+   */
+  reopenConversion(at: Date): void {
+    this.assertLive();
+    if (this.statusValue.value !== 'converted' || this.vehicleIdValue === null) {
+      throw new BusinessRuleViolationError(
+        'LEAD_NOT_CONVERTED',
+        'Only a converted lead with a vehicle can be reopened',
+      );
+    }
+    this.statusValue = LeadStatus.create('booking_confirmed');
+    this.statusChanged = true;
+    this.updatedAtValue = at;
+  }
+
+  /** Throws LEAD_CLOSED for a converted or lost lead. */
+  ensureOpen(message: string): void {
+    this.assertOpen(message);
+  }
+
   /** Another lead bought this lead's vehicle: release the vehicle and park the lead. */
   markVehicleUnavailable(at: Date): void {
     this.transitionTo(LeadStatus.vehicleUnavailable(), at);

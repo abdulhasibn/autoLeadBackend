@@ -9,4 +9,9 @@ import type { VehicleId } from '../../../domain/shared/vehicle-id';
  */
 export interface IVehicleSale {
   markSold(vehicleId: VehicleId, leadId: LeadId, actorId: UserId, reason: string): Promise<void>;
+  /**
+   * Undoes `markSold` for this lead: the vehicle goes back to `linked`. A
+   * no-op when it isn't sold; refuses a vehicle sold to another lead.
+   */
+  unmarkSold(vehicleId: VehicleId, leadId: LeadId, actorId: UserId, reason: string): Promise<void>;
 }

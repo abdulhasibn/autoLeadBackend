@@ -10,7 +10,8 @@ Only admins add vehicles, so the owner-submission inspection pipeline (`submitte
 - **Lead:** `new`, `not_now`, `booking_confirmed`, `converted`, `lost`, `vehicle_unavailable`.
   - `new`, `not_now` and `booking_confirmed` are active.
   - Converting sells the vehicle, and every other active lead on it becomes `vehicle_unavailable` with its vehicle unlinked. That status is system-only and can be revived after linking another vehicle.
-- **Dropping a linked vehicle** needs the admin to confirm, after a warning with the lead count. The vehicle's active leads are then unlinked and keep their status.
+- **Dropping a linked vehicle** needs the admin to confirm, after a warning with the lead count. The vehicle's active leads are then unlinked. A `booking_confirmed` lead becomes `vehicle_unavailable` (a booking can't stand without its car); the others keep their status.
+- **Undoing a conversion** is admin-only and refused while finance has the sale price. The lead goes back to `booking_confirmed` and the vehicle from `sold` to `linked` (the only ways out of those terminal statuses). Leads the sale made `vehicle_unavailable` stay so. Steps: release the vehicle, then save the lead.
 
 ## Ports and wiring
 

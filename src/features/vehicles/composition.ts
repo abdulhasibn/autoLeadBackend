@@ -67,6 +67,7 @@ import { ListVehicleStatusHistoryController } from './presentation/controllers/l
 import { ListVehiclesController } from './presentation/controllers/list-vehicles.controller';
 import { SetVehicleListedPriceController } from './presentation/controllers/set-vehicle-listed-price.controller';
 import { UpdateVehicleController } from './presentation/controllers/update-vehicle.controller';
+import { SupabaseOwnerVehicleCount } from './infrastructure/supabase-owner-vehicle-count';
 import { createVehiclesRouter } from './presentation/vehicles.routes';
 
 export interface VehiclesComposition {
@@ -78,6 +79,8 @@ export interface VehiclesComposition {
   readonly catalogLineage: ICatalogLineage;
   /** Vehicle attributes for scoring buyer preferences (leads). */
   readonly matchableVehicles: IVehicleMatchProfiles;
+  /** Unsold cars per owner (owners blocks deactivation on it). */
+  readonly ownerVehicleCount: SupabaseOwnerVehicleCount;
 }
 
 export interface VehiclesCompositionDeps {
@@ -261,5 +264,6 @@ export function composeVehicles(
     vehicleLeadLink: new VehicleLeadLinkService(repo, deps.clock),
     catalogLineage: new SupabaseCatalogLineageLookup(infraClient),
     matchableVehicles: new SupabaseVehicleMatchProfiles(infraClient),
+    ownerVehicleCount: new SupabaseOwnerVehicleCount(infraClient),
   };
 }

@@ -20,6 +20,7 @@ import { DeactivateOwnerController } from './presentation/controllers/deactivate
 import { GetOwnerController } from './presentation/controllers/get-owner.controller';
 import { ListOwnersController } from './presentation/controllers/list-owners.controller';
 import { UpdateOwnerController } from './presentation/controllers/update-owner.controller';
+import type { IOwnerVehicleCount } from './domain/owner-vehicle-count.port';
 import { createOwnersRouter } from './presentation/owners.routes';
 
 export interface OwnersComposition {
@@ -31,6 +32,8 @@ export interface OwnersComposition {
 export interface OwnersCompositionDeps {
   readonly bearerMiddleware: RequestHandler;
   readonly clock: Clock;
+  /** Vehicles: an owner's unsold cars (blocks deactivation). */
+  readonly ownerVehicleCount: IOwnerVehicleCount;
 }
 
 /**
@@ -48,7 +51,12 @@ export function composeOwners(
 
   const createOwnerUseCase = new CreateOwnerUseCase(policy, repo, deps.clock, ids);
   const updateOwnerUseCase = new UpdateOwnerUseCase(policy, repo, deps.clock);
-  const deactivateOwnerUseCase = new DeactivateOwnerUseCase(policy, repo, deps.clock);
+  const deactivateOwnerUseCase = new DeactivateOwnerUseCase(
+    policy,
+    repo,
+    deps.ownerVehicleCount,
+    deps.clock,
+  );
   const listOwnersUseCase = new ListOwnersUseCase(policy, queries);
   const getOwnerUseCase = new GetOwnerUseCase(policy, queries);
 

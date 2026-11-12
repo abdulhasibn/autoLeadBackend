@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  acquisitionTypeSchema,
   colourSchema,
   fuelTypeSchema,
   kmDrivenSchema,
@@ -30,6 +31,8 @@ export const updateVehicleBodySchema = z.object({
   loanStatus: optionalLoanStatusSchema,
   location: optionalTextSchema,
   description: optionalTextSchema,
+  /** Optional: purchase vs commission, correctable until the car is sold. */
+  acquisitionType: acquisitionTypeSchema.optional(),
 });
 
 export type UpdateVehicleBody = z.infer<typeof updateVehicleBodySchema>;

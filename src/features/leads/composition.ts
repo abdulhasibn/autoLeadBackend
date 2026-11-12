@@ -43,6 +43,9 @@ import { CancelFollowUpController } from './presentation/controllers/cancel-foll
 import { CompleteFollowUpController } from './presentation/controllers/complete-follow-up.controller';
 import { AssociateLeadVehicleController } from './presentation/controllers/associate-lead-vehicle.controller';
 import { ChangeLeadStatusController } from './presentation/controllers/change-lead-status.controller';
+import { ReopenConvertedLeadController } from './presentation/controllers/reopen-converted-lead.controller';
+import { ReopenConvertedLeadUseCase } from './application/use-cases/reopen-converted-lead.use-case';
+import type { IRecordedSaleLookup } from './domain/recorded-sale-lookup.port';
 import { CreateLeadController } from './presentation/controllers/create-lead.controller';
 import { GetLeadController } from './presentation/controllers/get-lead.controller';
 import { ListLeadFollowUpsController } from './presentation/controllers/list-lead-follow-ups.controller';
@@ -73,6 +76,8 @@ export interface LeadsCompositionDeps {
   readonly vehicleSale: IVehicleSale;
   readonly catalogLineage: ICatalogLineageLookup;
   readonly matchableVehicles: IMatchableVehicleLookup;
+  /** Finance: whether a car's sale price is recorded (blocks undoing the sale). */
+  readonly recordedSales: IRecordedSaleLookup;
 }
 
 /**
@@ -166,6 +171,16 @@ export function composeLeads(
     associateLeadVehicleController: new AssociateLeadVehicleController(associateLeadVehicleUseCase),
     assignLeadController: new AssignLeadController(assignLeadUseCase),
     changeLeadStatusController: new ChangeLeadStatusController(changeLeadStatusUseCase),
+    reopenConvertedLeadController: new ReopenConvertedLeadController(
+      new ReopenConvertedLeadUseCase(
+        policy,
+        repo,
+        deps.vehicleSale,
+        deps.recordedSales,
+        vehicleLinks,
+        deps.clock,
+      ),
+    ),
     scheduleFollowUpController: new ScheduleFollowUpController(scheduleFollowUpUseCase),
     listLeadFollowUpsController: new ListLeadFollowUpsController(listLeadFollowUpsUseCase),
     completeFollowUpController: new CompleteFollowUpController(completeFollowUpUseCase),

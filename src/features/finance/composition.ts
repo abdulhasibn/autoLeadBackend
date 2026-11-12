@@ -21,6 +21,7 @@ import { QuoteSealer } from './application/services/quote.sealer';
 import { TagSealer } from './application/services/tag.sealer';
 import { VehicleDealSealer } from './application/services/vehicle-deal.sealer';
 import { VaultKeyring } from './application/services/vault-keyring';
+import { RecordedSaleLookup } from './application/services/recorded-sale-lookup';
 import { CreateFinanceEntryUseCase } from './application/use-cases/create-finance-entry.use-case';
 import { CreateFinanceTagUseCase } from './application/use-cases/create-finance-tag.use-case';
 import { DeleteFinanceEntryUseCase } from './application/use-cases/delete-finance-entry.use-case';
@@ -104,6 +105,8 @@ import { createFinanceRouter } from './presentation/finance.routes';
 export interface FinanceComposition {
   readonly router: ReturnType<typeof createFinanceRouter>;
   readonly errorMapper: ErrorMapper;
+  /** Whether a car's sale price is recorded (read by leads before undoing a sale). */
+  readonly recordedSales: RecordedSaleLookup;
 }
 
 export interface FinanceCompositionDeps {
@@ -379,5 +382,5 @@ export function composeFinance(
     return null;
   };
 
-  return { router, errorMapper };
+  return { router, errorMapper, recordedSales: new RecordedSaleLookup(dealQueries) };
 }

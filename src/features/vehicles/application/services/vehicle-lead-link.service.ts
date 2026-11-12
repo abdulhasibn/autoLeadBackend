@@ -59,4 +59,21 @@ export class VehicleLeadLinkService {
     vehicle.markSold(leadId, now, reason);
     await this.repo.save(vehicle, actorId);
   }
+
+  async unmarkSold(
+    vehicleId: VehicleId,
+    leadId: LeadId,
+    actorId: UserId,
+    reason: string,
+  ): Promise<void> {
+    const vehicle = await this.repo.findById(vehicleId);
+    if (vehicle === null) {
+      throw new NotFoundError(`Vehicle not found for id ${vehicleId}`);
+    }
+    if (vehicle.status.value !== 'sold') {
+      return;
+    }
+    vehicle.unmarkSold(leadId, this.clock.now(), reason);
+    await this.repo.save(vehicle, actorId);
+  }
 }

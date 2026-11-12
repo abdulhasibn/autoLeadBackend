@@ -161,7 +161,12 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | 422 | `VEHICLE_NOT_LINKABLE` | Linking a lead to a `dropped` or `sold` vehicle |
 | 422 | `VEHICLE_ALREADY_SOLD` | Converting a lead whose vehicle was sold through another lead |
 | 422 | `SHOWROOM_REQUIRED` | No `showroomId` in the body and no home showroom on your account |
-| 422 | `LEAD_CLOSED` | Editing, assigning, or attaching/removing a vehicle on a `converted` or `lost` lead |
+| 422 | `LEAD_CLOSED` | Editing, assigning, attaching/removing a vehicle on, or scheduling a follow-up for (also `next` on complete) a `converted` or `lost` lead |
+| 422 | `LEAD_NOT_CONVERTED` | `POST /leads/:id/reopen` on a lead that isn't `converted` with a vehicle |
+| 422 | `SALE_PRICE_RECORDED` | `POST /leads/:id/reopen` while finance has the car's sale price; remove it in finance first |
+| 422 | `VEHICLE_SOLD_TO_ANOTHER_LEAD` | `POST /leads/:id/reopen` when the car was sold through a different lead |
+| 422 | `VEHICLE_SOLD` | `PATCH /vehicles/:id` changing `acquisitionType` on a sold car |
+| 422 | `OWNER_HAS_UNSOLD_VEHICLES` | `DELETE /owners/:id` while the owner has live cars that aren't sold; `error.details.unsoldVehicleCount` says how many |
 | 422 | `LEAD_REQUIRES_VEHICLE` | Moving a lead with no vehicle to `booking_confirmed` or `converted`, or removing the vehicle of a `booking_confirmed` lead |
 | 422 | `LEAD_STATUS_SYSTEM_MANAGED` | Setting `vehicle_unavailable` by hand |
 | 422 | `ASSIGNEE_NOT_ELIGIBLE` | `assignedTo` is not an active admin or salesperson |
@@ -367,7 +372,7 @@ Phone is the unique live key.
 | `GET` | `/owners` | `200` page |
 | `GET` | `/owners/:id` | `200` owner |
 | `PATCH` | `/owners/:id` | `200` owner |
-| `DELETE` | `/owners/:id` | `204` (Admin) |
+| `DELETE` | `/owners/:id` | `204` (Admin). Refused with `422 OWNER_HAS_UNSOLD_VEHICLES` while any of their cars is `open`, `linked` or `dropped` |
 
 **Create / update body**
 
@@ -424,7 +429,7 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
 | `POST` | `/vehicles` | `201` vehicle (`makeName` / `modelName` / `variantName` / `frontImageUrl` are `null` until you GET) |
 | `GET` | `/vehicles` | `200` page (includes catalog names, `frontImageUrl` and `linkedLeadCount`) |
 | `GET` | `/vehicles/:id` | `200` vehicle (includes `frontImageUrl` and `linkedLeadCount`) |
-| `PATCH` | `/vehicles/:id` | `200` vehicle (second-hand fields only; cannot change owner/variant/showroom/status) |
+| `PATCH` | `/vehicles/:id` | `200` vehicle (second-hand fields, plus optional `acquisitionType` until the car is sold; cannot change owner/variant/showroom/status) |
 | `PUT` | `/vehicles/:id/listed-price` | `200` `{ listedPrice }`: body `{ "listedPrice": 1250000 \| null }` in whole rupees (Admin). The public asking price; vehicles return it as `listedPrice` |
 | `POST` | `/vehicles/:id/status` | `200` `{ "status", "unlinkedLeadCount" }` (Admin) |
 | `GET` | `/vehicles/:id/status-history` | `200` page (newest first) |
@@ -554,7 +559,7 @@ sold    → (terminal)
 **Change status (admin):** `{ "status": "dropped" | "open", "reason": null, "confirmUnlinkLeads": false }`
 
 - `linked` / `sold` → `422 VEHICLE_STATUS_SYSTEM_MANAGED`. Same status is a no-op. `PATCH /vehicles/:id` cannot set status.
-- Dropping a vehicle that still has active leads first answers `422 VEHICLE_HAS_LINKED_LEADS` with `error.details.linkedLeadCount`. Show the admin that count; on confirm resend with `"confirmUnlinkLeads": true`. Those leads keep their status but lose their `vehicleId`, and the response reports `unlinkedLeadCount`.
+- Dropping a vehicle that still has active leads first answers `422 VEHICLE_HAS_LINKED_LEADS` with `error.details.linkedLeadCount`. Show the admin that count; on confirm resend with `"confirmUnlinkLeads": true`. Those leads lose their `vehicleId`, and the response reports `unlinkedLeadCount`. A `booking_confirmed` lead becomes `vehicle_unavailable` (a booking can't stand without its car; it shows up for re-matching); other leads keep their status. The assignees are notified (`lead_vehicle_unavailable` / `lead_vehicle_removed`).
 - Leads can only link to `open` or `linked` vehicles (`422 VEHICLE_NOT_LINKABLE`).
 
 **Status history item**
@@ -620,6 +625,7 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 | `POST` | `/leads/:id/follow-ups/:followUpId/complete` | `200` `{ "followUp", "next" }` |
 | `POST` | `/leads/:id/follow-ups/:followUpId/cancel` | `200` follow-up |
 | `POST` | `/leads/:id/status` | `200` `{ "status", "vehicleSold" }` |
+| `POST` | `/leads/:id/reopen` | `200` `{ "status": "booking_confirmed" }` (Admin). Undoes a mistaken conversion |
 | `GET` | `/leads/:id/status-history` | `200` page (newest first) |
 
 **Create body**
@@ -738,6 +744,12 @@ Each lead is the usual lead object plus `match`:
 `taskType`: `call`, `whatsapp`, `meeting`, `test_drive`, `send_quotation`, `other`.  
 The follow-up belongs to the lead's assignee (or to you if the lead is unassigned), and that person gets a `follow_up_due` notification at `scheduledAt`.  
 **List follow-ups:** `GET /leads/:id/follow-ups?status=open|closed|all&limit=&offset=` (default `all`). `open` is the to-do list, earliest first; `closed` is completed and cancelled ones, most recently closed first; `all` is newest `scheduledAt` first. Items: `{ "id", "leadId", "taskType", "scheduledAt", "notes", "status" (open | completed | cancelled), "outcome", "completionNotes", "completedAt", "completedBy", "completedByName", "cancelledAt", "cancelledBy", "cancelledByName", "assignedTo", "assignedToName", "createdBy", "createdByName", "createdAt" }`. Same visibility as `GET /leads/:id`.  
+**Undo a sale (admin):** `POST /leads/:id/reopen` with optional `{ "notes" }` (recorded on the status history; defaults to "Sale undone"). The `converted` lead goes back to `booking_confirmed` on the same car, and the car goes from `sold` back to `linked`. Refused with `422 SALE_PRICE_RECORDED` while finance has the sale price. Leads the sale moved to `vehicle_unavailable`, and follow-ups cancelled when it converted, stay as they are. Repeating a failed request finishes the job.
+
+**Closing a lead** (`converted` or `lost`) cancels its open follow-ups and marks their reminders read. New follow-ups on a closed lead answer `422 LEAD_CLOSED`.
+
+**Notifications about a lead's car:** the assignee (when it isn't the person acting) gets `lead_vehicle_unavailable` when their lead becomes `vehicle_unavailable` (the car sold to another lead, or its booked car was dropped), and `lead_vehicle_removed` when the car is taken off their lead without a status change (e.g. a drop). Both carry `leadId`.
+
 **Complete follow-up:** `{ "outcome": "no_answer", "notes": null, "next": { "scheduledAt", "taskType", "notes" } }`. `outcome`: `reached`, `no_answer`, `rescheduled`, `not_interested`, `done`. `next` is optional; when given, the next follow-up (and its reminder) is scheduled in the same transaction, exactly like `POST /leads/:id/follow-ups`. Returns `{ "followUp", "next" }` (`next` is `null` when not requested). The follow-up's `follow_up_due` notification is marked read.  
 **Cancel follow-up:** no body. The follow-up is soft-deleted and its notification marked read.  
 Closing a follow-up that is already completed or cancelled answers `422 FOLLOW_UP_CLOSED` (or `409 CONFLICT` if another request closed it at the same moment). A follow-up id from another lead answers `404`. Completing and cancelling work on closed leads too, so stale items can be cleared.  

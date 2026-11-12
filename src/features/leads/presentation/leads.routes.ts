@@ -5,6 +5,7 @@ import type { CancelFollowUpController } from './controllers/cancel-follow-up.co
 import type { CompleteFollowUpController } from './controllers/complete-follow-up.controller';
 import type { AssociateLeadVehicleController } from './controllers/associate-lead-vehicle.controller';
 import type { ChangeLeadStatusController } from './controllers/change-lead-status.controller';
+import type { ReopenConvertedLeadController } from './controllers/reopen-converted-lead.controller';
 import type { CreateLeadController } from './controllers/create-lead.controller';
 import type { GetLeadController } from './controllers/get-lead.controller';
 import type { ListLeadFollowUpsController } from './controllers/list-lead-follow-ups.controller';
@@ -26,6 +27,7 @@ export interface LeadsRouterDeps {
   readonly associateLeadVehicleController: AssociateLeadVehicleController;
   readonly assignLeadController: AssignLeadController;
   readonly changeLeadStatusController: ChangeLeadStatusController;
+  readonly reopenConvertedLeadController: ReopenConvertedLeadController;
   readonly scheduleFollowUpController: ScheduleFollowUpController;
   readonly listLeadFollowUpsController: ListLeadFollowUpsController;
   readonly completeFollowUpController: CompleteFollowUpController;
@@ -56,6 +58,7 @@ export function createLeadsRouter(deps: LeadsRouterDeps): Router {
   router.put('/:id/assignment', deps.assignLeadController.handle());
   router.put('/:id/preference', deps.setLeadPreferenceController.handle());
   router.post('/:id/status', deps.changeLeadStatusController.handle());
+  router.post('/:id/reopen', deps.reopenConvertedLeadController.handle());
   router.get('/:id/status-history', deps.listLeadStatusHistoryController.handle());
   router.get('/:id/vehicle-matches', deps.listLeadVehicleMatchesController.handle());
   router.get('/:id/follow-ups', deps.listLeadFollowUpsController.handle());
