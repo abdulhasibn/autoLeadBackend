@@ -98,6 +98,8 @@ function testConfig(): AppConfig {
     logLevel: 'silent',
     businessTimeZone: 'Asia/Kolkata',
     publicSiteOrigins: ['http://localhost:3002'],
+    pushDispatchSecret: null,
+    expoAccessToken: null,
     supabase: {
       url: 'https://test-project.supabase.co',
       anonKey: 'test-anon-key',

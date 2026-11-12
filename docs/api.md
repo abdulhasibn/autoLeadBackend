@@ -846,6 +846,8 @@ Inbox for the **signed-in user**. Items with a future `dueAt` are omitted.
 |--------|------|---------|
 | `GET` | `/notifications?isRead=` | `200` page + `unreadCount` |
 | `PATCH` | `/notifications/:id/read` | `204` (own notifications only) |
+| `PUT` | `/notifications/push-devices` | `204` save this device's Expo push token / flip its push switch (see `docs/push-notifications.md`) |
+| `DELETE` | `/notifications/push-devices?token=` | `204` forget this device's token (sign-out) |
 
 ```json
 {

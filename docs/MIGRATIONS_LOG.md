@@ -33,7 +33,9 @@ The backend's local `.env` points at **dev**. Check `SUPABASE_URL` before runnin
 
 ## Pending on prod
 
-None. Dev and prod matched on 2026-11-11 (28 migrations each, by name).
+- `20261112120000_push_notifications` (not applied to dev or prod yet; needs `push_dispatch_config` row, see `docs/push-notifications.md`).
+
+Otherwise none. Dev and prod matched on 2026-11-11 (28 migrations each, by name).
 
 ## History (applied to both)
 

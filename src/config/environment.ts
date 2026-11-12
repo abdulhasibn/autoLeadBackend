@@ -21,6 +21,11 @@ const environmentSchema = z.object({
         .filter((origin) => origin.length > 0),
     )
     .pipe(z.array(z.string().url('PUBLIC_SITE_ORIGINS must be comma-separated URLs'))),
+  PUSH_DISPATCH_SECRET: z
+    .string()
+    .min(16, 'PUSH_DISPATCH_SECRET must be at least 16 characters')
+    .optional(),
+  EXPO_ACCESS_TOKEN: z.string().min(1).optional(),
   BUSINESS_TIMEZONE: z
     .string()
     .refine(isTimeZone, 'BUSINESS_TIMEZONE must be an IANA timezone')
@@ -44,6 +49,10 @@ export interface AppConfig {
   readonly businessTimeZone: string;
   /** Browser origins of the customer website, allowed to call `/public`. */
   readonly publicSiteOrigins: readonly string[];
+  /** Shared with the database so it can ask this API to send pushes. Null disables it. */
+  readonly pushDispatchSecret: string | null;
+  /** Expo push access token; only needed if enhanced push security is on. */
+  readonly expoAccessToken: string | null;
   readonly supabase: {
     readonly url: string;
     readonly anonKey: string;
@@ -83,6 +92,8 @@ export function loadEnvironment(source: NodeJS.ProcessEnv = process.env): AppCon
     logLevel: env.LOG_LEVEL,
     businessTimeZone: env.BUSINESS_TIMEZONE,
     publicSiteOrigins: env.PUBLIC_SITE_ORIGINS,
+    pushDispatchSecret: env.PUSH_DISPATCH_SECRET ?? null,
+    expoAccessToken: env.EXPO_ACCESS_TOKEN ?? null,
     supabase: {
       url: env.SUPABASE_URL,
       anonKey: env.SUPABASE_ANON_KEY,
