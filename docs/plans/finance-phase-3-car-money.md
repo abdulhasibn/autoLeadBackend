@@ -1,6 +1,6 @@
 # Finance Phase 3 — car deal, sale, quotes, profit and dues
 
-**Status:** approved plan · **Date:** 2026-11-02 · **Branch:** `feat/finance-3-car-money` · **Design:** `docs/plans/finance-module.md`
+**Status:** shipped (approved plan, kept as written; as-built API in `docs/api.md`) · **Date:** 2026-11-02 · **Branch:** `feat/finance-3-car-money` · **Design:** `docs/plans/finance-module.md`
 
 ## Context
 

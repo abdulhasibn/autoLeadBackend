@@ -1,6 +1,6 @@
 # Finance Phase 2 — tags and the income/expense ledger
 
-**Status:** approved plan · **Date:** 2026-11-02 · **Branch:** `feat/finance-2-ledger` · **Design:** `docs/plans/finance-module.md`
+**Status:** shipped (approved plan, kept as written; as-built API in `docs/api.md`) · **Date:** 2026-11-02 · **Branch:** `feat/finance-2-ledger` · **Design:** `docs/plans/finance-module.md`
 
 ## Context
 

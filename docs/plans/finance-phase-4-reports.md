@@ -1,6 +1,6 @@
 # Finance Phase 4 — reports and summary
 
-**Status:** approved plan · **Date:** 2026-11-03 · **Branch:** `feat/finance-4-reports` · **Design:** `docs/plans/finance-module.md`
+**Status:** shipped (approved plan, kept as written; as-built API in `docs/api.md`) · **Date:** 2026-11-03 · **Branch:** `feat/finance-4-reports` · **Design:** `docs/plans/finance-module.md`
 
 ## Context
 
