@@ -1,0 +1,80 @@
+name: DB check
+
+# Migration safety gate (db-inspector). Lints only the migration files this PR
+# adds or changes: merged migrations are history and are never edited to please
+# the linter. Rules live in .squawk.toml. Every warning fails the job; a warning
+# that is acceptable for one statement is silenced next to it with a reason.
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - '.squawk.toml'
+      - '.github/workflows/db-check.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  migration-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Block edits to existing migrations
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          changed=$(git diff --name-status --diff-filter=MDR "$BASE_SHA"...HEAD -- supabase/migrations/ || true)
+          if [ -n "$changed" ]; then
+            echo "::error::Existing migrations were modified, renamed or deleted. Add a new migration instead."
+            echo "$changed"
+            exit 1
+          fi
+
+      - name: Block out-of-order migrations
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          latest_base=$(git ls-tree --name-only "$BASE_SHA" supabase/migrations/ | xargs -n1 basename | grep -E '^[0-9]+_.*\.sql$' | sort | tail -1 || true)
+          for f in $(git diff --name-only --diff-filter=A "$BASE_SHA"...HEAD -- 'supabase/migrations/*.sql'); do
+            name=$(basename "$f")
+            if [[ -n "$latest_base" && ! "$name" > "$latest_base" ]]; then
+              echo "::error file=$f::$name sorts before $latest_base, the newest migration on the base branch. Rename it with a later timestamp."
+              exit 1
+            fi
+          done
+
+      - name: Squawk (added migrations)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          files=$(git diff --name-only --diff-filter=A "$BASE_SHA"...HEAD -- 'supabase/migrations/*.sql')
+          if [ -z "$files" ]; then
+            echo "No new migrations to lint."
+            exit 0
+          fi
+          echo "$files"
+          # shellcheck disable=SC2086
+          pnpm lint:migrations $files
