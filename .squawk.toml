@@ -1,0 +1,39 @@
+# Squawk config for supabase/migrations/** (docs: https://squawkhq.com/docs/rules).
+#
+# CI (.github/workflows/db-check.yml) lints only migration files a PR adds,
+# and fails a PR that edits, renames or deletes an existing one. Merged
+# migrations are history and must never be edited to please the linter.
+# Run locally with: pnpm lint:migrations supabase/migrations/<file>.sql
+#
+# Every rule not listed in excluded_rules stays on, including the lock and
+# destructive-change rules this gate exists for: adding-not-nullable-field,
+# adding-required-field, adding-foreign-key-constraint,
+# constraint-missing-not-valid, require-concurrent-index-creation,
+# require-concurrent-index-deletion, disallowed-unique-constraint,
+# changing-column-type, renaming-column, renaming-table, ban-drop-column,
+# ban-drop-table, ban-drop-constraint, ban-drop-function, ban-drop-database,
+# ban-truncate-cascade, require-lock-timeout, require-statement-timeout.
+#
+# A warning that is acceptable for one statement (e.g. a plain index on a table
+# the release review measured as small, or a drop that is the contract step of
+# an expand/contract change) is silenced next to that statement, with the reason:
+#   -- squawk-ignore require-concurrent-index-creation -- leads: ~2k rows, see docs/db-reviews/<pr>.md
+# Never use a bare `-- squawk-ignore-file`.
+
+# Matches supabase/config.toml [db] major_version. Update both if prod moves.
+pg_version = "15.0"
+
+# The Supabase CLI and the MCP apply_migration tool run each migration file in
+# a single transaction. This turns on ban-concurrent-index-creation-in-transaction
+# (CONCURRENTLY fails inside a transaction) and turns off prefer-robust-stmts
+# (a failed file rolls back as a whole, so `if not exists` guards are not needed;
+# existing migrations don't use them by convention).
+assume_in_transaction = true
+
+excluded_rules = [
+  # Primary keys are uuid. int/smallint columns hold bounded business values
+  # (model year, mileage, seat count, sort order) that cannot approach 2^31.
+  # 19 + 12 hits across existing migrations, all false positives.
+  "prefer-bigint-over-int",
+  "prefer-bigint-over-smallint",
+]
