@@ -1,6 +1,6 @@
 # Finance Phase 1 — vault, keys and unlock sessions
 
-**Status:** approved plan · **Date:** 2026-11-02 · **Branch:** `feat/finance-1-vault` · **Design:** `docs/plans/finance-module.md`
+**Status:** shipped (approved plan, kept as written; as-built API in `docs/api.md`) · **Date:** 2026-11-02 · **Branch:** `feat/finance-1-vault` · **Design:** `docs/plans/finance-module.md`
 
 ## Context
 

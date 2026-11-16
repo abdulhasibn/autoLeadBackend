@@ -1,6 +1,6 @@
 # Finance Phase 5 — encrypted seed data, smoke checks, Postman sync
 
-**Status:** approved plan, done 2026-11-08 · **Branch:** `feat/finance-5-seed-smoke` · **Design:** `docs/plans/finance-module.md`
+**Status:** shipped 2026-11-08, exit check waived (see outcome notes) · **Branch:** `feat/finance-5-seed-smoke` · **Design:** `docs/plans/finance-module.md`
 
 **Outcome notes:** the live finance smoke run with a temporary vault was skipped because hosted gained a real vault on 2026-11-05 (left untouched); the Postman cloud push was replaced by a manual import (collection too large for the connector). The smoke script also gained `FINANCE_ONLY=1` and a macOS bash fix (`set +B`).
 
