@@ -339,24 +339,12 @@ function checkEdit(filePath, cwd) {
 
 // ---------- database (Supabase MCP) ----------
 
-const WRITE_SQL =
-  /\b(insert|update|delete|merge|upsert|drop|alter|create|truncate|grant|revoke|comment|copy|vacuum|reindex|cluster|lock|refresh|call|do|security|owner)\b/i;
-
-function isReadOnlySql(sql) {
-  const clean = sql
-    .replace(/--[^\n]*/g, ' ')
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/'(?:[^']|'')*'/g, "''");
-  const stmts = clean
-    .split(';')
-    .map((x) => x.trim())
-    .filter(Boolean);
-  return (
-    stmts.length > 0 &&
-    stmts.every((x) => /^(select|with|explain|show|table|values)\b/i.test(x)) &&
-    !WRITE_SQL.test(clean)
-  );
-}
+// No SQL classifier: a "read-only" SELECT can still write through functions
+// (pg_terminate_backend, setval, set_config, lo_*, app RPCs, SELECT ... INTO),
+// and the guard cannot prove a function call is side-effect free. Every
+// execute_sql against production asks. Aggregate production checks go through
+// psql with $PROD_DB_READONLY_URL (db-inspector), a role the database itself
+// keeps read-only.
 
 function checkMcp(toolName, input, cwd) {
   const op = toolName.split('__').pop();
@@ -381,12 +369,10 @@ function checkMcp(toolName, input, cwd) {
       );
   }
   if (!isProd) return null;
-  if (op === 'execute_sql') {
-    if (isReadOnlySql(input?.query ?? '')) return null;
+  if (op === 'execute_sql')
     return ask(
-      'Write SQL against the PRODUCTION database. Confirm only if the user explicitly asked for it.',
+      'SQL against the PRODUCTION database. The guard cannot prove any SQL is read-only (functions called inside SELECT can write), so every query needs confirmation. Confirm only if the user explicitly asked for it; aggregate checks belong in psql with $PROD_DB_READONLY_URL.',
     );
-  }
   return ask(
     `"${op}" on the PRODUCTION Supabase project. Confirm only if the user explicitly asked for it.`,
   );
