@@ -429,7 +429,7 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
 | `POST` | `/vehicles` | `201` vehicle (`makeName` / `modelName` / `variantName` / `frontImageUrl` are `null` until you GET) |
 | `GET` | `/vehicles` | `200` page (includes catalog names, `frontImageUrl` and `linkedLeadCount`) |
 | `GET` | `/vehicles/:id` | `200` vehicle (includes `frontImageUrl` and `linkedLeadCount`) |
-| `PATCH` | `/vehicles/:id` | `200` vehicle (second-hand fields, plus optional `acquisitionType` until the car is sold; cannot change owner/variant/showroom/status) |
+| `PATCH` | `/vehicles/:id` | `200` vehicle (second-hand fields, plus optional `acquisitionType` until the car is sold, admin only when it changes the value; cannot change owner/variant/showroom/status) |
 | `PUT` | `/vehicles/:id/listed-price` | `200` `{ listedPrice }`: body `{ "listedPrice": 1250000 \| null }` in whole rupees (Admin). The public asking price; vehicles return it as `listedPrice` |
 | `POST` | `/vehicles/:id/status` | `200` `{ "status", "unlinkedLeadCount" }` (Admin) |
 | `GET` | `/vehicles/:id/status-history` | `200` page (newest first) |
@@ -469,7 +469,7 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
 
 `showroomId` is optional: omit it to use your home showroom (see **Roles**).
 
-**Update body** is the same minus `showroomId`, `ownerId`, `variantId`, `acquisitionType`. `accidentHistory` is required on update.
+**Update body** is the same minus `showroomId`, `ownerId`, `variantId`. `accidentHistory` is required on update. `acquisitionType` is optional: omit it or resend the current value to leave it alone. Changing it is admin-only (a salesperson gets `403 FORBIDDEN`) and refused on a sold car (`422 VEHICLE_SOLD`), because it decides whether finance reads the deal as a purchase rate or a commission.
 
 **List query** (all optional, AND-combined): `limit`, `offset`, `status`, `ownerId`, `showroomId`, `registration` (exact), plus:
 

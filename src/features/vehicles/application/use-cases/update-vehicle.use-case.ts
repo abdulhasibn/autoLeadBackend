@@ -32,6 +32,16 @@ export class UpdateVehicleUseCase {
       throw new NotFoundError(`Vehicle not found for id ${command.vehicleId}`);
     }
 
+    const acquisitionType =
+      command.acquisitionType === undefined
+        ? undefined
+        : AcquisitionType.create(command.acquisitionType);
+    // Acquisition type decides the sale model finance reads (purchase rate vs
+    // commission), so only an admin may change it. Resending the current value is fine.
+    if (acquisitionType !== undefined && acquisitionType.value !== vehicle.acquisitionType.value) {
+      this.policy.requireAdmin(ctx, "Only an admin can change a vehicle's acquisition type");
+    }
+
     vehicle.updateDetails({
       year: VehicleYear.create(command.year),
       registrationNumber: RegistrationNumber.create(command.registrationNumber),
@@ -50,10 +60,7 @@ export class UpdateVehicleUseCase {
       loanStatus: parseLoanStatus(command.loanStatus),
       location: command.location,
       description: command.description,
-      acquisitionType:
-        command.acquisitionType === undefined
-          ? undefined
-          : AcquisitionType.create(command.acquisitionType),
+      acquisitionType,
       updatedAt: this.clock.now(),
     });
 

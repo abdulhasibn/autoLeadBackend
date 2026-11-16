@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { ForbiddenActionError } from '../../../domain/errors/forbidden-action.error';
 import { NotFoundError } from '../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
 import { toOwnerId } from '../../../domain/shared/owner-id';
@@ -23,6 +24,12 @@ const ADMIN: AuthenticatedContext = {
   userId: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   roles: ['admin'],
   showroomId: null,
+};
+
+const SALESPERSON: AuthenticatedContext = {
+  userId: toUserId('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
+  roles: ['salesperson'],
+  showroomId: toShowroomId('b0000000-0000-4000-8000-000000000001'),
 };
 
 const VEHICLE_ID = '33333333-3333-4333-8333-333333333333';
@@ -118,5 +125,60 @@ describe('UpdateVehicleUseCase', () => {
         ADMIN,
       ),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  describe('acquisition type', () => {
+    const baseCommand = {
+      vehicleId: VEHICLE_ID,
+      year: 2019,
+      registrationNumber: 'KA01AB1234',
+      fuelType: 'petrol',
+      transmission: 'manual',
+      kmDriven: 42000,
+      numPreviousOwners: 1,
+      colour: 'White',
+      insuranceValidUntil: null,
+      rcStatus: null,
+      serviceHistory: null,
+      accidentHistory: false,
+      loanStatus: null,
+      location: null,
+      description: null,
+    };
+
+    it('lets an admin change it', async () => {
+      const result = await useCase.execute(
+        { ...baseCommand, acquisitionType: 'dealership_purchase' },
+        ADMIN,
+      );
+      expect(result.acquisitionType).toBe('dealership_purchase');
+    });
+
+    it('forbids a salesperson from changing it and saves nothing', async () => {
+      await expect(
+        useCase.execute(
+          { ...baseCommand, colour: 'Red', acquisitionType: 'dealership_purchase' },
+          SALESPERSON,
+        ),
+      ).rejects.toBeInstanceOf(ForbiddenActionError);
+      const stored = await repo.findById(toVehicleId(VEHICLE_ID));
+      expect(stored?.acquisitionType.value).toBe('consignment');
+      expect(stored?.colour).toBe('White');
+    });
+
+    it('lets a salesperson resend the current value with other edits', async () => {
+      const result = await useCase.execute(
+        { ...baseCommand, colour: 'Red', acquisitionType: 'consignment' },
+        SALESPERSON,
+      );
+      expect(result.acquisitionType).toBe('consignment');
+      expect(result.colour).toBe('Red');
+    });
+
+    it('lets a salesperson edit details without sending it', async () => {
+      const result = await useCase.execute({ ...baseCommand, colour: 'Red' }, SALESPERSON);
+      expect(result.acquisitionType).toBe('consignment');
+      expect(result.colour).toBe('Red');
+    });
   });
 });
