@@ -26,7 +26,7 @@ export class GetDuesReportUseCase {
       query.showroomId === null ? null : toShowroomId(query.showroomId),
     );
 
-    const items: DuesRowDto[] = cars.rows
+    const items: DuesRowDto[] = cars
       .filter((car) => hasDues(car.money))
       .map(({ vehicle, deal, money }) => ({
         vehicle: { id: vehicle.id, label: vehicle.label },
@@ -49,7 +49,7 @@ export class GetDuesReportUseCase {
         owedToSellers: positiveSum(items.map((i) => i.owedToSeller)),
         owedByBuyers: positiveSum(items.map((i) => i.owedByBuyer)),
       },
-      truncated: cars.truncated,
+      truncated: false,
     };
   }
 }

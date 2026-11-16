@@ -2,7 +2,6 @@ import type { AuthenticatedContext } from '../../../../domain/shared/auth-contex
 import { CalendarDate } from '../../../../domain/shared/calendar-date.value-object';
 import { toShowroomId } from '../../../../domain/shared/showroom-id';
 import { ReportPeriod } from '../../domain/report-period.value-object';
-import { calculateVehicleMoney } from '../../domain/vehicle-money';
 import type { VehicleProfitReportDto, VehicleProfitRowDto } from '../dtos/finance-report.dto';
 import { commissionPercentOf } from '../dtos/vehicle-finance.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
@@ -38,13 +37,7 @@ export class GetVehicleProfitReportUseCase {
     const showroomId = query.showroomId === null ? null : toShowroomId(query.showroomId);
 
     const sold = await this.data.soldCarsBetween(cipher, from.value, to.value, showroomId);
-    const items: VehicleProfitRowDto[] = sold.rows.map((car) => {
-      const money = calculateVehicleMoney({
-        saleModel: car.saleModel,
-        terms: car.terms,
-        finalisedPrice: car.finalisedPrice,
-        entries: car.entries,
-      });
+    const items: VehicleProfitRowDto[] = sold.map(({ money, ...car }) => {
       return {
         vehicle: { id: car.vehicle.id, label: car.vehicle.label },
         soldOn: car.soldOn,
@@ -76,7 +69,7 @@ export class GetVehicleProfitReportUseCase {
         carsMissingPurchaseRate: items.length - counted.length,
         uncountedSales: sum(uncounted.map((i) => i.finalisedPrice)),
       },
-      truncated: sold.truncated,
+      truncated: false,
     };
   }
 }

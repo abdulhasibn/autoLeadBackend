@@ -1,45 +1,44 @@
 import type { ShowroomId } from '../../../../domain/shared/showroom-id';
 import type { VehicleId } from '../../../../domain/shared/vehicle-id';
-import type { SaleInfo, SoldCar } from '../../domain/build-profit-and-loss';
+import type { SaleInfo, SoldCarFigures } from '../../domain/build-profit-and-loss';
 import type { FinanceCipher } from '../../domain/finance-cipher.port';
 import type { FinanceEntry } from '../../domain/finance-entry.entity';
-import type { IFinanceEntryQueries } from '../../domain/finance-entry.queries';
+import type { FinanceEntryFilter, IFinanceEntryQueries } from '../../domain/finance-entry.queries';
 import type {
   FinanceVehicleFacts,
   IFinanceVehicleLookup,
 } from '../../domain/finance-vehicle-lookup.port';
-import { MAX_LEDGER_ROWS } from '../../domain/finance.constants';
 import type { VehicleDeal } from '../../domain/vehicle-deal.entity';
 import type { IVehicleDealQueries } from '../../domain/vehicle-deal.queries';
-import { calculateVehicleMoney, hasDealTerms, type VehicleMoney } from '../../domain/vehicle-money';
+import { hasDealTerms, VehicleMoneyTally, type VehicleMoney } from '../../domain/vehicle-money';
 import { compareQuotesNewestFirst, type VehicleQuote } from '../../domain/vehicle-quote.entity';
 import type { IVehicleQuoteQueries } from '../../domain/vehicle-quote.queries';
 import type { EntrySealer } from './entry.sealer';
 import type { QuoteSealer } from './quote.sealer';
 import type { VehicleDealSealer } from './vehicle-deal.sealer';
 
-export interface SoldCarRow extends SoldCar {
+/** A car whose sale is dated in the range, with its numbers over every entry it has. */
+export interface SoldCarRow extends SoldCarFigures {
   readonly vehicle: FinanceVehicleFacts;
   readonly deal: VehicleDeal;
-}
-
-/** A live car with finance data, its decrypted deal and entries, and its numbers. */
-export interface CarMoneyRow {
-  readonly vehicle: FinanceVehicleFacts;
-  readonly deal: VehicleDeal | null;
-  readonly entries: readonly FinanceEntry[];
   readonly money: VehicleMoney;
 }
 
-export interface Loaded<T> {
-  readonly rows: T;
-  /** A read hit MAX_LEDGER_ROWS; figures may be incomplete. */
-  readonly truncated: boolean;
+/** A live car with finance data, its decrypted deal, and its numbers. */
+export interface CarMoneyRow {
+  readonly vehicle: FinanceVehicleFacts;
+  readonly deal: VehicleDeal | null;
+  readonly money: VehicleMoney;
 }
 
 /**
  * Loads and decrypts what the reports need, so every report reads the data
  * the same way. Read side only: queries ports and the car lookup.
+ *
+ * Totals need every entry, and SQL can't sum encrypted amounts (ADR-0014), so
+ * entries are streamed with `scan` and folded into running totals a page at a
+ * time: nothing is capped, and memory grows with the number of cars, not
+ * entries.
  */
 export class FinanceReportData {
   constructor(
@@ -52,13 +51,13 @@ export class FinanceReportData {
     private readonly quoteSealer: QuoteSealer,
   ) {}
 
-  /** Cars whose sale is dated in the range, with every entry they have (any date). */
+  /** Cars whose sale is dated in the range, with numbers over all their entries (any date). */
   async soldCarsBetween(
     cipher: FinanceCipher,
     from: string,
     to: string,
     showroomId: ShowroomId | null,
-  ): Promise<Loaded<SoldCarRow[]>> {
+  ): Promise<SoldCarRow[]> {
     const deals = (await this.deals.findSoldBetween(from, to)).map((row) =>
       this.dealSealer.open(row, cipher),
     );
@@ -67,14 +66,26 @@ export class FinanceReportData {
       const car = facts.get(deal.vehicleId);
       return car !== undefined && (showroomId === null || car.showroomId === showroomId);
     });
-    const { byCar, truncated } = await this.entriesOfCars(
-      cipher,
-      kept.map((deal) => deal.vehicleId),
+    const tallies = new Map(
+      kept.map((deal) => [
+        deal.vehicleId as string,
+        new VehicleMoneyTally(deal.sale?.soldOn.value ?? null),
+      ]),
     );
-    const rows = kept.flatMap((deal): SoldCarRow[] => {
+    if (tallies.size > 0) {
+      await this.foldEntries(
+        cipher,
+        { vehicleIds: kept.map((deal) => deal.vehicleId) },
+        (entry) => {
+          if (entry.vehicleId !== null) tallies.get(entry.vehicleId)?.add(entry);
+        },
+      );
+    }
+    return kept.flatMap((deal): SoldCarRow[] => {
       const vehicle = facts.get(deal.vehicleId);
+      const tally = tallies.get(deal.vehicleId);
       const sale = deal.sale;
-      if (vehicle === undefined || sale === null) return [];
+      if (vehicle === undefined || tally === undefined || sale === null) return [];
       return [
         {
           vehicleId: deal.vehicleId,
@@ -82,32 +93,45 @@ export class FinanceReportData {
           finalisedPrice: sale.finalisedPrice,
           saleModel: vehicle.saleModel,
           terms: deal.terms,
-          entries: byCar.get(deal.vehicleId) ?? [],
+          costsUpToSale: tally.costsUpToSale,
+          money: tally.finish({
+            saleModel: vehicle.saleModel,
+            terms: deal.terms,
+            finalisedPrice: sale.finalisedPrice,
+          }),
           vehicle,
           deal,
         },
       ];
     });
-    return { rows, truncated };
   }
 
-  /** Every live entry dated in the range. */
-  async entriesBetween(
+  /**
+   * Hands every live entry dated in the range to `visit`, with the sale info
+   * of its car when that car has a recorded sale (to tell later costs apart).
+   */
+  async foldEntriesBetween(
     cipher: FinanceCipher,
     from: string,
     to: string,
     showroomId: ShowroomId | null,
-  ): Promise<Loaded<FinanceEntry[]>> {
-    const page = await this.entries.list({
-      from,
-      to,
-      ...(showroomId === null ? {} : { showroomId }),
-      maxRows: MAX_LEDGER_ROWS,
+    visit: (entry: FinanceEntry, sale: SaleInfo | undefined) => void,
+  ): Promise<void> {
+    const sales = new Map<string, SaleInfo>();
+    const looked = new Set<string>();
+    const filter = { from, to, ...(showroomId === null ? {} : { showroomId }) };
+    await this.foldPages(cipher, filter, async (page) => {
+      const unseen = [
+        ...new Set(page.flatMap((e) => (e.vehicleId === null ? [] : [e.vehicleId]))),
+      ].filter((id) => !looked.has(id));
+      if (unseen.length > 0) {
+        unseen.forEach((id) => looked.add(id));
+        for (const [id, info] of await this.saleInfo(cipher, unseen)) sales.set(id, info);
+      }
+      for (const entry of page) {
+        visit(entry, entry.vehicleId === null ? undefined : sales.get(entry.vehicleId));
+      }
     });
-    return {
-      rows: page.rows.map((row) => this.entrySealer.open(row, cipher)),
-      truncated: page.truncated,
-    };
   }
 
   /**
@@ -135,48 +159,47 @@ export class FinanceReportData {
     return sales;
   }
 
-  /** Every live car holding a deal or entries, with its numbers. */
+  /** Every live car holding a deal or entries, with its numbers over all its entries. */
   async carsWithMoney(
     cipher: FinanceCipher,
     showroomId: ShowroomId | null,
-  ): Promise<Loaded<CarMoneyRow[]>> {
+  ): Promise<CarMoneyRow[]> {
     const deals = new Map(
       (await this.deals.findWithData()).map((row) => [
         row.vehicleId as string,
         this.dealSealer.open(row, cipher),
       ]),
     );
-    const page = await this.entries.list({ maxRows: MAX_LEDGER_ROWS });
-    const byCar = new Map<string, FinanceEntry[]>();
-    for (const row of page.rows) {
-      if (row.vehicleId === null) continue;
-      const entry = this.entrySealer.open(row, cipher);
-      byCar.set(row.vehicleId, [...(byCar.get(row.vehicleId) ?? []), entry]);
-    }
-    const ids = [...new Set([...deals.keys(), ...byCar.keys()])] as VehicleId[];
+    const tallies = new Map<string, VehicleMoneyTally>();
+    await this.foldEntries(cipher, {}, (entry) => {
+      if (entry.vehicleId === null) return;
+      let tally = tallies.get(entry.vehicleId);
+      if (tally === undefined) {
+        tally = new VehicleMoneyTally();
+        tallies.set(entry.vehicleId, tally);
+      }
+      tally.add(entry);
+    });
+    const ids = [...new Set([...deals.keys(), ...tallies.keys()])] as VehicleId[];
     const facts = await this.factsById(ids);
 
-    const rows = ids.flatMap((id): CarMoneyRow[] => {
+    return ids.flatMap((id): CarMoneyRow[] => {
       const vehicle = facts.get(id);
       if (vehicle === undefined || vehicle.deleted) return [];
       if (showroomId !== null && vehicle.showroomId !== showroomId) return [];
       const deal = deals.get(id) ?? null;
-      const entries = byCar.get(id) ?? [];
       return [
         {
           vehicle,
           deal,
-          entries,
-          money: calculateVehicleMoney({
+          money: (tallies.get(id) ?? new VehicleMoneyTally()).finish({
             saleModel: vehicle.saleModel,
             terms: deal?.terms ?? null,
             finalisedPrice: deal?.sale?.finalisedPrice ?? null,
-            entries,
           }),
         },
       ];
     });
-    return { rows, truncated: page.truncated };
   }
 
   async latestQuotes(
@@ -199,20 +222,24 @@ export class FinanceReportData {
     return new Map(facts.map((car) => [car.id as string, car]));
   }
 
-  private async entriesOfCars(
+  private async foldEntries(
     cipher: FinanceCipher,
-    vehicleIds: readonly VehicleId[],
-  ): Promise<{ byCar: Map<string, FinanceEntry[]>; truncated: boolean }> {
-    const byCar = new Map<string, FinanceEntry[]>();
-    if (vehicleIds.length === 0) return { byCar, truncated: false };
-    const page = await this.entries.list({ vehicleIds, maxRows: MAX_LEDGER_ROWS });
-    for (const row of page.rows) {
-      if (row.vehicleId === null) continue;
-      byCar.set(row.vehicleId, [
-        ...(byCar.get(row.vehicleId) ?? []),
-        this.entrySealer.open(row, cipher),
-      ]);
+    filter: FinanceEntryFilter,
+    visit: (entry: FinanceEntry) => void,
+  ): Promise<void> {
+    await this.foldPages(cipher, filter, (page) => {
+      page.forEach(visit);
+    });
+  }
+
+  /** Decrypts one page at a time; a page is dropped before the next is read. */
+  private async foldPages(
+    cipher: FinanceCipher,
+    filter: FinanceEntryFilter,
+    visit: (page: readonly FinanceEntry[]) => void | Promise<void>,
+  ): Promise<void> {
+    for await (const sealed of this.entries.scan(filter)) {
+      await visit(sealed.map((row) => this.entrySealer.open(row, cipher)));
     }
-    return { byCar, truncated: page.truncated };
   }
 }

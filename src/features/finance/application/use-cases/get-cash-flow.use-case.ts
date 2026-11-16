@@ -1,7 +1,7 @@
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { CalendarDate } from '../../../../domain/shared/calendar-date.value-object';
 import { toShowroomId } from '../../../../domain/shared/showroom-id';
-import { buildCashFlow } from '../../domain/build-cash-flow';
+import { CashFlowTally } from '../../domain/build-cash-flow';
 import { ReportPeriod } from '../../domain/report-period.value-object';
 import { rupeesOf, type CashFlowReportDto } from '../dtos/finance-report.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
@@ -26,11 +26,11 @@ export class GetCashFlowUseCase {
     const { cipher } = await this.sessions.open(ctx, query.sessionToken);
     const showroomId = query.showroomId === null ? null : toShowroomId(query.showroomId);
 
-    const entries = await this.data.entriesBetween(cipher, from.value, to.value, showroomId);
-    const report = buildCashFlow({
-      buckets: period.bucketsBetween(from, to),
-      entries: entries.rows,
-    });
+    const tally = new CashFlowTally(period.bucketsBetween(from, to));
+    await this.data.foldEntriesBetween(cipher, from.value, to.value, showroomId, (entry) =>
+      tally.add(entry),
+    );
+    const report = tally.result();
 
     return {
       period: period.value,
@@ -38,7 +38,7 @@ export class GetCashFlowUseCase {
       to: to.value,
       buckets: report.buckets.map((b) => rupeesOf(b)),
       totals: rupeesOf(report.totals),
-      truncated: entries.truncated,
+      truncated: false,
     };
   }
 }

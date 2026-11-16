@@ -4,7 +4,7 @@ import type { Money } from './money.value-object';
 import { bucketIndexOf, type ReportBucket } from './report-period.value-object';
 import type { SaleModel } from './sale-model';
 import type { DealTerms } from './vehicle-deal.entity';
-import { commissionOn, hasDealTerms } from './vehicle-money';
+import { commissionOn, hasDealTerms, VehicleMoneyTally } from './vehicle-money';
 
 /** A car whose sale is recorded, with every live entry it has (any date). */
 export interface SoldCar {
@@ -15,6 +15,12 @@ export interface SoldCar {
   readonly saleModel: SaleModel;
   readonly terms: DealTerms | null;
   readonly entries: readonly FinanceEntry[];
+}
+
+/** A sold car with its pre-sale costs already summed, so P&L needs no entry list. */
+export interface SoldCarFigures extends Omit<SoldCar, 'entries'> {
+  /** Paise of the car's `cost` entries dated on or before `soldOn`. */
+  readonly costsUpToSale: number;
 }
 
 /** What the report needs to know about every car with a recorded sale. */
@@ -93,33 +99,53 @@ export function buildProfitAndLoss(input: {
   readonly entries: readonly FinanceEntry[];
   readonly sales: ReadonlyMap<string, SaleInfo>;
 }): ProfitAndLoss {
-  const lines: MutableLine[] = input.buckets.map(() => emptyLine());
-
+  const tally = new ProfitAndLossTally(input.buckets);
   for (const car of input.soldCars) {
-    const index = bucketIndexOf(input.buckets, car.soldOn);
-    const line = lines[index];
-    if (line === undefined) continue;
+    const money = new VehicleMoneyTally(car.soldOn);
+    for (const entry of car.entries) money.add(entry);
+    tally.addSoldCar({ ...car, costsUpToSale: money.costsUpToSale });
+  }
+  for (const entry of input.entries) {
+    tally.addEntry(entry, entry.vehicleId === null ? undefined : input.sales.get(entry.vehicleId));
+  }
+  return tally.result();
+}
+
+/**
+ * {@link buildProfitAndLoss} one item at a time, so a report can fold the
+ * ledger page by page. Same rules; items dated outside the buckets are ignored.
+ */
+export class ProfitAndLossTally {
+  private readonly lines: MutableLine[];
+
+  constructor(private readonly buckets: readonly ReportBucket[]) {
+    this.lines = buckets.map(() => emptyLine());
+  }
+
+  addSoldCar(car: SoldCarFigures): void {
+    const line = this.lines[bucketIndexOf(this.buckets, car.soldOn)];
+    if (line === undefined) return;
     line.carsSold += 1;
     if (!hasDealTerms(car.saleModel, car.terms)) {
       line.carsMissingPurchaseRate += 1;
       line.uncountedSales += car.finalisedPrice.paise;
-      continue;
+      return;
     }
     if (car.saleModel === 'commission') {
       line.commissions += commissionOn(car.finalisedPrice, car.terms?.commissionBasisPoints ?? 0);
-      continue;
+      return;
     }
-    const purchaseRate = car.terms?.purchaseRate?.paise ?? 0;
-    const costsUpToSale = car.entries
-      .filter((e) => e.purpose === 'cost' && e.entryDate.value <= car.soldOn)
-      .reduce((sum, e) => sum + e.amount.paise, 0);
     line.sales += car.finalisedPrice.paise;
-    line.costOfSales += purchaseRate + costsUpToSale;
+    line.costOfSales += (car.terms?.purchaseRate?.paise ?? 0) + car.costsUpToSale;
   }
 
-  for (const entry of input.entries) {
-    const line = lines[bucketIndexOf(input.buckets, entry.entryDate.value)];
-    if (line === undefined) continue;
+  /**
+   * @param sale the sale info of the entry's car, if it has a recorded sale,
+   *   to tell later costs apart
+   */
+  addEntry(entry: FinanceEntry, sale: SaleInfo | undefined): void {
+    const line = this.lines[bucketIndexOf(this.buckets, entry.entryDate.value)];
+    if (line === undefined) return;
     const paise = entry.amount.paise;
     if (entry.vehicleId === null) {
       if (entry.kind === 'income') line.otherIncome += paise;
@@ -127,18 +153,19 @@ export function buildProfitAndLoss(input: {
     } else if (entry.purpose === 'other') {
       line.otherIncome += paise;
     } else if (entry.purpose === 'cost') {
-      const sale = input.sales.get(entry.vehicleId);
       if (sale !== undefined && sale.countsLaterCosts && entry.entryDate.value > sale.soldOn) {
         line.laterCarCosts += paise;
       }
     }
   }
 
-  const buckets = input.buckets.map((bucket, i) => ({
-    ...bucket,
-    ...finish(lines[i] ?? emptyLine()),
-  }));
-  return { buckets, totals: finish(lines.reduce(addLines, emptyLine())) };
+  result(): ProfitAndLoss {
+    const buckets = this.buckets.map((bucket, i) => ({
+      ...bucket,
+      ...finish(this.lines[i] ?? emptyLine()),
+    }));
+    return { buckets, totals: finish(this.lines.reduce(addLines, emptyLine())) };
+  }
 }
 
 function emptyLine(): MutableLine {
