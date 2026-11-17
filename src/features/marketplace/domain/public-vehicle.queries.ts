@@ -43,12 +43,25 @@ export interface PublicVehiclePhoto {
   readonly category: string;
 }
 
+/** A Listed vehicle with its cover photo: the first `front` photo, else the first photo. */
+export interface PublicVehicleListing {
+  readonly vehicle: PublicVehicleReadModel;
+  readonly coverPath: string | null;
+}
+
+/** A Listed vehicle with every photo, in display order. */
+export interface PublicVehicleWithPhotos {
+  readonly vehicle: PublicVehicleReadModel;
+  readonly photos: readonly PublicVehiclePhoto[];
+}
+
+/**
+ * Photos come back with their vehicle in one read: each Supabase call is a
+ * network round trip, and these routes sit on the website's critical path.
+ */
 export interface IPublicVehicleQueries {
-  list(criteria: PublicVehicleCriteria, page: Pagination): Promise<Page<PublicVehicleReadModel>>;
-  get(id: string): Promise<PublicVehicleReadModel | null>;
+  list(criteria: PublicVehicleCriteria, page: Pagination): Promise<Page<PublicVehicleListing>>;
+  get(id: string): Promise<PublicVehicleWithPhotos | null>;
   /** Every Listed vehicle, unpaginated: the source of the filter options. */
   listAll(): Promise<readonly PublicVehicleReadModel[]>;
-  /** Cover photo per vehicle: the first `front` photo, else the first photo. */
-  coverPaths(vehicleIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
-  photos(vehicleId: string): Promise<readonly PublicVehiclePhoto[]>;
 }

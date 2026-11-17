@@ -11,12 +11,12 @@ export class GetPublicVehicleUseCase {
 
   /** Sold, dropped and removed vehicles are indistinguishable from unknown ids. */
   async execute(id: string): Promise<PublicVehicleDetailDto> {
-    const vehicle = await this.queries.get(id);
-    if (vehicle === null) {
+    const found = await this.queries.get(id);
+    if (found === null) {
       throw new NotFoundError('Vehicle not found');
     }
 
-    const photos = await this.queries.photos(id);
+    const { vehicle, photos } = found;
     const urls = await this.signer.sign(photos.map((photo) => photo.storagePath));
     const signed = photos.flatMap((photo) => {
       const url = urls.get(photo.storagePath);

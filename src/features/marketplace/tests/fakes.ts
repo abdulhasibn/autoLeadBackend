@@ -7,8 +7,10 @@ import type { IPublicMediaSigner } from '../domain/public-media-signer.port';
 import type {
   IPublicVehicleQueries,
   PublicVehicleCriteria,
+  PublicVehicleListing,
   PublicVehiclePhoto,
   PublicVehicleReadModel,
+  PublicVehicleWithPhotos,
 } from '../domain/public-vehicle.queries';
 import type {
   ITestDriveIntake,
@@ -65,44 +67,42 @@ export class FakePublicVehicleQueries implements IPublicVehicleQueries {
     private readonly media: Record<string, PublicVehiclePhoto[]> = {},
   ) {}
 
+  /** Supabase calls each test made; every call is a network round trip in production. */
+  readonly calls: string[] = [];
+
   async list(
     _criteria: PublicVehicleCriteria,
     page: Pagination,
-  ): Promise<Page<PublicVehicleReadModel>> {
+  ): Promise<Page<PublicVehicleListing>> {
+    this.calls.push('list');
     return toPage(
-      this.vehicles.slice(page.offset, page.offset + page.limit),
+      this.vehicles.slice(page.offset, page.offset + page.limit).map((vehicle) => {
+        const photos = this.media[vehicle.id] ?? [];
+        const cover = photos.find((photo) => photo.category === 'front') ?? photos[0];
+        return { vehicle, coverPath: cover?.storagePath ?? null };
+      }),
       this.vehicles.length,
       page,
     );
   }
 
-  async get(id: string): Promise<PublicVehicleReadModel | null> {
-    return this.vehicles.find((vehicle) => vehicle.id === id) ?? null;
+  async get(id: string): Promise<PublicVehicleWithPhotos | null> {
+    this.calls.push('get');
+    const vehicle = this.vehicles.find((candidate) => candidate.id === id);
+    return vehicle === undefined ? null : { vehicle, photos: this.media[id] ?? [] };
   }
 
   async listAll(): Promise<readonly PublicVehicleReadModel[]> {
+    this.calls.push('listAll');
     return this.vehicles;
-  }
-
-  async coverPaths(vehicleIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
-    const covers = new Map<string, string>();
-    for (const id of vehicleIds) {
-      const photos = this.media[id] ?? [];
-      const cover = photos.find((photo) => photo.category === 'front') ?? photos[0];
-      if (cover !== undefined) {
-        covers.set(id, cover.storagePath);
-      }
-    }
-    return covers;
-  }
-
-  async photos(vehicleId: string): Promise<readonly PublicVehiclePhoto[]> {
-    return this.media[vehicleId] ?? [];
   }
 }
 
 export class FakeSigner implements IPublicMediaSigner {
+  readonly calls: (readonly string[])[] = [];
+
   async sign(storagePaths: readonly string[]): Promise<ReadonlyMap<string, string>> {
+    this.calls.push(storagePaths);
     return new Map(storagePaths.map((path) => [path, `https://signed.test/${path}`]));
   }
 }
