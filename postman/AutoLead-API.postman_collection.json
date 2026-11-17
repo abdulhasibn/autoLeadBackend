@@ -995,8 +995,76 @@
               }
             },
             "url": "{{baseUrl}}/vehicles",
-            "description": "POST /vehicles — Admin or Salesperson. `showroomId` is optional: it defaults to your home showroom, and only admins may name another. Duplicate live registration → 409."
-          }
+            "description": "**Story:** A salesperson adds a second-hand car to the stock so leads can be matched to it.\n\nPOST /vehicles — Admin or Salesperson. `showroomId` is optional: it defaults to your home showroom, and only admins may name another. The registration is stored uppercase with spaces, dashes, dots and slashes removed, so `KA-01-AB-1234` and `KA01AB1234` are the same car. Duplicate live registration → 409."
+          },
+          "response": [
+            {
+              "id": "7712de6f-63fd-4ff7-a889-b47e940736c9",
+              "name": "201 Created — vehicle",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"showroomId\": \"{{showroomId}}\",\n  \"ownerId\": \"{{ownerId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"year\": 2019,\n  \"registrationNumber\": \"KA01AB1234\",\n  \"fuelType\": \"petrol\",\n  \"transmission\": \"manual\",\n  \"kmDriven\": 42000,\n  \"numPreviousOwners\": 1,\n  \"colour\": \"White\",\n  \"insuranceValidUntil\": null,\n  \"rcStatus\": \"clear\",\n  \"serviceHistory\": \"full\",\n  \"accidentHistory\": false,\n  \"loanStatus\": \"clear\",\n  \"location\": \"Bengaluru\",\n  \"description\": null,\n  \"acquisitionType\": \"consignment\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/vehicles"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"b7e1f0c2-4a5d-4c1e-9f3a-2d6b8e0a1c55\",\n  \"showroomId\": \"3f1c2a9e-5b7d-4e8f-a1c2-9d0e4b6a7c81\",\n  \"ownerId\": \"8a2d4c6e-1f3b-4d5a-9e7c-0b2a4c6e8f10\",\n  \"variantId\": \"5c7e9a1b-3d5f-4b7d-8e9a-1c3e5a7b9d20\",\n  \"makeName\": \"BMW\",\n  \"modelName\": \"3 Series\",\n  \"variantName\": \"320d\",\n  \"year\": 2019,\n  \"registrationNumber\": \"KA01AB1234\",\n  \"fuelType\": \"petrol\",\n  \"transmission\": \"manual\",\n  \"kmDriven\": 42000,\n  \"numPreviousOwners\": 1,\n  \"colour\": \"White\",\n  \"insuranceValidUntil\": null,\n  \"rcStatus\": \"clear\",\n  \"serviceHistory\": \"full\",\n  \"accidentHistory\": false,\n  \"loanStatus\": \"clear\",\n  \"location\": \"Bengaluru\",\n  \"description\": null,\n  \"status\": \"open\",\n  \"soldLeadId\": null,\n  \"acquisitionType\": \"consignment\",\n  \"submittedBy\": \"2e4a6c8e-0a2c-4e6a-8c0e-2a4c6e8a0c42\",\n  \"createdAt\": \"2026-11-17T10:00:00.000Z\",\n  \"updatedAt\": \"2026-11-17T10:00:00.000Z\",\n  \"frontImageUrl\": null,\n  \"frontImageUrlExpiresAt\": null,\n  \"linkedLeadCount\": 0\n}"
+            },
+            {
+              "id": "fbaa5829-929b-430d-b591-e7858e466408",
+              "name": "409 — CONFLICT (same plate, typed with dashes)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"showroomId\": \"{{showroomId}}\",\n  \"ownerId\": \"{{ownerId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"year\": 2019,\n  \"registrationNumber\": \"KA-01-AB-1234\",\n  \"fuelType\": \"petrol\",\n  \"transmission\": \"manual\",\n  \"kmDriven\": 42000,\n  \"numPreviousOwners\": 1,\n  \"colour\": \"White\",\n  \"insuranceValidUntil\": null,\n  \"rcStatus\": \"clear\",\n  \"serviceHistory\": \"full\",\n  \"accidentHistory\": false,\n  \"loanStatus\": \"clear\",\n  \"location\": \"Bengaluru\",\n  \"description\": null,\n  \"acquisitionType\": \"consignment\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/vehicles"
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"CONFLICT\",\n    \"message\": \"Vehicle with this registration number already exists\"\n  }\n}"
+            }
+          ]
         },
         {
           "name": "List Vehicles",

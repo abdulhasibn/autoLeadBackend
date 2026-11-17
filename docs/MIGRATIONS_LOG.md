@@ -37,6 +37,7 @@ Apply these before merging the next `dev` → `main` release (see `docs/RELEASE_
 
 | Date (dev) | Migration | Dev version | Notes |
 |---|---|---|---|
+| — (not applied yet) | `normalise_registration_numbers` | — | Issue #30. Rewrites plates to letters and digits only (spaces, dashes, dots, slashes removed). Data only, no constraint: backward-compatible with the current backend. Stops without writing if two live cars would share a plate or a plate would become empty. **Before applying on dev:** soft-delete one of the two live `QA01AB0001` QA cars (the guard names them). Prod: audit collisions first (db-inspector, counts only). A later migration adds the format CHECK once the new backend is live on prod. |
 | 2026-11-12 | `lead_flow_gaps` | `20261112174824` | Replaces the bodies of `private.save_lead` (close follow-ups on converted/lost; notify assignee on `vehicle_unavailable` / car removed) and `private.save_vehicle` (updates `acquisition_type`). One-off: cancels open follow-ups on already-closed leads (0 on dev). Backward-compatible: signatures unchanged. Checked on dev in a rolled-back block: close cancels follow-ups + reads reminders; vehicle_unavailable notifies the assignee with lead_id. |
 
 ## History (applied to both)
