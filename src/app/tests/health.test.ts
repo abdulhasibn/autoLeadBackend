@@ -11,6 +11,7 @@ function testConfig(): AppConfig {
     logLevel: 'silent',
     businessTimeZone: 'Asia/Kolkata',
     publicSiteOrigins: ['http://localhost:3002'],
+    crmOrigins: ['http://localhost:3001'],
     supabase: {
       url: 'https://test-project.supabase.co',
       anonKey: 'test-anon-key',

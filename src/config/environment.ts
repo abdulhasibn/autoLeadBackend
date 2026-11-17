@@ -1,5 +1,19 @@
 import { z } from 'zod';
 
+/** A comma-separated list of browser origins; empty entries are dropped. */
+function originList(name: string) {
+  return z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0),
+    )
+    .pipe(z.array(z.string().url(`${name} must be comma-separated URLs`)));
+}
+
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -11,16 +25,8 @@ const environmentSchema = z.object({
     .string()
     .min(32, 'SUPABASE_JWT_SECRET must be at least 32 characters')
     .optional(),
-  PUBLIC_SITE_ORIGINS: z
-    .string()
-    .default('')
-    .transform((value) =>
-      value
-        .split(',')
-        .map((origin) => origin.trim())
-        .filter((origin) => origin.length > 0),
-    )
-    .pipe(z.array(z.string().url('PUBLIC_SITE_ORIGINS must be comma-separated URLs'))),
+  PUBLIC_SITE_ORIGINS: originList('PUBLIC_SITE_ORIGINS'),
+  CRM_ORIGINS: originList('CRM_ORIGINS'),
   BUSINESS_TIMEZONE: z
     .string()
     .refine(isTimeZone, 'BUSINESS_TIMEZONE must be an IANA timezone')
@@ -44,6 +50,11 @@ export interface AppConfig {
   readonly businessTimeZone: string;
   /** Browser origins of the customer website, allowed to call `/public`. */
   readonly publicSiteOrigins: readonly string[];
+  /**
+   * Browser origins of the CRM, allowed to call the staff routes. Empty means
+   * no cross-origin browser calls: the CRM calls the API from its server.
+   */
+  readonly crmOrigins: readonly string[];
   readonly supabase: {
     readonly url: string;
     readonly anonKey: string;
@@ -83,6 +94,7 @@ export function loadEnvironment(source: NodeJS.ProcessEnv = process.env): AppCon
     logLevel: env.LOG_LEVEL,
     businessTimeZone: env.BUSINESS_TIMEZONE,
     publicSiteOrigins: env.PUBLIC_SITE_ORIGINS,
+    crmOrigins: env.CRM_ORIGINS,
     supabase: {
       url: env.SUPABASE_URL,
       anonKey: env.SUPABASE_ANON_KEY,
