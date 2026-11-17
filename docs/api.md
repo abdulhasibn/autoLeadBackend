@@ -471,7 +471,7 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
 
 **Update body** is the same minus `showroomId`, `ownerId`, `variantId`. `accidentHistory` is required on update. `acquisitionType` is optional: omit it or resend the current value to leave it alone. Changing it is admin-only (a salesperson gets `403 FORBIDDEN`) and refused on a sold car (`422 VEHICLE_SOLD`), because it decides whether finance reads the deal as a purchase rate or a commission.
 
-**List query** (all optional, AND-combined): `limit`, `offset`, `status`, `ownerId`, `showroomId`, `registration` (exact), plus:
+**List query** (all optional, AND-combined): `limit`, `offset`, `status`, `ownerId`, `showroomId`, `registration` (exact, normalised like the stored plate, so `KA-01-AB-1234` finds `KA01AB1234`), plus:
 
 | Param | Meaning |
 |-------|---------|
@@ -497,7 +497,7 @@ A min above its max is `422 VALIDATION_ERROR`. Price filters arrive with acquisi
 | `loanStatus` | `clear`, `active` (or `null`) |
 | `status` | `open`, `linked`, `dropped`, `sold` (starts `open`) |
 
-**Rules:** year `1900–2100`; `kmDriven` ≥ 0 integer; `numPreviousOwners` `0–32767`; registration uppercase alphanumeric, max 16, spaces stripped; `ownerId` / `variantId` / `showroomId` must exist. Duplicate live registration → `409`.
+**Rules:** year `1900–2100`; `kmDriven` ≥ 0 integer; `numPreviousOwners` `0–32767`; registration is stored uppercase, letters and digits only, max 16: spaces, dashes, dots and slashes are removed (`ka 01-ab 1234` → `KA01AB1234`), any other symbol is a `422`; `ownerId` / `variantId` / `showroomId` must exist. Duplicate live registration → `409`.
 
 **Vehicle object** (GET)
 
