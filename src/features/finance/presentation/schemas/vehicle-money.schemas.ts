@@ -45,6 +45,8 @@ export const recordVehicleSaleBodySchema = z.object({
   leadId: uuidSchema('leadId')
     .nullish()
     .transform((v) => v ?? null),
+  /** Save a price below what the buyer has paid, keeping the overpayment. */
+  keepOverpayment: z.boolean().optional().default(false),
 });
 
 export const addVehicleQuoteBodySchema = z.object({

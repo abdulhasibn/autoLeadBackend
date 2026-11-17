@@ -132,6 +132,8 @@ describe('finance reports', () => {
       k.leadConversion,
       k.deals,
       k.dealSealer,
+      k.entries,
+      k.entrySealer,
       k.clock,
     );
     const entry = (c: Partial<CreateFinanceEntryCommand>) =>
@@ -315,6 +317,8 @@ describe('finance reports', () => {
       kit.leadConversion,
       kit.deals,
       kit.dealSealer,
+      kit.entries,
+      kit.entrySealer,
       kit.clock,
     ).execute(
       {

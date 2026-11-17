@@ -130,6 +130,8 @@ describe('car money', () => {
       k.leadConversion,
       k.deals,
       k.dealSealer,
+      k.entries,
+      k.entrySealer,
       k.clock,
     );
     clearSale = new ClearVehicleSaleUseCase(
@@ -397,6 +399,91 @@ describe('car money', () => {
       expect(
         (await getFinance.execute({ sessionToken: token, vehicleId: CRETA }, ADMIN)).sale,
       ).toMatchObject({ finalisedPrice: 700000 });
+    });
+  });
+
+  describe('a price below what the buyer has paid (#31)', () => {
+    const sale = (
+      finalisedPricePaise: number,
+      extra: { leadId?: string | null; keepOverpayment?: boolean } = {},
+    ) =>
+      recordSale.execute(
+        {
+          sessionToken: token,
+          vehicleId: CRETA,
+          finalisedPricePaise,
+          soldOn: '2026-11-01',
+          leadId: extra.leadId ?? null,
+          ...(extra.keepOverpayment === undefined
+            ? {}
+            : { keepOverpayment: extra.keepOverpayment }),
+        },
+        ADMIN,
+      );
+    const buyerPaid = (amountPaise: number) =>
+      entry({ kind: 'income', purpose: 'sale', vehicleId: CRETA, amountPaise });
+
+    it('refuses to lower the price below the payments, with both amounts', async () => {
+      markCarSold(kit, CRETA);
+      await sale(50_000_000);
+      await buyerPaid(50_000_000);
+
+      const refused = sale(45_000_000);
+
+      await expect(refused).rejects.toMatchObject({
+        code: 'SALE_PRICE_BELOW_RECEIVED',
+        details: { receivedFromBuyer: 500000, finalisedPrice: 450000 },
+      });
+      expect(
+        (await getFinance.execute({ sessionToken: token, vehicleId: CRETA }, ADMIN)).sale,
+      ).toMatchObject({ finalisedPrice: 500000 });
+    });
+
+    it('adds up every payment from the buyer', async () => {
+      markCarSold(kit, CRETA);
+      await buyerPaid(20_000_000);
+      await buyerPaid(30_000_000);
+      await entry({ kind: 'expense', vehicleId: CRETA, amountPaise: 90_000_000 });
+
+      await expect(sale(49_999_900)).rejects.toMatchObject({
+        code: 'SALE_PRICE_BELOW_RECEIVED',
+      });
+      await expect(sale(50_000_000)).resolves.toMatchObject({
+        sale: { finalisedPrice: 500000 },
+      });
+    });
+
+    it('saves a price at or above the payments, or with no payments at all', async () => {
+      markCarSold(kit, CRETA);
+      await expect(sale(10_000_000)).resolves.toBeDefined();
+      await buyerPaid(10_000_000);
+      await expect(sale(10_000_000)).resolves.toBeDefined();
+      await expect(sale(60_000_000)).resolves.toMatchObject({
+        sale: { finalisedPrice: 600000 },
+      });
+    });
+
+    it('keeps a real overpayment when asked', async () => {
+      markCarSold(kit, CRETA);
+      await buyerPaid(50_000_000);
+
+      await sale(45_000_000, { keepOverpayment: true });
+
+      const money = await getFinance.execute({ sessionToken: token, vehicleId: CRETA }, ADMIN);
+      expect(money.sale).toMatchObject({ finalisedPrice: 450000 });
+      expect(money.owedByBuyer).toBe(-50000);
+    });
+
+    it('refuses before converting the lead, so nothing changes', async () => {
+      kit.leads.booked.set(CRETA, [LEAD_ANIL]);
+      await buyerPaid(50_000_000);
+
+      await expect(sale(45_000_000, { leadId: LEAD_ANIL })).rejects.toMatchObject({
+        code: 'SALE_PRICE_BELOW_RECEIVED',
+      });
+      expect(kit.leadConversion.converted).toEqual([]);
+      expect(kit.vehicles.cars.get(CRETA)?.status).toBe('open');
+      expect(kit.deals.rows.get(CRETA)).toBeUndefined();
     });
   });
 

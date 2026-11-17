@@ -112,6 +112,11 @@ export class VehicleMoneyTally {
     }
   }
 
+  /** Paise of the `sale` entries added so far: what the buyer has paid. */
+  get receivedFromBuyerPaise(): number {
+    return this.receivedFromBuyer;
+  }
+
   /** Paise of `cost` entries dated on or before the sale date; 0 without one. */
   get costsUpToSale(): number {
     return this.costsOnOrBeforeSale;

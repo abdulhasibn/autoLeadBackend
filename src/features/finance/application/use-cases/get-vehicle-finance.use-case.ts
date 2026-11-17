@@ -8,7 +8,6 @@ import type { IFinanceTagQueries } from '../../domain/finance-tag.queries';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
 import { VehicleDeal } from '../../domain/vehicle-deal.entity';
 import type { IVehicleDealQueries } from '../../domain/vehicle-deal.queries';
-import { VehicleMoneyTally } from '../../domain/vehicle-money';
 import { compareQuotesNewestFirst } from '../../domain/vehicle-quote.entity';
 import type { IVehicleQuoteQueries } from '../../domain/vehicle-quote.queries';
 import { toVehicleFinanceDto, type VehicleFinanceDto } from '../dtos/vehicle-finance.dto';
@@ -19,6 +18,7 @@ import type { QuoteSealer } from '../services/quote.sealer';
 import { leadsOf } from '../services/quote-leads';
 import type { TagSealer } from '../services/tag.sealer';
 import type { VehicleDealSealer } from '../services/vehicle-deal.sealer';
+import { tallyVehicleEntries } from '../services/vehicle-entry-tally';
 
 /** A car's money tab: deal, sale, quotes, landing cost, profit and dues. */
 export class GetVehicleFinanceUseCase {
@@ -56,11 +56,7 @@ export class GetVehicleFinanceUseCase {
       sealedDeal === null
         ? VehicleDeal.empty(vehicleId, null, this.clock.now())
         : this.dealSealer.open(sealedDeal, cipher);
-    // Every entry counts toward the car's money, so read them all, not a capped list.
-    const tally = new VehicleMoneyTally();
-    for await (const page of this.entries.scan({ vehicleId })) {
-      for (const row of page) tally.add(this.entrySealer.open(row, cipher));
-    }
+    const tally = await tallyVehicleEntries(this.entries, this.entrySealer, cipher, vehicleId);
     const quotes = (await this.quotes.listForVehicles([vehicleId]))
       .map((row) => this.quoteSealer.open(row, cipher))
       .sort(compareQuotesNewestFirst);

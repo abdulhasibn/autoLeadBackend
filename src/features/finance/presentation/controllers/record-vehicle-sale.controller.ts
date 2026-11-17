@@ -24,6 +24,7 @@ export class RecordVehicleSaleController {
             finalisedPricePaise: body.finalisedPrice,
             soldOn: body.soldOn,
             leadId: body.leadId,
+            keepOverpayment: body.keepOverpayment,
           },
           ctx,
         );
