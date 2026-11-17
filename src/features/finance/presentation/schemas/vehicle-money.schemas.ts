@@ -47,6 +47,11 @@ export const recordVehicleSaleBodySchema = z.object({
     .transform((v) => v ?? null),
   /** Save a price below what the buyer has paid, keeping the overpayment. */
   keepOverpayment: z.boolean().optional().default(false),
+  /** Money the buyer paid at the sale, saved with it as a `sale` income entry. */
+  buyerPayment: z
+    .object({ amount: amountSchema, paidOn: calendarDateSchema })
+    .nullish()
+    .transform((v) => v ?? null),
 });
 
 export const addVehicleQuoteBodySchema = z.object({

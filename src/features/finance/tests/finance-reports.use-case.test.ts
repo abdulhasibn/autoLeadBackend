@@ -1,3 +1,4 @@
+import { SaleIncomeGuard } from '../application/services/sale-income-guard';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { ForbiddenActionError } from '../../../domain/errors/forbidden-action.error';
@@ -116,6 +117,7 @@ describe('finance reports', () => {
       k.tagSealer,
       k.clock,
       k.ids,
+      new SaleIncomeGuard(k.leads),
     );
     const setDeal = new SetVehicleDealUseCase(
       k.policy,
@@ -135,6 +137,8 @@ describe('finance reports', () => {
       k.entries,
       k.entrySealer,
       k.clock,
+      k.entries,
+      k.ids,
     );
     const entry = (c: Partial<CreateFinanceEntryCommand>) =>
       create.execute(
@@ -320,6 +324,8 @@ describe('finance reports', () => {
       kit.entries,
       kit.entrySealer,
       kit.clock,
+      kit.entries,
+      kit.ids,
     ).execute(
       {
         sessionToken: token,

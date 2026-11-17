@@ -1,3 +1,4 @@
+import { SaleIncomeGuard } from '../application/services/sale-income-guard';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
@@ -99,6 +100,7 @@ describe('car money', () => {
       k.tagSealer,
       k.clock,
       k.ids,
+      new SaleIncomeGuard(k.leads),
     );
     getFinance = new GetVehicleFinanceUseCase(
       k.policy,
@@ -133,6 +135,8 @@ describe('car money', () => {
       k.entries,
       k.entrySealer,
       k.clock,
+      k.entries,
+      k.ids,
     );
     clearSale = new ClearVehicleSaleUseCase(
       k.policy,
@@ -390,6 +394,82 @@ describe('car money', () => {
       await expect(sale(LEAD_ANIL, 0)).rejects.toBeInstanceOf(BusinessRuleViolationError);
       expect(kit.leadConversion.converted).toEqual([]);
       expect(kit.vehicles.cars.get(CRETA)?.status).toBe('open');
+    });
+
+    describe('with the buyer’s payment (#32, #33)', () => {
+      const saleWithPayment = (amountPaise: number, finalisedPricePaise = 70_000_000) =>
+        recordSale.execute(
+          {
+            sessionToken: token,
+            vehicleId: CRETA,
+            finalisedPricePaise,
+            soldOn: '2026-11-01',
+            leadId: LEAD_ANIL,
+            buyerPayment: { amountPaise, paidOn: '2026-11-01' },
+          },
+          ADMIN,
+        );
+      const buyerRows = () =>
+        [...kit.entries.rows.values()].filter((row) => row.vehicleId === CRETA);
+      const money = () => getFinance.execute({ sessionToken: token, vehicleId: CRETA }, ADMIN);
+
+      it('saves the sale and the payment together', async () => {
+        kit.leads.booked.set(CRETA, [LEAD_ANIL]);
+
+        await saleWithPayment(20_000_000);
+
+        const after = await money();
+        expect(after.sale).toMatchObject({ finalisedPrice: 700000 });
+        expect(after.receivedFromBuyer).toBe(200000);
+        expect(after.owedByBuyer).toBe(500000);
+        expect(buyerRows()).toHaveLength(1);
+      });
+
+      it('counts the payment against the price, refusing before writing anything', async () => {
+        kit.leads.booked.set(CRETA, [LEAD_ANIL]);
+
+        await expect(saleWithPayment(80_000_000)).rejects.toMatchObject({
+          code: 'SALE_PRICE_BELOW_RECEIVED',
+        });
+        expect(buyerRows()).toHaveLength(0);
+        expect(kit.leadConversion.converted).toEqual([]);
+      });
+
+      it('removes the payment when the lead conversion fails', async () => {
+        // LEAD_ANIL is not booked on this car, so the conversion is refused.
+        await expect(saleWithPayment(20_000_000)).rejects.toMatchObject({
+          code: 'SALE_LEAD_NOT_BOOKED',
+        });
+        expect(buyerRows().every((row) => row.deletedAt !== null)).toBe(true);
+        expect((await money()).receivedFromBuyer).toBe(0);
+        expect(kit.deals.rows.get(CRETA)).toBeUndefined();
+      });
+
+      it('removes the payment when saving the price fails, so a retry does not double it', async () => {
+        kit.leads.booked.set(CRETA, [LEAD_ANIL]);
+        const save = kit.deals.save.bind(kit.deals);
+        kit.deals.save = async () => {
+          throw new Error('network blip');
+        };
+
+        await expect(saleWithPayment(20_000_000)).rejects.toThrow('network blip');
+        expect((await money()).receivedFromBuyer).toBe(0);
+
+        // Retry: the car is sold by now, so the price and one payment land.
+        kit.deals.save = save;
+        await recordSale.execute(
+          {
+            sessionToken: token,
+            vehicleId: CRETA,
+            finalisedPricePaise: 70_000_000,
+            soldOn: '2026-11-01',
+            leadId: null,
+            buyerPayment: { amountPaise: 20_000_000, paidOn: '2026-11-01' },
+          },
+          ADMIN,
+        );
+        expect((await money()).receivedFromBuyer).toBe(200000);
+      });
     });
 
     it('a car already sold through the CRM takes the price alone', async () => {

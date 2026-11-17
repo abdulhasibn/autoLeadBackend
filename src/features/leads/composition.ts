@@ -45,6 +45,8 @@ import { AssociateLeadVehicleController } from './presentation/controllers/assoc
 import { ChangeLeadStatusController } from './presentation/controllers/change-lead-status.controller';
 import { ReopenConvertedLeadController } from './presentation/controllers/reopen-converted-lead.controller';
 import { ReopenConvertedLeadUseCase } from './application/use-cases/reopen-converted-lead.use-case';
+import { SellVehicleToLeadUseCase } from './application/use-cases/sell-vehicle-to-lead.use-case';
+import { SellVehicleToLeadController } from './presentation/controllers/sell-vehicle-to-lead.controller';
 import type { IRecordedSaleLookup } from './domain/recorded-sale-lookup.port';
 import { CreateLeadController } from './presentation/controllers/create-lead.controller';
 import { GetLeadController } from './presentation/controllers/get-lead.controller';
@@ -171,6 +173,17 @@ export function composeLeads(
     associateLeadVehicleController: new AssociateLeadVehicleController(associateLeadVehicleUseCase),
     assignLeadController: new AssignLeadController(assignLeadUseCase),
     changeLeadStatusController: new ChangeLeadStatusController(changeLeadStatusUseCase),
+    sellVehicleToLeadController: new SellVehicleToLeadController(
+      new SellVehicleToLeadUseCase(
+        policy,
+        repo,
+        deps.linkableVehicleLookup,
+        associateLeadVehicleUseCase,
+        changeLeadStatusUseCase,
+        vehicleLinks,
+        deps.clock,
+      ),
+    ),
     reopenConvertedLeadController: new ReopenConvertedLeadController(
       new ReopenConvertedLeadUseCase(
         policy,

@@ -1,3 +1,4 @@
+import { SaleIncomeGuard } from '../application/services/sale-income-guard';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
@@ -32,6 +33,8 @@ import {
   TEST_KDF,
   createFinanceTestKit,
   type FinanceTestKit,
+  LEAD_ANIL,
+  markCarSold,
 } from './fakes';
 
 const ADMIN_IN_A: AuthenticatedContext = { ...ADMIN, showroomId: SHOWROOM_A };
@@ -84,6 +87,7 @@ describe('finance ledger', () => {
       k.tagSealer,
       k.clock,
       k.ids,
+      new SaleIncomeGuard(k.leads),
     );
     updateEntry = new UpdateFinanceEntryUseCase(
       k.policy,
@@ -94,6 +98,7 @@ describe('finance ledger', () => {
       k.entrySealer,
       k.tagSealer,
       k.clock,
+      new SaleIncomeGuard(k.leads),
     );
     deleteEntry = new DeleteFinanceEntryUseCase(
       k.policy,
@@ -273,6 +278,7 @@ describe('finance ledger', () => {
 
     it("from a car's screen: car showroom, car label and default purpose", async () => {
       const cost = await newEntry({ vehicleId: CRETA, tagIds: [tagIds['Painting'] ?? ''] });
+      kit.leads.booked.set(CRETA, [LEAD_ANIL]); // a buyer, so a payment from them is allowed
       const payment = await newEntry({ kind: 'income', vehicleId: CRETA });
 
       expect(cost).toMatchObject({
@@ -439,6 +445,7 @@ describe('finance ledger', () => {
         party: 'Ace Paints',
       });
       await newEntry({ amountPaise: 1_000_000, vehicleId: SWIFT, purpose: 'purchase' });
+      kit.leads.booked.set(SWIFT, [LEAD_ANIL]);
       await newEntry({ kind: 'income', amountPaise: 5_000_000, vehicleId: SWIFT });
       await newEntry({ amountPaise: 300_000, note: 'Electricity bill' });
       await newEntry({ amountPaise: 999_900, entryDate: '2026-09-30' });
@@ -494,6 +501,69 @@ describe('finance ledger', () => {
     });
   });
 
+  describe('money from a buyer on a car with no buyer (#32)', () => {
+    const liveRows = () => [...kit.entries.rows.values()].filter((r) => r.deletedAt === null);
+
+    it('refuses sale income on an open car with no booked lead, and saves nothing', async () => {
+      await expect(newEntry({ kind: 'income', vehicleId: SWIFT })).rejects.toMatchObject({
+        code: 'SALE_NOT_RECORDED',
+      });
+      await expect(
+        newEntry({ kind: 'income', vehicleId: SWIFT, purpose: 'sale' }),
+      ).rejects.toMatchObject({ code: 'SALE_NOT_RECORDED' });
+      expect(liveRows()).toHaveLength(0);
+    });
+
+    it('allows it with a booked lead (a token advance) or once the car is sold', async () => {
+      kit.leads.booked.set(SWIFT, [LEAD_ANIL]);
+      await expect(newEntry({ kind: 'income', vehicleId: SWIFT })).resolves.toMatchObject({
+        purpose: 'sale',
+      });
+      markCarSold(kit, CRETA);
+      await expect(newEntry({ kind: 'income', vehicleId: CRETA })).resolves.toMatchObject({
+        purpose: 'sale',
+      });
+    });
+
+    it('still allows other income and expenses on an open car', async () => {
+      await expect(
+        newEntry({ kind: 'income', vehicleId: SWIFT, purpose: 'other' }),
+      ).resolves.toMatchObject({ purpose: 'other' });
+      await expect(newEntry({ vehicleId: SWIFT })).resolves.toMatchObject({ purpose: 'cost' });
+    });
+
+    it('refuses linking income to, or making it sale income on, a car with no buyer', async () => {
+      const business = await newEntry({ kind: 'income' });
+      await expect(
+        updateEntry.execute({ sessionToken: token, entryId: business.id, vehicleId: SWIFT }, ADMIN),
+      ).rejects.toMatchObject({ code: 'SALE_NOT_RECORDED' });
+
+      const other = await newEntry({ kind: 'income', vehicleId: SWIFT, purpose: 'other' });
+      await expect(
+        updateEntry.execute({ sessionToken: token, entryId: other.id, purpose: 'sale' }, ADMIN),
+      ).rejects.toMatchObject({ code: 'SALE_NOT_RECORDED' });
+      await expect(
+        updateEntry.execute(
+          { sessionToken: token, entryId: business.id, vehicleId: SWIFT, purpose: 'other' },
+          ADMIN,
+        ),
+      ).resolves.toMatchObject({ purpose: 'other' });
+    });
+
+    it('lets an existing buyer payment be edited after the booking ends', async () => {
+      kit.leads.booked.set(SWIFT, [LEAD_ANIL]);
+      const token_ = await newEntry({ kind: 'income', vehicleId: SWIFT });
+      kit.leads.booked.set(SWIFT, []);
+
+      await expect(
+        updateEntry.execute(
+          { sessionToken: token, entryId: token_.id, amountPaise: 123_400 },
+          ADMIN,
+        ),
+      ).resolves.toMatchObject({ amount: 1234 });
+    });
+  });
+
   it("handles the client's worked example on one car", async () => {
     const t = (name: string) => [tagIds[name] ?? ''];
     const car = { vehicleId: SWIFT };
@@ -505,6 +575,7 @@ describe('finance ledger', () => {
     await newEntry({ ...car, amountPaise: 500_000, tagIds: t('Rubbing polish') });
     await newEntry({ ...car, amountPaise: 1_500_000, tagIds: [...t('Insurance'), ...t('Tyres')] });
     await newEntry({ ...car, amountPaise: 500_000, tagIds: [...t('Travel'), ...t('Fuel')] });
+    kit.leads.booked.set(SWIFT, [LEAD_ANIL]); // the buyer's booking is confirmed
     await newEntry({ ...car, kind: 'income', amountPaise: 5_000_000, note: 'Token' });
     await newEntry({ ...car, kind: 'income', amountPaise: 51_000_000, note: 'Balance' });
 
