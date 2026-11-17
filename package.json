@@ -25,7 +25,8 @@
     "auth:configure-email": "tsx --env-file=.env scripts/configure-auth-email.ts",
     "catalog:import": "tsx --env-file=.env scripts/import-vehicle-catalog.ts",
     "seed:demo-vehicles": "tsx --env-file=.env scripts/seed-demo-vehicles.ts",
-    "seed:test-data": "tsx --env-file=.env scripts/seed-test-data.ts"
+    "seed:test-data": "tsx --env-file=.env scripts/seed-test-data.ts",
+    "finance:orphan-sale-income": "tsx --env-file=.env scripts/find-orphan-sale-income.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",

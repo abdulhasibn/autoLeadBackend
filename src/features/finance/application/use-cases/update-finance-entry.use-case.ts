@@ -16,11 +16,14 @@ import type { UpdateFinanceEntryCommand } from '../dtos/update-finance-entry-com
 import type { FinancePolicy } from '../policies/finance.policy';
 import type { EntrySealer } from '../services/entry.sealer';
 import type { FinanceSessionService } from '../services/finance-session.service';
+import type { SaleIncomeGuard } from '../services/sale-income-guard';
 import type { TagSealer } from '../services/tag.sealer';
 
 /**
  * Edits an entry. Sending `vehicleId` links, moves or (with null) unlinks it;
  * the purpose then resets to the default unless `purpose` is sent too.
+ * Linking or turning an entry into money from a buyer on a car with no buyer
+ * is refused (`SALE_NOT_RECORDED`); edits that keep the car and purpose are not.
  */
 export class UpdateFinanceEntryUseCase {
   constructor(
@@ -32,6 +35,7 @@ export class UpdateFinanceEntryUseCase {
     private readonly entrySealer: EntrySealer,
     private readonly tagSealer: TagSealer,
     private readonly clock: Clock,
+    private readonly saleIncome: SaleIncomeGuard,
   ) {}
 
   async execute(
@@ -78,9 +82,14 @@ export class UpdateFinanceEntryUseCase {
       if (command.showroomId !== undefined) {
         entry.moveToShowroom(toShowroomId(command.showroomId), now);
       }
+      await this.saleIncome.assertAllowed(entry, vehicle);
     } else {
       if (command.purpose !== undefined) {
         entry.changePurpose(command.purpose, now);
+        if (entry.vehicleId !== null) {
+          const [vehicle] = await this.vehicles.findMany([entry.vehicleId]);
+          await this.saleIncome.assertAllowed(entry, vehicle ?? null);
+        }
       }
       if (command.showroomId !== undefined) {
         entry.moveToShowroom(toShowroomId(command.showroomId), now);

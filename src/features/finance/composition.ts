@@ -34,6 +34,7 @@ import { GetVehicleFinanceUseCase } from './application/use-cases/get-vehicle-fi
 import { SetVehicleDealUseCase } from './application/use-cases/set-vehicle-deal.use-case';
 import { RecordVehicleSaleUseCase } from './application/use-cases/record-vehicle-sale.use-case';
 import { ClearVehicleSaleUseCase } from './application/use-cases/clear-vehicle-sale.use-case';
+import { SaleIncomeGuard } from './application/services/sale-income-guard';
 import { ListVehicleQuotesUseCase } from './application/use-cases/list-vehicle-quotes.use-case';
 import { AddVehicleQuoteUseCase } from './application/use-cases/add-vehicle-quote.use-case';
 import { DeleteVehicleQuoteUseCase } from './application/use-cases/delete-vehicle-quote.use-case';
@@ -145,6 +146,7 @@ export function composeFinance(
   const tagQueries = new SupabaseFinanceTagQueries(infraClient);
   const vehicles = new SupabaseFinanceVehicleLookup(infraClient);
   const leads = new SupabaseFinanceLeadLookup(infraClient);
+  const saleIncome = new SaleIncomeGuard(leads);
   const entrySealer = new EntrySealer();
   const tagSealer = new TagSealer();
   const tagSeeder = new DefaultTagSeeder(tags, tagSealer, deps.clock, ids);
@@ -237,6 +239,7 @@ export function composeFinance(
         tagSealer,
         deps.clock,
         ids,
+        saleIncome,
       ),
     ),
     getFinanceEntryController: new GetFinanceEntryController(
@@ -260,6 +263,7 @@ export function composeFinance(
         entrySealer,
         tagSealer,
         deps.clock,
+        saleIncome,
       ),
     ),
     deleteFinanceEntryController: new DeleteFinanceEntryController(
@@ -296,6 +300,8 @@ export function composeFinance(
         entryQueries,
         entrySealer,
         deps.clock,
+        entries,
+        ids,
       ),
     ),
     clearVehicleSaleController: new ClearVehicleSaleController(

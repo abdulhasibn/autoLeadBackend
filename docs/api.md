@@ -166,6 +166,7 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | 422 | `SALE_PRICE_RECORDED` | `POST /leads/:id/reopen` while finance has the car's sale price; remove it in finance first |
 | 422 | `VEHICLE_SOLD_TO_ANOTHER_LEAD` | `POST /leads/:id/reopen` when the car was sold through a different lead |
 | 422 | `VEHICLE_SOLD` | `PATCH /vehicles/:id` changing `acquisitionType` on a sold car |
+| 422 | `SALE_NOT_RECORDED` | A payment from the buyer (income with purpose `sale`) on a car that isn't sold and has no booking-confirmed lead: `POST /finance/entries`, or `PATCH` that links the entry to such a car or changes its purpose to `sale`. Confirm a booking or record the sale first, or use purpose `other` |
 | 422 | `SALE_PRICE_BELOW_RECEIVED` | `POST /finance/vehicles/:id/sale` with a price below what the buyer has paid; `error.details` has `receivedFromBuyer` and `finalisedPrice` (rupees). Reduce the payments or resend with `keepOverpayment: true` |
 | 422 | `OWNER_HAS_UNSOLD_VEHICLES` | `DELETE /owners/:id` while the owner has live cars that aren't sold; `error.details.unsoldVehicleCount` says how many |
 | 422 | `LEAD_REQUIRES_VEHICLE` | Moving a lead with no vehicle to `booking_confirmed` or `converted`, or removing the vehicle of a `booking_confirmed` lead |
@@ -626,6 +627,7 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 | `POST` | `/leads/:id/follow-ups/:followUpId/complete` | `200` `{ "followUp", "next" }` |
 | `POST` | `/leads/:id/follow-ups/:followUpId/cancel` | `200` follow-up |
 | `POST` | `/leads/:id/status` | `200` `{ "status", "vehicleSold" }` |
+| `POST` | `/leads/:id/sell` | `200` `{ "status": "converted", "vehicleSold": true }`. Sells a car to the lead in one request |
 | `POST` | `/leads/:id/reopen` | `200` `{ "status": "booking_confirmed" }` (Admin). Undoes a mistaken conversion |
 | `GET` | `/leads/:id/status-history` | `200` page (newest first) |
 
@@ -745,6 +747,8 @@ Each lead is the usual lead object plus `match`:
 `taskType`: `call`, `whatsapp`, `meeting`, `test_drive`, `send_quotation`, `other`.  
 The follow-up belongs to the lead's assignee (or to you if the lead is unassigned), and that person gets a `follow_up_due` notification at `scheduledAt`.  
 **List follow-ups:** `GET /leads/:id/follow-ups?status=open|closed|all&limit=&offset=` (default `all`). `open` is the to-do list, earliest first; `closed` is completed and cancelled ones, most recently closed first; `all` is newest `scheduledAt` first. Items: `{ "id", "leadId", "taskType", "scheduledAt", "notes", "status" (open | completed | cancelled), "outcome", "completionNotes", "completedAt", "completedBy", "completedByName", "cancelledAt", "cancelledBy", "cancelledByName", "assignedTo", "assignedToName", "createdBy", "createdByName", "createdAt" }`. Same visibility as `GET /leads/:id`.  
+**Sell a car to a lead:** `POST /leads/:id/sell` with `{ "vehicleId", "notes"? }` ("Mark as sold"). In one request it links the car to the lead (if it isn't already), confirms the booking (if it isn't already) and converts the lead, which marks the car sold and moves the car's other active leads to `vehicle_unavailable`. `notes` goes on each status change. Staff, on leads they may work. Everything is checked before the first write: a closed lead is `422 LEAD_CLOSED`, a car that can't be linked is `422 VEHICLE_NOT_LINKABLE` (skipped when the lead is already booked on this car). If a later step fails, the lead goes back to its old status and car (status history note "Sale did not complete; lead restored") and the error is returned, unless the conversion had already marked the car sold: then repeating the request finishes the sale. Sending it again for a lead already converted on this car returns the same `200`.
+
 **Undo a sale (admin):** `POST /leads/:id/reopen` with optional `{ "notes" }` (recorded on the status history; defaults to "Sale undone"). The `converted` lead goes back to `booking_confirmed` on the same car, and the car goes from `sold` back to `linked`. Refused with `422 SALE_PRICE_RECORDED` while finance has the sale price. Leads the sale moved to `vehicle_unavailable`, and follow-ups cancelled when it converted, stay as they are. Repeating a failed request finishes the job.
 
 **Closing a lead** (`converted` or `lost`) cancels its open follow-ups and marks their reminders read. New follow-ups on a closed lead answer `422 LEAD_CLOSED`.
@@ -1172,7 +1176,8 @@ Every request below needs `X-Finance-Session` (else `423 FINANCE_LOCKED`).
   - expense: `purchase` (a payment to the seller towards the purchase rate) or `cost` (default: painting, service, mediator…);
   - income: `sale` (default: a payment from the buyer) or `other`;
   - no car: always `general`.
-  Linking, moving or unlinking resets the purpose to the default unless the same request sends one. Suggested UI: preselect `purchase` when the admin picks the "Purchase" tag.
+  Linking, moving or unlinking resets the purpose to the default unless the same request sends one.
+  A `sale` payment needs a buyer: the car is `sold`, or a lead on it has its booking confirmed (a token advance). Otherwise `POST`, or a `PATCH` that links the entry to the car or sets purpose `sale`, is `422 SALE_NOT_RECORDED`. Because car income defaults to `sale`, income on a car with no buyer must be sent as `other`. Edits that keep the car and purpose (amount, date, note…) are always allowed. Suggested UI: preselect `purchase` when the admin picks the "Purchase" tag.
 
 `FinanceEntry` = `{ id, kind, amount, entryDate, purpose, tags: FinanceTag[], vehicle: { id, label } | null, party, note, showroomId, recordedBy, createdAt, updatedAt }`. `label` reads like `Maruti Swift · KA01AB1234`.
 
@@ -1201,7 +1206,7 @@ One car's buy-and-sell numbers (ADR-0015). Every request needs `X-Finance-Sessio
 |--------|------|--------------|---------|
 | GET | `/finance/vehicles/:vehicleId` | — | `200` car money (below) |
 | PUT | `/finance/vehicles/:vehicleId` | `{ purchaseRate? \| commissionPercent?, purchasedOn?, ownerExpectedPrice?, minimumSellingPrice?, note?, listedPrice? }` | `200` `{ vehicleId, deal, sale, listedPrice }` |
-| POST | `/finance/vehicles/:vehicleId/sale` | `{ finalisedPrice, soldOn, leadId?, keepOverpayment? }` | `200` same shape |
+| POST | `/finance/vehicles/:vehicleId/sale` | `{ finalisedPrice, soldOn, leadId?, keepOverpayment?, buyerPayment?: { amount, paidOn } }` | `200` same shape |
 | DELETE | `/finance/vehicles/:vehicleId/sale` | — | `204` |
 | GET | `/finance/vehicles/:vehicleId/quotes` | — | `200` quotes, newest first |
 | POST | `/finance/vehicles/:vehicleId/quotes` | `{ amount, quotedOn, leadId, quotedTo?, note? }` | `201` quote |
@@ -1216,7 +1221,7 @@ All amounts are rupees.
 For a commission car: `profit` = `commission` = % × finalised price. Its `cost` entries are recovered from the owner, so `owedToSeller` = finalised − commission − costs − payouts to the owner (`purchase` expenses), and is `null` until the sale is recorded. `landingCost` is the costs alone. `flags.purchaseRateMissing` means the purchase rate or the commission % is missing.
 
 - **Deal (`PUT`).** The purchase rate agreed with the seller, plus optional purchase date, owner's expected price, minimum selling price and note. `PUT` replaces these fields; it never touches the sale. `listedPrice` is the public asking price (plaintext, used by lead matching): omit it to keep the current one, send `null` to clear it.
-- **Sale.** `POST …/sale` records the finalised price and date, and always closes against a lead. If the car is already `sold` (its lead was converted from the CRM), only the price is saved and `leadId` is ignored. Otherwise send `leadId`: one of the car's `bookedLeads`. That lead is converted first, which marks the car sold and moves its other active leads to `vehicle_unavailable` (ADR-0011), then the price is saved; repeating a failed request finishes the job. Without `leadId` it is `422 SALE_NEEDS_BOOKED_LEAD`; a lead that isn't linked to this car with its booking confirmed is `422 SALE_LEAD_NOT_BOOKED`. The price is checked before anything is converted. It can be recorded before the deal. **A price below what the buyer has already paid** (the car's `sale` entries) is `422 SALE_PRICE_BELOW_RECEIVED`, with `error.details` `{ receivedFromBuyer, finalisedPrice }` in rupees, and nothing is saved or converted. Either reduce the buyer's payments in Entries first (the payment was entered wrong), or resend with `keepOverpayment: true` (the buyer really paid more, e.g. before a discount; the car then shows a negative `owedByBuyer`, which Dues lists as owed back to them). `DELETE …/sale` removes a sale recorded by mistake; it doesn't un-sell the car or reopen the lead.
+- **Sale.** `POST …/sale` records the finalised price and date, and always closes against a lead. If the car is already `sold` (its lead was converted from the CRM), only the price is saved and `leadId` is ignored. Otherwise send `leadId`: one of the car's `bookedLeads`. That lead is converted first, which marks the car sold and moves its other active leads to `vehicle_unavailable` (ADR-0011), then the price is saved; repeating a failed request finishes the job. Without `leadId` it is `422 SALE_NEEDS_BOOKED_LEAD`; a lead that isn't linked to this car with its booking confirmed is `422 SALE_LEAD_NOT_BOOKED`. The price is checked before anything is converted. It can be recorded before the deal. **A price below what the buyer has already paid** (the car's `sale` entries) is `422 SALE_PRICE_BELOW_RECEIVED`, with `error.details` `{ receivedFromBuyer, finalisedPrice }` in rupees, and nothing is saved or converted. Either reduce the buyer's payments in Entries first (the payment was entered wrong), or resend with `keepOverpayment: true` (the buyer really paid more, e.g. before a discount; the car then shows a negative `owedByBuyer`, which Dues lists as owed back to them). **`buyerPayment`** (money the buyer paid at the sale, rupees and `YYYY-MM-DD`) is saved in the same request as a `sale` income entry with the note "Received from the buyer when the sale was recorded". It counts towards the `SALE_PRICE_BELOW_RECEIVED` check. If the conversion or the price save fails, the entry is removed again, so a failed sale never leaves its payment behind and a repeated request doesn't save it twice. `DELETE …/sale` removes a sale recorded by mistake; it doesn't un-sell the car or reopen the lead.
 - **Quotes** are prices offered to a lead. `leadId` is **required** and must be a live lead (else `404 NOT_FOUND`); it doesn't have to be the car's linked lead. `quotedTo` (display name) and `note` stay optional. Every quote comes back with `lead: { id, name, phone }` (the lead's contact, or registered buyer), so no per-quote lead lookup is needed; it is `null` only for older quotes recorded without a lead. The newest quote is the current one.
 - **Awaiting sale price** lists cars whose status is `sold` but whose finalised price isn't recorded yet. Show it as a to-do after converting a lead.
 
@@ -1308,7 +1313,7 @@ Each window also has `carsMissingPurchaseRate` and `uncountedSales` (same rule a
 | Vehicle create | `GET /catalog/makes` → models → variants, then `POST /vehicles` |
 | Vehicle list / detail | `GET /vehicles`, `GET /vehicles/:id`, `PATCH /vehicles/:id`, `POST /vehicles/:id/status`, `GET /vehicles/:id/status-history` |
 | Vehicle photos / docs | signed upload then `POST /vehicles/:id/media` or `/documents` |
-| Lead pipeline | `GET /leads?status=&assignedTo=&search=`, `POST /leads`, `PATCH /leads/:id`, `PATCH`/`DELETE /leads/:id/vehicle`, `PUT /leads/:id/assignment`, `POST /leads/:id/status`, `GET /leads/:id/status-history`, `GET`/`POST /leads/:id/follow-ups`, `POST /leads/:id/follow-ups/:followUpId/complete`, `POST /leads/:id/follow-ups/:followUpId/cancel` |
+| Lead pipeline | `GET /leads?status=&assignedTo=&search=`, `POST /leads`, `PATCH /leads/:id`, `PATCH`/`DELETE /leads/:id/vehicle`, `PUT /leads/:id/assignment`, `POST /leads/:id/status`, `POST /leads/:id/sell`, `GET /leads/:id/status-history`, `GET`/`POST /leads/:id/follow-ups`, `POST /leads/:id/follow-ups/:followUpId/complete`, `POST /leads/:id/follow-ups/:followUpId/cancel` |
 | Inbox | `GET /notifications`, `PATCH /notifications/:id/read` |
 | Staff settings | `/users` (admin only) |
 

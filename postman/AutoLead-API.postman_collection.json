@@ -1609,6 +1609,29 @@
           }
         },
         {
+          "name": "Sell Vehicle To Lead",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"notes\": \"Sold at the showroom\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/leads/{{leadId}}/sell",
+            "description": "**Story:** \"Mark as sold\" from the CRM: one request links the car, confirms the booking and converts the lead.\n\nPOST /leads/:id/sell — 200 `{ status: \"converted\", vehicleSold: true }`.\n\n**Auth:** Bearer, staff on leads they may work.\n\n- Links the car if needed, confirms the booking if needed, then converts the lead: the car becomes sold and its other active leads move to `vehicle_unavailable`.\n- Checked before any write: closed lead → `422 LEAD_CLOSED`; car not open/linked → `422 VEHICLE_NOT_LINKABLE` (skipped when already booked on this car).\n- A later failure restores the lead's old status and car, unless the car was already marked sold: then repeat the request to finish.\n- Already converted on this car → same `200`. See docs/api.md."
+          }
+        },
+        {
           "name": "List Lead Status History",
           "request": {
             "method": "GET",
@@ -3782,7 +3805,7 @@
                   }
                 ],
                 "url": "{{baseUrl}}/finance/entries",
-                "description": "**Story:** The admin records money paid or received, from the ledger or straight from a car's screen.\n\nPOST /finance/entries — records one entry.\n\n**Auth:** Bearer, Admin only.\n\n- `kind` (required): `income` (received) or `expense` (paid); fixed after creation.\n- `amount` (number, required): rupees above zero, two decimals at most.\n- `entryDate` (YYYY-MM-DD, required).\n- `tagIds` (uuid[], optional, ≤ 10): existing, non-archived tags.\n- `vehicleId` (uuid or null): link to a car; the entry takes the car's showroom.\n- `purpose` (optional): car-linked expense `purchase` | `cost` (default); car-linked income `sale` (default) | `other`; no car → `general`.\n- `party` (≤ 120), `note` (≤ 1000): optional.\n- `showroomId` (uuid, optional): business entries only; defaults to your home showroom.\n- `201` the entry. `404` unknown car; `422 FINANCE_TAG_NOT_FOUND`, `FINANCE_TAG_ARCHIVED`, `INVALID_ENTRY_PURPOSE`, `ENTRY_SHOWROOM_FOLLOWS_VEHICLE`, `SHOWROOM_REQUIRED`.\n- The test script stores the id as `financeEntryId`.\n\n- Needs `X-Finance-Session` from Finance › Vault › Unlock; without a live one → `423 FINANCE_LOCKED`.\n- Admin only (`403` otherwise). See docs/api.md#finance--tags-and-entries.",
+                "description": "**Story:** The admin records money paid or received, from the ledger or straight from a car's screen.\n\nPOST /finance/entries — records one entry.\n\n**Auth:** Bearer, Admin only.\n\n- `kind` (required): `income` (received) or `expense` (paid); fixed after creation.\n- `amount` (number, required): rupees above zero, two decimals at most.\n- `entryDate` (YYYY-MM-DD, required).\n- `tagIds` (uuid[], optional, ≤ 10): existing, non-archived tags.\n- `vehicleId` (uuid or null): link to a car; the entry takes the car's showroom.\n- `purpose` (optional): car-linked expense `purchase` | `cost` (default); car-linked income `sale` (default) | `other`; no car → `general`.\n- `party` (≤ 120), `note` (≤ 1000): optional.\n- `showroomId` (uuid, optional): business entries only; defaults to your home showroom.\n- `201` the entry. `404` unknown car; `422 FINANCE_TAG_NOT_FOUND`, `FINANCE_TAG_ARCHIVED`, `INVALID_ENTRY_PURPOSE`, `ENTRY_SHOWROOM_FOLLOWS_VEHICLE`, `SHOWROOM_REQUIRED`.\n- The test script stores the id as `financeEntryId`.\n\n- Needs `X-Finance-Session` from Finance › Vault › Unlock; without a live one → `423 FINANCE_LOCKED`.\n- Admin only (`403` otherwise). See docs/api.md#finance--tags-and-entries.\n- A `sale` payment needs a buyer: the car is sold or has a booking-confirmed lead, else `422 SALE_NOT_RECORDED` (car income defaults to `sale`; send `other` otherwise).",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"kind\": \"expense\",\n  \"amount\": 5000,\n  \"entryDate\": \"2026-10-20\",\n  \"tagIds\": [\n    \"{{financeTagId}}\"\n  ],\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"purpose\": null,\n  \"party\": \"Ace Paints\",\n  \"note\": \"Bonnet and bumper\"\n}",
@@ -4316,10 +4339,10 @@
                   }
                 ],
                 "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/sale",
-                "description": "**Story:** When the deal with the buyer is final, the admin records the finalised price, usually right after converting the lead.\n\nPOST /finance/vehicles/:vehicleId/sale — records or replaces the sale.\n\n**Auth:** Bearer, Admin only.\n\n- `finalisedPrice` (rupees, required), `soldOn` (YYYY-MM-DD, required).\n- Doesn't change the car's status (leads do that); may be recorded before the deal.\n- `keepOverpayment` (boolean, optional, default false): save a price below what the buyer has already paid and keep the overpayment (the buyer is owed the difference). Without it, such a price is `422 SALE_PRICE_BELOW_RECEIVED` with `error.details { receivedFromBuyer, finalisedPrice }` and nothing changes.\n- `200` `{ vehicleId, deal, sale, listedPrice }`. `404` unknown or deleted car.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.",
+                "description": "**Story:** When the deal with the buyer is final, the admin records the finalised price, usually right after converting the lead.\n\nPOST /finance/vehicles/:vehicleId/sale — records or replaces the sale.\n\n**Auth:** Bearer, Admin only.\n\n- `finalisedPrice` (rupees, required), `soldOn` (YYYY-MM-DD, required).\n- Doesn't change the car's status (leads do that); may be recorded before the deal.\n- `keepOverpayment` (boolean, optional, default false): save a price below what the buyer has already paid and keep the overpayment (the buyer is owed the difference). Without it, such a price is `422 SALE_PRICE_BELOW_RECEIVED` with `error.details { receivedFromBuyer, finalisedPrice }` and nothing changes.\n- `buyerPayment` (optional `{ amount, paidOn }`): money the buyer paid at the sale, saved in the same request as a `sale` income entry. Counts towards the price check; removed again if the sale fails.\n- `200` `{ vehicleId, deal, sale, listedPrice }`. `404` unknown or deleted car.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"finalisedPrice\": 560000,\n  \"soldOn\": \"2026-10-25\"\n}",
+                  "raw": "{\n  \"finalisedPrice\": 560000,\n  \"soldOn\": \"2026-10-25\",\n  \"buyerPayment\": { \"amount\": 50000, \"paidOn\": \"2026-10-25\" }\n}",
                   "options": {
                     "raw": {
                       "language": "json"

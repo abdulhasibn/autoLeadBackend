@@ -10,4 +10,9 @@ export interface RecordVehicleSaleCommand {
    * it anyway and leave the overpayment owed back to them.
    */
   readonly keepOverpayment?: boolean;
+  /**
+   * Money the buyer paid at the sale. Saved in the same request as a `sale`
+   * income entry, so the sale and its payment land together or not at all.
+   */
+  readonly buyerPayment?: { readonly amountPaise: number; readonly paidOn: string } | null;
 }

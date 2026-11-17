@@ -228,3 +228,42 @@ describe('modifying another assignee lead', () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe('POST /leads/:id/sell (checks before any write)', () => {
+  const UNKNOWN_VEHICLE = '00000000-0000-4000-8000-0000000000ff';
+
+  it('returns 401 without a token', async () => {
+    const res = await api('POST', `/leads/${ownLeadId}/sell`, {
+      body: { vehicleId: UNKNOWN_VEHICLE },
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 422 VALIDATION_ERROR for a missing or malformed vehicleId', async () => {
+    for (const body of [{}, { vehicleId: 'not-a-uuid' }]) {
+      const res = await api('POST', `/leads/${ownLeadId}/sell`, { token: adminToken, body });
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    }
+  });
+
+  it('hides another assignee lead from a salesperson (404)', async () => {
+    const res = await api('POST', `/leads/${otherLeadId}/sell`, {
+      token: salesToken,
+      body: { vehicleId: UNKNOWN_VEHICLE },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 404 for an unknown car and leaves the lead unchanged', async () => {
+    const before = await api('GET', `/leads/${ownLeadId}`, { token: adminToken });
+    const res = await api('POST', `/leads/${ownLeadId}/sell`, {
+      token: salesToken,
+      body: { vehicleId: UNKNOWN_VEHICLE },
+    });
+    expect(res.status).toBe(404);
+    const after = await api('GET', `/leads/${ownLeadId}`, { token: adminToken });
+    expect(after.body.status).toBe(before.body.status);
+    expect(after.body.vehicleId).toBe(before.body.vehicleId);
+  });
+});

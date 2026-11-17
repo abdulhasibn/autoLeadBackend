@@ -25,6 +25,10 @@ export class RecordVehicleSaleController {
             soldOn: body.soldOn,
             leadId: body.leadId,
             keepOverpayment: body.keepOverpayment,
+            buyerPayment:
+              body.buyerPayment === null
+                ? null
+                : { amountPaise: body.buyerPayment.amount, paidOn: body.buyerPayment.paidOn },
           },
           ctx,
         );

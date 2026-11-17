@@ -295,6 +295,21 @@ export class Lead {
     this.updatedAtValue = at;
   }
 
+  /**
+   * Puts a lead back how it was before a sale that didn't complete (#33): the
+   * status and car it had before it was linked and booked for the sale. Never
+   * used on a closed lead, so a finished sale can't be undone this way.
+   */
+  restoreAfterFailedSale(status: LeadStatus, vehicleId: VehicleId | null, at: Date): void {
+    this.assertOpen('Cannot restore a closed lead');
+    if (this.statusValue.value !== status.value) {
+      this.statusValue = status;
+      this.statusChanged = true;
+    }
+    this.vehicleIdValue = vehicleId;
+    this.updatedAtValue = at;
+  }
+
   /** Throws LEAD_CLOSED for a converted or lost lead. */
   ensureOpen(message: string): void {
     this.assertOpen(message);

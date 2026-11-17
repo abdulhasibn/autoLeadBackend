@@ -23,11 +23,13 @@ import { toFinanceEntryDto, type FinanceEntryDto } from '../dtos/finance-entry.d
 import type { FinancePolicy } from '../policies/finance.policy';
 import type { EntrySealer } from '../services/entry.sealer';
 import type { FinanceSessionService } from '../services/finance-session.service';
+import type { SaleIncomeGuard } from '../services/sale-income-guard';
 import type { TagSealer } from '../services/tag.sealer';
 
 /**
  * Records money in or out. With a car it lands in the car's showroom with the
- * car's default purpose; without one it's a business entry.
+ * car's default purpose; without one it's a business entry. Money from a
+ * buyer on a car with no buyer is refused (`SALE_NOT_RECORDED`).
  */
 export class CreateFinanceEntryUseCase {
   constructor(
@@ -40,6 +42,7 @@ export class CreateFinanceEntryUseCase {
     private readonly tagSealer: TagSealer,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
+    private readonly saleIncome: SaleIncomeGuard,
   ) {}
 
   async execute(
@@ -86,6 +89,7 @@ export class CreateFinanceEntryUseCase {
       recordedBy: ctx.userId,
       now: this.clock.now(),
     });
+    await this.saleIncome.assertAllowed(entry, vehicle);
     await this.entries.save(this.entrySealer.seal(entry, cipher));
 
     const vehiclesById = new Map(vehicle === null ? [] : [[vehicle.id as string, vehicle]]);
