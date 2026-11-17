@@ -6,10 +6,9 @@ import type { IFinanceEntryQueries } from '../../domain/finance-entry.queries';
 import type { IFinanceLeadLookup } from '../../domain/finance-lead-lookup.port';
 import type { IFinanceTagQueries } from '../../domain/finance-tag.queries';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
-import { MAX_LEDGER_ROWS } from '../../domain/finance.constants';
 import { VehicleDeal } from '../../domain/vehicle-deal.entity';
 import type { IVehicleDealQueries } from '../../domain/vehicle-deal.queries';
-import { calculateVehicleMoney } from '../../domain/vehicle-money';
+import { VehicleMoneyTally } from '../../domain/vehicle-money';
 import { compareQuotesNewestFirst } from '../../domain/vehicle-quote.entity';
 import type { IVehicleQuoteQueries } from '../../domain/vehicle-quote.queries';
 import { toVehicleFinanceDto, type VehicleFinanceDto } from '../dtos/vehicle-finance.dto';
@@ -57,8 +56,11 @@ export class GetVehicleFinanceUseCase {
       sealedDeal === null
         ? VehicleDeal.empty(vehicleId, null, this.clock.now())
         : this.dealSealer.open(sealedDeal, cipher);
-    const page = await this.entries.list({ vehicleId, maxRows: MAX_LEDGER_ROWS });
-    const entries = page.rows.map((row) => this.entrySealer.open(row, cipher));
+    // Every entry counts toward the car's money, so read them all, not a capped list.
+    const tally = new VehicleMoneyTally();
+    for await (const page of this.entries.scan({ vehicleId })) {
+      for (const row of page) tally.add(this.entrySealer.open(row, cipher));
+    }
     const quotes = (await this.quotes.listForVehicles([vehicleId]))
       .map((row) => this.quoteSealer.open(row, cipher))
       .sort(compareQuotesNewestFirst);
@@ -67,11 +69,10 @@ export class GetVehicleFinanceUseCase {
     return toVehicleFinanceDto({
       vehicle,
       deal,
-      money: calculateVehicleMoney({
+      money: tally.finish({
         saleModel: vehicle.saleModel,
         terms: deal.terms,
         finalisedPrice: deal.sale?.finalisedPrice ?? null,
-        entries,
       }),
       quotes,
       leadsById: await leadsOf(this.leads, quotes),

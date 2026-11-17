@@ -25,5 +25,8 @@ export const DEFAULT_KDF_PARAMS: KdfParams = {
 
 /** Longest date range one ledger list may cover. */
 export const MAX_LEDGER_RANGE_DAYS = 366;
-/** Most entries one list decrypts; beyond this the response says `truncated`. */
+/**
+ * Most entries one ledger list decrypts; beyond this the list says `truncated`.
+ * Lists only: reports and car money read every entry (`scan`).
+ */
 export const MAX_LEDGER_ROWS = 5000;

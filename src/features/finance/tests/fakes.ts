@@ -26,6 +26,7 @@ import type { IFinanceVaultRepository } from '../domain/finance-vault.repository
 import type { FinanceEntryId } from '../domain/finance-entry-id';
 import type {
   FinanceEntryCriteria,
+  FinanceEntryFilter,
   IFinanceEntryQueries,
   SealedEntryPage,
 } from '../domain/finance-entry.queries';
@@ -189,7 +190,28 @@ export class InMemoryFinanceEntryStore implements IFinanceEntryRepository, IFina
   }
 
   async list(criteria: FinanceEntryCriteria): Promise<SealedEntryPage> {
-    const matched = [...this.rows.values()]
+    // Same order as the Supabase query, so the cap drops the same (oldest) rows.
+    const matched = this.matching(criteria).sort(
+      (a, b) => b.entryDate.localeCompare(a.entryDate) || a.id.localeCompare(b.id),
+    );
+    return {
+      rows: matched.slice(0, criteria.maxRows),
+      truncated: matched.length > criteria.maxRows,
+    };
+  }
+
+  /** Page size `scan` yields; small values exercise multi-page folding. */
+  scanPageSize = 1000;
+
+  async *scan(filter: FinanceEntryFilter): AsyncIterable<readonly SealedFinanceEntry[]> {
+    const matched = this.matching(filter).sort((a, b) => a.id.localeCompare(b.id));
+    for (let i = 0; i < matched.length; i += this.scanPageSize) {
+      yield matched.slice(i, i + this.scanPageSize);
+    }
+  }
+
+  private matching(criteria: FinanceEntryFilter): SealedFinanceEntry[] {
+    return [...this.rows.values()]
       .filter((row) => row.deletedAt === null)
       .filter((row) => criteria.from === undefined || row.entryDate >= criteria.from)
       .filter((row) => criteria.to === undefined || row.entryDate <= criteria.to)
@@ -204,10 +226,6 @@ export class InMemoryFinanceEntryStore implements IFinanceEntryRepository, IFina
               ? row.vehicleId === null
               : true,
       );
-    return {
-      rows: matched.slice(0, criteria.maxRows),
-      truncated: matched.length > criteria.maxRows,
-    };
   }
 }
 

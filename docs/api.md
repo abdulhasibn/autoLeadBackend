@@ -1248,7 +1248,7 @@ For a commission car: `profit` = `commission` = % × finalised price. Its `cost`
 
 #### Finance › Reports
 
-All amounts are rupees; profits can be negative. Every request needs `X-Finance-Session`. Each report takes an optional `showroomId`. Every response has `truncated` (true means more than 5,000 entries were involved and figures may be incomplete; narrow the range).
+All amounts are rupees; profits can be negative. Every request needs `X-Finance-Session`. Each report takes an optional `showroomId`. Reports total every relevant entry, with no row cap (P&L, cash flow and profit per car over the range; stock, dues and the summary over the whole ledger). Every response still has `truncated`, now always `false`; it stays so older clients keep working. Only `GET /finance/entries` can return `truncated: true`.
 
 | Method | Path | Query | Use it for |
 |--------|------|-------|-----------|

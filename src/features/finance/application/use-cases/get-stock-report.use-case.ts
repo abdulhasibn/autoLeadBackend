@@ -26,7 +26,7 @@ export class GetStockReportUseCase {
       cipher,
       query.showroomId === null ? null : toShowroomId(query.showroomId),
     );
-    const stock = cars.rows.filter((car) => isInStock(car.deal, car.vehicle.status, car.money));
+    const stock = cars.filter((car) => isInStock(car.deal, car.vehicle.status, car.money));
     const quotes = await this.data.latestQuotes(
       cipher,
       stock.map((car) => car.vehicle.id as VehicleId),
@@ -52,7 +52,7 @@ export class GetStockReportUseCase {
         cars: items.length,
         moneyInStock: Math.round(items.reduce((t, i) => t + i.landingCost, 0) * 100) / 100,
       },
-      truncated: cars.truncated,
+      truncated: false,
     };
   }
 }

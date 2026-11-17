@@ -1,13 +1,11 @@
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { toVehicleId } from '../../../../domain/shared/vehicle-id';
 import type { Clock } from '../../../../shared/clock/clock';
-import type { FinanceEntry } from '../../domain/finance-entry.entity';
 import type { IFinanceEntryQueries } from '../../domain/finance-entry.queries';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
-import { MAX_LEDGER_ROWS } from '../../domain/finance.constants';
 import { VehicleDeal } from '../../domain/vehicle-deal.entity';
 import type { IVehicleDealQueries } from '../../domain/vehicle-deal.queries';
-import { calculateVehicleMoney } from '../../domain/vehicle-money';
+import { VehicleMoneyTally } from '../../domain/vehicle-money';
 import { compareQuotesNewestFirst, type VehicleQuote } from '../../domain/vehicle-quote.entity';
 import type { IVehicleQuoteQueries } from '../../domain/vehicle-quote.queries';
 import {
@@ -52,12 +50,13 @@ export class ListVehicleFinanceSummariesUseCase {
         this.dealSealer.open(row, cipher),
       ]),
     );
-    const entriesByCar = new Map<string, FinanceEntry[]>();
-    const page = await this.entries.list({ vehicleIds: ids, maxRows: MAX_LEDGER_ROWS });
-    for (const row of page.rows) {
-      const entry = this.entrySealer.open(row, cipher);
-      if (entry.vehicleId !== null) {
-        entriesByCar.set(entry.vehicleId, [...(entriesByCar.get(entry.vehicleId) ?? []), entry]);
+    // Every entry counts toward a car's money, so read them all, not a capped list.
+    const tallies = new Map(ids.map((id) => [id as string, new VehicleMoneyTally()]));
+    for await (const page of this.entries.scan({ vehicleIds: ids })) {
+      for (const row of page) {
+        if (row.vehicleId !== null) {
+          tallies.get(row.vehicleId)?.add(this.entrySealer.open(row, cipher));
+        }
       }
     }
     const latestQuote = new Map<string, VehicleQuote>();
@@ -80,11 +79,10 @@ export class ListVehicleFinanceSummariesUseCase {
         vehicleId,
         saleModel,
         deal,
-        money: calculateVehicleMoney({
+        money: (tallies.get(vehicleId) ?? new VehicleMoneyTally()).finish({
           saleModel,
           terms: deal.terms,
           finalisedPrice: deal.sale?.finalisedPrice ?? null,
-          entries: entriesByCar.get(vehicleId) ?? [],
         }),
         currentQuote: latestQuote.get(vehicleId) ?? null,
       });

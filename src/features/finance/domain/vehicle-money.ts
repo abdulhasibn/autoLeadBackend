@@ -67,60 +67,97 @@ export function calculateVehicleMoney(input: {
   readonly finalisedPrice: Money | null;
   readonly entries: readonly FinanceEntry[];
 }): VehicleMoney {
-  let costs = 0;
-  let paidToSeller = 0;
-  let receivedFromBuyer = 0;
-  const groups = new Map<string, { tagId: FinanceTagId | null; paise: number; count: number }>();
+  const tally = new VehicleMoneyTally();
+  for (const entry of input.entries) tally.add(entry);
+  return tally.finish(input);
+}
 
-  for (const entry of input.entries) {
+/**
+ * {@link calculateVehicleMoney} one entry at a time, so a report can fold a
+ * car's entries page by page without holding them. Feed it every live entry
+ * of one car, then `finish`.
+ */
+export class VehicleMoneyTally {
+  private costs = 0;
+  private paidToSeller = 0;
+  private receivedFromBuyer = 0;
+  private costsOnOrBeforeSale = 0;
+  private readonly groups = new Map<
+    string,
+    { tagId: FinanceTagId | null; paise: number; count: number }
+  >();
+
+  /**
+   * @param soldOn the car's sale date (YYYY-MM-DD), when it has one: the
+   *   tally then also sums the `cost` entries dated on or before it, which
+   *   P&L counts in cost of sales.
+   */
+  constructor(private readonly soldOn: string | null = null) {}
+
+  add(entry: FinanceEntry): void {
     const paise = entry.amount.paise;
     if (entry.purpose === 'cost') {
-      costs += paise;
+      this.costs += paise;
+      if (this.soldOn !== null && entry.entryDate.value <= this.soldOn) {
+        this.costsOnOrBeforeSale += paise;
+      }
       const tagId = entry.tagIds[0] ?? null;
       const key = tagId ?? '';
-      const group = groups.get(key) ?? { tagId, paise: 0, count: 0 };
-      groups.set(key, { tagId, paise: group.paise + paise, count: group.count + 1 });
+      const group = this.groups.get(key) ?? { tagId, paise: 0, count: 0 };
+      this.groups.set(key, { tagId, paise: group.paise + paise, count: group.count + 1 });
     } else if (entry.purpose === 'purchase') {
-      paidToSeller += paise;
+      this.paidToSeller += paise;
     } else if (entry.purpose === 'sale') {
-      receivedFromBuyer += paise;
+      this.receivedFromBuyer += paise;
     }
   }
 
-  const finalised = input.finalisedPrice?.paise ?? null;
-  const shared = {
-    costs,
-    costBreakdown: [...groups.values()].sort((a, b) => b.paise - a.paise),
-    paidToSeller,
-    receivedFromBuyer,
-    owedByBuyer: finalised === null ? null : finalised - receivedFromBuyer,
-  };
-
-  if (input.saleModel === 'commission') {
-    const basisPoints = input.terms?.commissionBasisPoints ?? null;
-    const commission =
-      basisPoints === null || input.finalisedPrice === null
-        ? null
-        : commissionOn(input.finalisedPrice, basisPoints);
-    return {
-      ...shared,
-      landingCost: costs,
-      commission,
-      profit: commission,
-      owedToSeller:
-        commission === null || finalised === null
-          ? null
-          : finalised - commission - costs - paidToSeller,
-    };
+  /** Paise of `cost` entries dated on or before the sale date; 0 without one. */
+  get costsUpToSale(): number {
+    return this.costsOnOrBeforeSale;
   }
 
-  const purchaseRate = input.terms?.purchaseRate?.paise ?? null;
-  const landingCost = (purchaseRate ?? 0) + costs;
-  return {
-    ...shared,
-    landingCost,
-    commission: null,
-    profit: purchaseRate !== null && finalised !== null ? finalised - landingCost : null,
-    owedToSeller: purchaseRate === null ? null : purchaseRate - paidToSeller,
-  };
+  finish(input: {
+    readonly saleModel: SaleModel;
+    readonly terms: DealTerms | null;
+    readonly finalisedPrice: Money | null;
+  }): VehicleMoney {
+    const { costs, paidToSeller, receivedFromBuyer } = this;
+    const finalised = input.finalisedPrice?.paise ?? null;
+    const shared = {
+      costs,
+      costBreakdown: [...this.groups.values()].sort((a, b) => b.paise - a.paise),
+      paidToSeller,
+      receivedFromBuyer,
+      owedByBuyer: finalised === null ? null : finalised - receivedFromBuyer,
+    };
+
+    if (input.saleModel === 'commission') {
+      const basisPoints = input.terms?.commissionBasisPoints ?? null;
+      const commission =
+        basisPoints === null || input.finalisedPrice === null
+          ? null
+          : commissionOn(input.finalisedPrice, basisPoints);
+      return {
+        ...shared,
+        landingCost: costs,
+        commission,
+        profit: commission,
+        owedToSeller:
+          commission === null || finalised === null
+            ? null
+            : finalised - commission - costs - paidToSeller,
+      };
+    }
+
+    const purchaseRate = input.terms?.purchaseRate?.paise ?? null;
+    const landingCost = (purchaseRate ?? 0) + costs;
+    return {
+      ...shared,
+      landingCost,
+      commission: null,
+      profit: purchaseRate !== null && finalised !== null ? finalised - landingCost : null,
+      owedToSeller: purchaseRate === null ? null : purchaseRate - paidToSeller,
+    };
+  }
 }

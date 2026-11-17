@@ -13,6 +13,7 @@ export interface ProfitAndLossReportDto {
   readonly to: string;
   readonly buckets: readonly (ReportBucket & ProfitAndLossLineDto)[];
   readonly totals: ProfitAndLossLineDto;
+  /** Always false: reports fold every entry. Kept so older clients keep working. */
   readonly truncated: boolean;
 }
 
@@ -22,6 +23,7 @@ export interface CashFlowReportDto {
   readonly to: string;
   readonly buckets: readonly (ReportBucket & CashFlowLineDto & { readonly cumulative: number })[];
   readonly totals: CashFlowLineDto;
+  /** Always false: reports fold every entry. Kept so older clients keep working. */
   readonly truncated: boolean;
 }
 
@@ -62,6 +64,7 @@ export interface VehicleProfitReportDto {
     /** Finalised prices of cars without terms. */
     readonly uncountedSales: number;
   };
+  /** Always false: reports fold every entry. Kept so older clients keep working. */
   readonly truncated: boolean;
 }
 
@@ -86,6 +89,7 @@ export interface DuesReportDto {
   readonly items: readonly DuesRowDto[];
   /** Sums of what is still owed (positive amounts only). */
   readonly totals: { readonly owedToSellers: number; readonly owedByBuyers: number };
+  /** Always false: reports fold every entry. Kept so older clients keep working. */
   readonly truncated: boolean;
 }
 
@@ -104,6 +108,7 @@ export interface StockRowDto {
 export interface StockReportDto {
   readonly items: readonly StockRowDto[];
   readonly totals: { readonly cars: number; readonly moneyInStock: number };
+  /** Always false: reports fold every entry. Kept so older clients keep working. */
   readonly truncated: boolean;
 }
 
@@ -130,6 +135,7 @@ export interface FinanceSummaryDto {
   readonly owedToSellers: number;
   readonly owedByBuyers: number;
   readonly awaitingSalePrice: number;
+  /** Always false: reports fold every entry. Kept so older clients keep working. */
   readonly truncated: boolean;
 }
 

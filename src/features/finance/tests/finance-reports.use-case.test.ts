@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { ForbiddenActionError } from '../../../domain/errors/forbidden-action.error';
+import { CalendarDate } from '../../../domain/shared/calendar-date.value-object';
 import type { CreateFinanceEntryCommand } from '../application/dtos/create-finance-entry-command';
 import { FinanceLockedError } from '../application/errors/finance-locked.error';
 import { FinanceReportData } from '../application/services/finance-report-data';
@@ -16,6 +17,10 @@ import { RecordVehicleSaleUseCase } from '../application/use-cases/record-vehicl
 import { SetVehicleDealUseCase } from '../application/use-cases/set-vehicle-deal.use-case';
 import { SetupVaultUseCase } from '../application/use-cases/setup-vault.use-case';
 import { UnlockVaultUseCase } from '../application/use-cases/unlock-vault.use-case';
+import { toFinanceEntryId } from '../domain/finance-entry-id';
+import { FinanceEntry } from '../domain/finance-entry.entity';
+import { MAX_LEDGER_ROWS } from '../domain/finance.constants';
+import { Money } from '../domain/money.value-object';
 import {
   ADMIN,
   BALENO,
@@ -419,6 +424,104 @@ describe('finance reports', () => {
       owedToSellers: 200000,
       owedByBuyers: 0,
       awaitingSalePrice: 0,
+    });
+  });
+
+  /** Seals `count` one-rupee business expenses on `date` straight into the ledger. */
+  async function bulkExpenses(count: number, date: string): Promise<void> {
+    const { cipher } = await kit.sessionService.open(ADMIN, token);
+    for (let i = 0; i < count; i += 1) {
+      const entry = FinanceEntry.create({
+        id: toFinanceEntryId(kit.ids.generate()),
+        kind: 'expense',
+        amount: Money.ofPaise(100),
+        entryDate: CalendarDate.create(date),
+        purpose: null,
+        tagIds: [],
+        vehicleId: null,
+        showroomId: SHOWROOM_A,
+        party: null,
+        note: null,
+        recordedBy: ADMIN.userId,
+        now: kit.clock.now(),
+      });
+      await kit.entries.save(kit.entrySealer.seal(entry, cipher));
+    }
+  }
+
+  // Regression: reports used to read only the newest MAX_LEDGER_ROWS entries,
+  // so the oldest ones (a car's purchase payments, last month's rent) fell out
+  // of the totals once the ledger grew past the cap.
+  describe(`with more than ${MAX_LEDGER_ROWS} entries`, () => {
+    const BULK = MAX_LEDGER_ROWS + 1;
+
+    beforeEach(async () => {
+      kit.entries.scanPageSize = 700;
+      // Newer than every seeded entry, so a newest-first cap drops the seed.
+      await bulkExpenses(BULK, '2026-11-15');
+    });
+
+    it('stock, dues and summary still count the oldest entries', async () => {
+      const stockReport = await stock.execute({ sessionToken: token, showroomId: null }, ADMIN);
+      expect(stockReport.items).toEqual([
+        expect.objectContaining({
+          vehicle: { id: CRETA, label: 'Hyundai Creta · KA05CD5678' },
+          costs: 8000,
+          landingCost: 408000,
+        }),
+      ]);
+      expect(stockReport.totals).toEqual({ cars: 1, moneyInStock: 408000 });
+      expect(stockReport.truncated).toBe(false);
+
+      const duesReport = await dues.execute({ sessionToken: token, showroomId: null }, ADMIN);
+      expect(duesReport.items).toEqual([
+        expect.objectContaining({
+          vehicle: { id: CRETA, label: 'Hyundai Creta · KA05CD5678' },
+          owedToSeller: 200000,
+        }),
+      ]);
+      expect(duesReport.totals).toEqual({ owedToSellers: 200000, owedByBuyers: 0 });
+      expect(duesReport.truncated).toBe(false);
+
+      const s = await summary.execute({ sessionToken: token, showroomId: null }, ADMIN);
+      expect(s).toMatchObject({
+        moneyInStock: 408000,
+        owedToSellers: 200000,
+        owedByBuyers: 0,
+        truncated: false,
+      });
+    });
+
+    it('a month-period P&L and cash flow still count every entry', async () => {
+      const report = await pnl.execute(range(), ADMIN);
+      const [, oct, nov] = report.buckets;
+
+      expect(oct).toMatchObject({
+        sales: 560000,
+        costOfSales: 545000,
+        businessExpenses: 85000,
+        netProfit: -70000,
+        carsSold: 1,
+      });
+      expect(nov).toMatchObject({
+        laterCarCosts: 2000,
+        businessExpenses: 85000 + BULK,
+        netProfit: -87000 - BULK,
+      });
+      expect(report.totals).toMatchObject({
+        businessExpenses: 170000 + BULK,
+        netProfit: -157000 - BULK,
+      });
+      expect(report.truncated).toBe(false);
+
+      const cash = await cashFlow.execute(range(), ADMIN);
+      expect(cash.totals).toMatchObject({
+        inFromBuyers: 560000,
+        outToSellers: 700000,
+        outCarCosts: 55000,
+        outBusiness: 170000 + BULK,
+      });
+      expect(cash.truncated).toBe(false);
     });
   });
 

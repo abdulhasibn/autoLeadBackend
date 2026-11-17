@@ -1,8 +1,7 @@
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { CalendarDate } from '../../../../domain/shared/calendar-date.value-object';
 import { toShowroomId } from '../../../../domain/shared/showroom-id';
-import type { VehicleId } from '../../../../domain/shared/vehicle-id';
-import { buildProfitAndLoss } from '../../domain/build-profit-and-loss';
+import { ProfitAndLossTally } from '../../domain/build-profit-and-loss';
 import { ReportPeriod } from '../../domain/report-period.value-object';
 import {
   PNL_COUNT_FIELDS,
@@ -41,15 +40,14 @@ export class GetProfitAndLossUseCase {
     const { cipher } = await this.sessions.open(ctx, query.sessionToken);
     const showroomId = query.showroomId === null ? null : toShowroomId(query.showroomId);
 
-    const sold = await this.data.soldCarsBetween(cipher, from.value, to.value, showroomId);
-    const entries = await this.data.entriesBetween(cipher, from.value, to.value, showroomId);
-    const carIds = entries.rows.flatMap((e) => (e.vehicleId === null ? [] : [e.vehicleId]));
-    const report = buildProfitAndLoss({
-      buckets: period.bucketsBetween(from, to),
-      soldCars: sold.rows,
-      entries: entries.rows,
-      sales: await this.data.saleInfo(cipher, carIds as VehicleId[]),
-    });
+    const tally = new ProfitAndLossTally(period.bucketsBetween(from, to));
+    for (const car of await this.data.soldCarsBetween(cipher, from.value, to.value, showroomId)) {
+      tally.addSoldCar(car);
+    }
+    await this.data.foldEntriesBetween(cipher, from.value, to.value, showroomId, (entry, sale) =>
+      tally.addEntry(entry, sale),
+    );
+    const report = tally.result();
 
     return {
       period: period.value,
@@ -57,7 +55,7 @@ export class GetProfitAndLossUseCase {
       to: to.value,
       buckets: report.buckets.map((b) => rupeesOf(b, PNL_COUNT_FIELDS)),
       totals: rupeesOf(report.totals, PNL_COUNT_FIELDS),
-      truncated: sold.truncated || entries.truncated,
+      truncated: false,
     };
   }
 }
