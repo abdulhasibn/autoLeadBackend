@@ -37,7 +37,7 @@ Apply these before merging the next `dev` → `main` release (see `docs/RELEASE_
 
 | Date (dev) | Migration | Dev version | Notes |
 |---|---|---|---|
-| — (not applied yet) | `normalise_registration_numbers` | — | Issue #30. Rewrites plates to letters and digits only (spaces, dashes, dots, slashes removed). Data only, no constraint: backward-compatible with the current backend. Stops without writing if two live cars would share a plate or a plate would become empty. **Before applying on dev:** soft-delete one of the two live `QA01AB0001` QA cars (the guard names them). Prod: audit collisions first (db-inspector, counts only). A later migration adds the format CHECK once the new backend is live on prod. |
+| — (not applied yet) | `normalise_registration_numbers` | — | Issue #30. Rewrites plates to letters and digits only (spaces, dashes, dots, slashes removed). Data only, no constraint: backward-compatible with the current backend. Stops without writing if two live cars would share a plate or a plate would become empty. Dev duplicate already resolved (see Data operations log, 2026-11-17); the guard passes on dev (0 collisions, 0 empty, 1 row to rewrite). Prod: audit collisions first (db-inspector, counts only). A later migration adds the format CHECK once the new backend is live on prod. |
 | 2026-11-12 | `lead_flow_gaps` | `20261112174824` | Replaces the bodies of `private.save_lead` (close follow-ups on converted/lost; notify assignee on `vehicle_unavailable` / car removed) and `private.save_vehicle` (updates `acquisition_type`). One-off: cancels open follow-ups on already-closed leads (0 on dev). Backward-compatible: signatures unchanged. Checked on dev in a rolled-back block: close cancels follow-ups + reads reminders; vehicle_unavailable notifies the assignee with lead_id. |
 
 ## History (applied to both)
@@ -63,5 +63,6 @@ Writes to data (not schema) that someone might later wonder about.
 
 | Date | Env | What | Why |
 |---|---|---|---|
+| 2026-11-17 | dev | Soft-deleted vehicle `71618116-82cc-47ab-a5cd-435a6d94cd4e` (`QA01AB0001`, status `dropped`, no live leads, no finance entries; `deleted_at` set, row kept). Kept the older `eeb912d2-de73-4c7d-b2a2-e7ff080ac84f` (`QA01-AB0001`, sold, 1 lead, 1 finance entry). | QA regression duplicate (#30); `normalise_registration_numbers` refuses to run while two live cars share a plate |
 | 2026-11-11 | dev + prod | Added unique constraint `schema_migrations_idempotency_key_key` on `supabase_migrations.schema_migrations (idempotency_key)`. All existing keys were null. | `apply_migration` failed without it |
 | 2026-11-11 | dev | Flushed all transactional data: vehicles, owners, contacts, leads, follow-ups, status/price history, vehicle financials, finance entries, audit logs, vehicle media rows + files in the `vehicle-media` bucket. Kept users, user_roles, roles, showrooms, the makes/models/variants catalog, finance_vault, finance_tags, finance_sessions. | Clean slate for testing |
