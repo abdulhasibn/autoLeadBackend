@@ -293,6 +293,8 @@ export function composeFinance(
         deps.leadConversion,
         deals,
         dealSealer,
+        entryQueries,
+        entrySealer,
         deps.clock,
       ),
     ),

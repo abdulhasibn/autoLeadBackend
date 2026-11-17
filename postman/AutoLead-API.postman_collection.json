@@ -4316,7 +4316,7 @@
                   }
                 ],
                 "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/sale",
-                "description": "**Story:** When the deal with the buyer is final, the admin records the finalised price, usually right after converting the lead.\n\nPOST /finance/vehicles/:vehicleId/sale — records or replaces the sale.\n\n**Auth:** Bearer, Admin only.\n\n- `finalisedPrice` (rupees, required), `soldOn` (YYYY-MM-DD, required).\n- Doesn't change the car's status (leads do that); may be recorded before the deal.\n- `200` `{ vehicleId, deal, sale, listedPrice }`. `404` unknown or deleted car.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.",
+                "description": "**Story:** When the deal with the buyer is final, the admin records the finalised price, usually right after converting the lead.\n\nPOST /finance/vehicles/:vehicleId/sale — records or replaces the sale.\n\n**Auth:** Bearer, Admin only.\n\n- `finalisedPrice` (rupees, required), `soldOn` (YYYY-MM-DD, required).\n- Doesn't change the car's status (leads do that); may be recorded before the deal.\n- `keepOverpayment` (boolean, optional, default false): save a price below what the buyer has already paid and keep the overpayment (the buyer is owed the difference). Without it, such a price is `422 SALE_PRICE_BELOW_RECEIVED` with `error.details { receivedFromBuyer, finalisedPrice }` and nothing changes.\n- `200` `{ vehicleId, deal, sale, listedPrice }`. `404` unknown or deleted car.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"finalisedPrice\": 560000,\n  \"soldOn\": \"2026-10-25\"\n}",
@@ -4401,6 +4401,80 @@
                     }
                   ],
                   "body": "{\n  \"error\": {\n    \"code\": \"NOT_FOUND\",\n    \"message\": \"Vehicle not found for id 9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\"\n  }\n}"
+                },
+                {
+                  "id": "1fb5d7f6-938d-49c8-9c04-d3333bdc5371",
+                  "name": "422 — SALE_PRICE_BELOW_RECEIVED",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/sale",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"finalisedPrice\": 450000,\n  \"soldOn\": \"2026-10-25\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"SALE_PRICE_BELOW_RECEIVED\",\n    \"message\": \"The buyer has already paid more than this price: reduce their payments first, or keep the overpayment\",\n    \"details\": {\n      \"receivedFromBuyer\": 500000,\n      \"finalisedPrice\": 450000\n    }\n  }\n}"
+                },
+                {
+                  "id": "db2ab87f-f985-4dbf-8e6d-2103b28266e4",
+                  "name": "200 OK — keepOverpayment",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/vehicles/{{vehicleId}}/sale",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"finalisedPrice\": 450000,\n  \"soldOn\": \"2026-10-25\",\n  \"keepOverpayment\": true\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"vehicleId\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n  \"deal\": {\n    \"purchaseRate\": 500000,\n    \"purchasedOn\": \"2026-10-01\",\n    \"ownerExpectedPrice\": 520000,\n    \"minimumSellingPrice\": 550000,\n    \"note\": \"Bought from Mr Rao\"\n  },\n  \"sale\": {\n    \"finalisedPrice\": 450000,\n    \"soldOn\": \"2026-10-25\",\n    \"soldBy\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\"\n  },\n  \"listedPrice\": 585000\n}"
                 }
               ]
             },
