@@ -98,6 +98,7 @@ function testConfig(): AppConfig {
     logLevel: 'silent',
     businessTimeZone: 'Asia/Kolkata',
     publicSiteOrigins: ['http://localhost:3002'],
+    crmOrigins: ['http://localhost:3001'],
     supabase: {
       url: 'https://test-project.supabase.co',
       anonKey: 'test-anon-key',
@@ -184,5 +185,35 @@ describe('public marketplace routes', () => {
     const response = await supertest(app).get('/public/nope');
 
     expect(response.status).toBe(404);
+  });
+});
+
+describe('staff route CORS', () => {
+  const { app } = composeApp(testConfig());
+
+  function preflight(origin: string) {
+    return supertest(app)
+      .options('/leads')
+      .set('Origin', origin)
+      .set('Access-Control-Request-Method', 'GET')
+      .set('Access-Control-Request-Headers', 'authorization');
+  }
+
+  it('allows the CRM origin', async () => {
+    const response = await preflight('http://localhost:3001');
+
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:3001');
+  });
+
+  it('gives any other origin no CORS grant, never a wildcard', async () => {
+    const response = await preflight('https://evil.example');
+
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('does not grant the website origin on staff routes', async () => {
+    const response = await preflight('http://localhost:3002');
+
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
   });
 });

@@ -15,7 +15,7 @@ What is live today, and how a frontend (admin web first) can start against it.
 
 ### 1. Point at the local API
 
-Staff routes allow any browser origin (`cors()` with defaults). `/public` routes allow only the origins in `PUBLIC_SITE_ORIGINS`. Start the API with `pnpm dev` on port `3000`.
+Staff routes allow only the browser origins in `CRM_ORIGINS` (empty means no cross-origin browser calls; the CRM calls the API from its server). `/public` routes allow only the origins in `PUBLIC_SITE_ORIGINS`. Start the API with `pnpm dev` on port `3000`.
 
 ```ts
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';

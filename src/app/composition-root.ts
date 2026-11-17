@@ -147,7 +147,8 @@ export function composeApp(config: AppConfig): AppDependencies {
     marketplace.router,
     siteAnalytics.router,
   );
-  app.use(cors());
+  // Staff routes carry bearer tokens: only the CRM's origins may call them.
+  app.use(cors({ origin: [...config.crmOrigins] }));
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
   app.use(

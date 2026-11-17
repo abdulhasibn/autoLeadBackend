@@ -1,6 +1,6 @@
 import { describe, expect, it, inject } from 'vitest';
 
-import { api } from './support/client';
+import { BASE_URL, api } from './support/client';
 
 describe('GET /health', () => {
   it('returns 200 with status ok and an ISO timestamp', async () => {
@@ -48,5 +48,19 @@ describe('GET /auth/me', () => {
   it('returns 401 without a token', async () => {
     const res = await api('GET', '/auth/me');
     expect(res.status).toBe(401);
+  });
+});
+
+describe('CORS on staff routes (API-09)', () => {
+  it('never grants a foreign origin, and never with a wildcard', async () => {
+    const res = await fetch(`${BASE_URL}/leads`, {
+      method: 'OPTIONS',
+      headers: {
+        origin: 'https://evil.example',
+        'access-control-request-method': 'GET',
+        'access-control-request-headers': 'authorization',
+      },
+    });
+    expect(res.headers.get('access-control-allow-origin')).toBeNull();
   });
 });
