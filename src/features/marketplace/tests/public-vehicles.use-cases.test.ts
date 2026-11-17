@@ -55,6 +55,22 @@ describe('ListPublicVehiclesUseCase', () => {
 
     expect(page.items[0]?.coverImageUrl).toBeNull();
   });
+
+  it('reads vehicles and covers together, then signs once', async () => {
+    const queries = new FakePublicVehicleQueries(
+      [publicVehicle(), publicVehicle({ id: 'v2' }), publicVehicle({ id: 'v3' })],
+      { ...MEDIA, v2: [{ storagePath: 'v2/side.jpg', category: 'other' }] },
+    );
+    const signer = new FakeSigner();
+
+    await new ListPublicVehiclesUseCase(queries, signer).execute(
+      { sort: 'newest' },
+      { limit: 24, offset: 0 },
+    );
+
+    expect(queries.calls).toEqual(['list']);
+    expect(signer.calls).toEqual([[`${VEHICLE_ID}/front.jpg`, 'v2/side.jpg']]);
+  });
 });
 
 describe('GetPublicVehicleUseCase', () => {
@@ -71,10 +87,22 @@ describe('GetPublicVehicleUseCase', () => {
     expect(vehicle.coverImageUrl).toBe(`https://signed.test/${VEHICLE_ID}/front.jpg`);
   });
 
-  it('answers not found for a vehicle that is not Listed', async () => {
-    const useCase = new GetPublicVehicleUseCase(new FakePublicVehicleQueries([]), new FakeSigner());
+  it('reads the vehicle and its photos together, then signs once', async () => {
+    const queries = new FakePublicVehicleQueries([publicVehicle()], MEDIA);
+    const signer = new FakeSigner();
+
+    await new GetPublicVehicleUseCase(queries, signer).execute(VEHICLE_ID);
+
+    expect(queries.calls).toEqual(['get']);
+    expect(signer.calls).toEqual([[`${VEHICLE_ID}/interior.jpg`, `${VEHICLE_ID}/front.jpg`]]);
+  });
+
+  it('answers not found for a vehicle that is not Listed, without signing', async () => {
+    const signer = new FakeSigner();
+    const useCase = new GetPublicVehicleUseCase(new FakePublicVehicleQueries([]), signer);
 
     await expect(useCase.execute(VEHICLE_ID)).rejects.toBeInstanceOf(NotFoundError);
+    expect(signer.calls).toEqual([]);
   });
 });
 

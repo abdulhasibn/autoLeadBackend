@@ -17,14 +17,18 @@ export class ListPublicVehiclesUseCase {
     criteria: PublicVehicleCriteria,
     page: Pagination,
   ): Promise<Page<PublicVehicleSummaryDto>> {
-    const vehicles = await this.queries.list(criteria, page);
-    const covers = await this.queries.coverPaths(vehicles.items.map((vehicle) => vehicle.id));
-    const urls = await this.signer.sign([...new Set(covers.values())]);
+    const listings = await this.queries.list(criteria, page);
+    const paths = listings.items.flatMap(({ coverPath }) =>
+      coverPath === null ? [] : [coverPath],
+    );
+    const urls = await this.signer.sign([...new Set(paths)]);
 
-    const items = vehicles.items.map((vehicle) => {
-      const path = covers.get(vehicle.id);
-      return toPublicVehicleSummary(vehicle, (path && urls.get(path)) ?? null);
-    });
-    return toPage(items, vehicles.total, page);
+    const items = listings.items.map(({ vehicle, coverPath }) =>
+      toPublicVehicleSummary(
+        vehicle,
+        (coverPath === null ? undefined : urls.get(coverPath)) ?? null,
+      ),
+    );
+    return toPage(items, listings.total, page);
   }
 }

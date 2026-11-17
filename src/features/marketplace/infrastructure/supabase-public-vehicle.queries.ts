@@ -8,8 +8,9 @@ import { toPage } from '../../../shared/pagination/pagination';
 import type {
   IPublicVehicleQueries,
   PublicVehicleCriteria,
-  PublicVehiclePhoto,
+  PublicVehicleListing,
   PublicVehicleReadModel,
+  PublicVehicleWithPhotos,
 } from '../domain/public-vehicle.queries';
 
 // `public_vehicle_list` already limits rows to Listed, live vehicles and
@@ -18,6 +19,28 @@ const COLUMNS =
   'id, make_id, model_id, make_name, model_name, variant_name, body_types, year, fuel_type, transmission, km_driven, num_previous_owners, colour, description, listed_price';
 
 type Row = Omit<Database['public']['Views']['public_vehicle_list']['Row'], 'created_at'>;
+
+// Photos are embedded so each route is one read plus one signing call, not a
+// read per table. PostgREST infers vehicle_media -> public_vehicle_list from
+// the view's `v.id`, but the generated types list no relationship for views,
+// so the embedded shapes are declared here via `overrideTypes`.
+const MEDIA_ORDER = [
+  ['sort_order', true],
+  ['uploaded_at', true],
+] as const;
+
+// Two one-row embeds pick the cover in the database: the first `front` photo,
+// else the first photo. Only storage paths travel, never whole galleries.
+const LIST_COLUMNS = `${COLUMNS}, front:vehicle_media(storage_path), first:vehicle_media(storage_path)`;
+interface CoverEmbeds {
+  front: { storage_path: string }[];
+  first: { storage_path: string }[];
+}
+
+const DETAIL_COLUMNS = `${COLUMNS}, vehicle_media(storage_path, category)`;
+interface PhotoEmbed {
+  vehicle_media: { storage_path: string; category: string | null }[];
+}
 
 // Bounds the filter-options scan; a single dealership is far below it.
 const LIST_ALL_LIMIT = 1000;
@@ -28,8 +51,18 @@ export class SupabasePublicVehicleQueries implements IPublicVehicleQueries {
   async list(
     criteria: PublicVehicleCriteria,
     page: Pagination,
-  ): Promise<Page<PublicVehicleReadModel>> {
-    let query = this.db.from('public_vehicle_list').select(COLUMNS, { count: 'exact' });
+  ): Promise<Page<PublicVehicleListing>> {
+    let query = this.db
+      .from('public_vehicle_list')
+      .select(LIST_COLUMNS, { count: 'exact' })
+      .eq('front.category', 'front')
+      .limit(1, { referencedTable: 'front' })
+      .limit(1, { referencedTable: 'first' });
+    for (const [column, ascending] of MEDIA_ORDER) {
+      query = query
+        .order(column, { ascending, referencedTable: 'front' })
+        .order(column, { ascending, referencedTable: 'first' });
+    }
 
     if (criteria.makeId !== undefined) {
       query = query.eq('make_id', criteria.makeId);
@@ -74,7 +107,9 @@ export class SupabasePublicVehicleQueries implements IPublicVehicleQueries {
     }
     query = query.order('created_at', { ascending: false }).order('id', { ascending: true });
 
-    const { data, error, count } = await query.range(page.offset, page.offset + page.limit - 1);
+    const { data, error, count } = await query
+      .range(page.offset, page.offset + page.limit - 1)
+      .overrideTypes<CoverEmbeds[]>();
 
     if (error !== null) {
       const pastEnd = emptyPageIfPastEnd(error, page);
@@ -84,21 +119,36 @@ export class SupabasePublicVehicleQueries implements IPublicVehicleQueries {
       throw new DatabaseUnavailableError(`Failed to list public vehicles: ${error.message}`);
     }
 
-    const items = (data ?? []).flatMap((row) => toReadModel(row));
+    const items = (data ?? []).flatMap((row) =>
+      toReadModel(row).map((vehicle) => ({
+        vehicle,
+        coverPath: row.front[0]?.storage_path ?? row.first[0]?.storage_path ?? null,
+      })),
+    );
     return toPage(items, count ?? items.length, page);
   }
 
-  async get(id: string): Promise<PublicVehicleReadModel | null> {
-    const { data, error } = await this.db
-      .from('public_vehicle_list')
-      .select(COLUMNS)
-      .eq('id', id)
-      .maybeSingle();
+  async get(id: string): Promise<PublicVehicleWithPhotos | null> {
+    let query = this.db.from('public_vehicle_list').select(DETAIL_COLUMNS).eq('id', id);
+    for (const [column, ascending] of MEDIA_ORDER) {
+      query = query.order(column, { ascending, referencedTable: 'vehicle_media' });
+    }
+    const { data, error } = await query.maybeSingle().overrideTypes<PhotoEmbed>();
 
     if (error !== null) {
       throw new DatabaseUnavailableError(`Failed to load public vehicle: ${error.message}`);
     }
-    return data === null ? null : (toReadModel(data)[0] ?? null);
+    const vehicle = data === null ? undefined : toReadModel(data)[0];
+    if (data === null || vehicle === undefined) {
+      return null;
+    }
+    return {
+      vehicle,
+      photos: data.vehicle_media.map((row) => ({
+        storagePath: row.storage_path,
+        category: row.category ?? 'other',
+      })),
+    };
   }
 
   async listAll(): Promise<readonly PublicVehicleReadModel[]> {
@@ -111,52 +161,6 @@ export class SupabasePublicVehicleQueries implements IPublicVehicleQueries {
       throw new DatabaseUnavailableError(`Failed to list public vehicles: ${error.message}`);
     }
     return (data ?? []).flatMap((row) => toReadModel(row));
-  }
-
-  async coverPaths(vehicleIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
-    if (vehicleIds.length === 0) {
-      return new Map();
-    }
-
-    const { data, error } = await this.db
-      .from('vehicle_media')
-      .select('vehicle_id, storage_path, category')
-      .in('vehicle_id', [...vehicleIds])
-      .order('sort_order', { ascending: true })
-      .order('uploaded_at', { ascending: true });
-
-    if (error !== null) {
-      throw new DatabaseUnavailableError(`Failed to load vehicle covers: ${error.message}`);
-    }
-
-    const front = new Map<string, string>();
-    const first = new Map<string, string>();
-    for (const row of data ?? []) {
-      if (!first.has(row.vehicle_id)) {
-        first.set(row.vehicle_id, row.storage_path);
-      }
-      if (row.category === 'front' && !front.has(row.vehicle_id)) {
-        front.set(row.vehicle_id, row.storage_path);
-      }
-    }
-    return new Map([...first, ...front]);
-  }
-
-  async photos(vehicleId: string): Promise<readonly PublicVehiclePhoto[]> {
-    const { data, error } = await this.db
-      .from('vehicle_media')
-      .select('storage_path, category')
-      .eq('vehicle_id', vehicleId)
-      .order('sort_order', { ascending: true })
-      .order('uploaded_at', { ascending: true });
-
-    if (error !== null) {
-      throw new DatabaseUnavailableError(`Failed to load vehicle photos: ${error.message}`);
-    }
-    return (data ?? []).map((row) => ({
-      storagePath: row.storage_path,
-      category: row.category ?? 'other',
-    }));
   }
 }
 
