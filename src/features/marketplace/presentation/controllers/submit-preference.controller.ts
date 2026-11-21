@@ -18,7 +18,7 @@ export class SubmitPreferenceController {
 
         // A filled honeypot is a bot: answer like a success, record nothing.
         if (body.fax !== undefined && body.fax.trim() !== '') {
-          res.status(201).json({ outcome: 'created', showroom: null });
+          res.status(201).json({ showroom: null });
           return;
         }
 
@@ -35,7 +35,9 @@ export class SubmitPreferenceController {
           model: body.model,
           referenceVehicleId: body.referenceVehicleId,
         });
-        res.status(receipt.outcome === 'created' ? 201 : 200).json(receipt);
+        // Same answer whether a lead was created or merged, and no lead id:
+        // the response must not reveal whether a phone number is already a customer.
+        res.status(201).json({ showroom: receipt.showroom });
       } catch (err) {
         next(err);
       }

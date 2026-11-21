@@ -210,7 +210,7 @@ Anonymous. CORS is limited to `PUBLIC_SITE_ORIGINS`. Only Listed vehicles (`open
 | `GET` | `/public/vehicles/:id` | `200` detail: summary + `description` + `photos[]` (`{ url, category }`, in display order). A car sold in the last 90 days returns normally with `status: "sold"`; dropped, removed, older-sold and unknown ids are `404` |
 | `GET` | `/public/filters` | `200` `{ makes[{ id, name, models[] }], bodyTypes, fuelTypes, transmissions, priceRange, yearRange }` built from available stock (sold cars excluded) |
 | `POST` | `/public/test-drive-requests` | `201` new lead, `200` repeat on an active lead → `{ outcome, vehicleAvailable, showroom }` |
-| `POST` | `/public/preference-requests` | `201` new lead, `200` merged into the visitor's open web lead → `{ outcome, showroom }` |
+| `POST` | `/public/preference-requests` | `201` → `{ showroom }`, whether a lead was created or merged |
 | `POST` | `/public/events` | `204` always. Website analytics beacon (ADR-0016), see below |
 
 Summary fields: `id, make, model, variant, bodyType, year, fuelType, transmission, kmDriven, previousOwners, colour, listedPrice` (rupees or `null` → show "Price on request"), `coverImageUrl`, `status` (`"available"` \| `"sold"`). A `sold` car is shown for 90 days after its sale (sale date, else last update) for social proof: same fields, no extra data; the site should disable booking for it. Photo URLs are signed for 24 hours; GET responses carry `Cache-Control: s-maxage=300`.
@@ -238,8 +238,10 @@ Preference body: `{ fullName, phone, fax?, attribution?, budgetMax?, bodyTypes?,
 | `make`, `model` | Trimmed, max 60 chars; matched to the catalog case-insensitively (a model only under its make); unmatched text stays in the notes |
 | `referenceVehicleId` | uuid of a car the visitor liked; named in the notes, never linked |
 
-- Creates a car-less `website` lead (`instagram` / `facebook` for a Meta last touch), unassigned, with the preferences (budget, body, fuel, transmission, catalog make/model) filled in and a note, and notifies every admin (`website_lead`). `outcome: "created"` → `201`.
-- If the contact already has an open web lead with no car (source `website` / `instagram` / `facebook`, status `new`, `contacted`, `interested` or `follow_up`), preferences are merged into it and a note appended instead (`200`, `outcome: "updated"`). Other leads are never touched.
+- Creates a car-less `website` lead (`instagram` / `facebook` for a Meta last touch), unassigned, with the preferences (budget, body, fuel, transmission, catalog make/model) filled in and a note, and notifies every admin (`website_lead`).
+- If the contact already has a `new` web lead with no car (source `website` / `instagram` / `facebook`), it is merged into instead, **add-only**: picks are added to the lists, budget and make/model fill only empty fields, and a note is appended. Nothing staff recorded is overwritten. Other leads are never touched.
+- The answer is the same `201 { showroom }` either way, with no lead id, so the endpoint never reveals whether a phone number is already a customer.
+- `make` / `model` accept letters, numbers, spaces and `. & ' -` only (else `422`); unmatched text goes into the note.
 - An existing contact is reused and never renamed. `showroom` is returned as on test-drive requests. A filled `fax` gets a fake `201 { outcome: "created", showroom: null }`.
 - Errors: `422 VALIDATION_ERROR` (unknown enum value, budget out of range, more than 5 choices, bad uuid), `422 INVALID_PHONE`, `429 RATE_LIMITED` (5 per IP per hour, 3 per phone per day, counted separately from test-drive limits).
 
@@ -264,7 +266,7 @@ Preference body: `{ fullName, phone, fax?, attribution?, budgetMax?, bodyTypes?,
 }
 ```
 
-- `preference_open` carries `props.source` (where the form was opened from). The three `preference_*` types need the database `web_events_type_check` widened; until then a batch containing one fails to store.
+- `preference_open` carries `props.source` (where the form was opened from). The three `preference_*` types are allowed by `web_events_type_check` from migration `public_sold_and_preference_lead`.
 - Always `204`, even for invalid or oversized bodies: nothing is reported back. Bot and blank user agents are dropped.
 - The channel is classified server-side: `instagram_ads | instagram_organic | facebook_ads | facebook_organic | google_ads | google_organic | whatsapp | direct | referral | other`. UTM tags win (`utm_medium` containing `paid`, or `cpc`/`ppc`/`cpm`/`display` → ads); without them a `gclid` → `google_ads`, then the in-app browser or referrer names the network; nothing at all → `direct`.
 - A session keeps the touch of its first batch. At most 500 events per session per hour are stored; event times are clamped to the last 24 hours. Events are kept 13 months.

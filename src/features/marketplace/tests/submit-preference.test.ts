@@ -201,18 +201,28 @@ describe('POST /public/preference-requests', () => {
 
     expect(response.status).toBe(201);
     expect(response.headers['access-control-allow-origin']).toBe(SITE);
-    expect(response.body).toMatchObject({ outcome: 'created', showroom: { city: 'Bengaluru' } });
+    expect(response.body).toEqual({ showroom: expect.objectContaining({ city: 'Bengaluru' }) });
     expect(intake.submitted[0]).toMatchObject({ budgetMax: 800_000, fuelTypes: ['diesel'] });
     expect(intake.submitted[0]?.ipHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it('answers 200 when an existing lead was updated', async () => {
+  it('answers a merge exactly like a new lead, without the lead id', async () => {
     const response = await supertest(app(new FakePreferenceIntake({ outcome: 'updated' })))
       .post('/public/preference-requests')
       .send(base);
 
-    expect(response.status).toBe(200);
-    expect(response.body.outcome).toBe('updated');
+    expect(response.status).toBe(201);
+    expect(response.body).not.toHaveProperty('outcome');
+    expect(response.body).not.toHaveProperty('leadId');
+  });
+
+  it('rejects make/model text with markup or control characters', async () => {
+    for (const make of ['<script>', 'Honda\nCity']) {
+      const response = await supertest(app(new FakePreferenceIntake()))
+        .post('/public/preference-requests')
+        .send({ ...base, make });
+      expect(response.status).toBe(422);
+    }
   });
 
   it('answers a filled honeypot like a success and records nothing', async () => {
@@ -222,7 +232,7 @@ describe('POST /public/preference-requests', () => {
       .send({ ...base, fax: 'http://spam.test' });
 
     expect(response.status).toBe(201);
-    expect(response.body).toEqual({ outcome: 'created', showroom: null });
+    expect(response.body).toEqual({ showroom: null });
     expect(intake.submitted).toEqual([]);
   });
 

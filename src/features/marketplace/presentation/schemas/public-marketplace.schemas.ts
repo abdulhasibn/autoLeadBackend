@@ -64,7 +64,13 @@ const MAX_PREFERENCE_CHOICES = 5;
 
 const choicesSchema = <T extends string>(values: readonly [T, ...T[]]) =>
   z.array(z.enum(values)).max(MAX_PREFERENCE_CHOICES).optional();
-const catalogNameSchema = z.string().trim().max(60).optional();
+// Free text ends up in staff-facing lead notes: plain name characters only.
+const catalogNameSchema = z
+  .string()
+  .trim()
+  .max(60)
+  .regex(/^[\p{L}\p{N} .&'-]*$/u, "Use letters, numbers, spaces and . & ' - only")
+  .optional();
 
 /** `POST /public/preference-requests`: a contact plus optional "what I want" hints. */
 export const submitPreferenceBodySchema = z.object({
