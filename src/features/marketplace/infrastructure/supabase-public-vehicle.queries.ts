@@ -18,7 +18,10 @@ import type {
 const COLUMNS =
   'id, make_id, model_id, make_name, model_name, variant_name, body_types, year, fuel_type, transmission, km_driven, num_previous_owners, colour, description, listed_price';
 
-type Row = Omit<Database['public']['Views']['public_vehicle_list']['Row'], 'created_at'>;
+type Row = Omit<
+  Database['public']['Views']['public_vehicle_list']['Row'],
+  'created_at' | 'public_status' | 'sold_on'
+>;
 
 // Photos are embedded so each route is one read plus one signing call, not a
 // read per table. PostgREST infers vehicle_media -> public_vehicle_list from

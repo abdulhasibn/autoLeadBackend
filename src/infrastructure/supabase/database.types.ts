@@ -1,5 +1,5 @@
 /**
- * Generated via Supabase MCP `generate_typescript_types` for project pptljtbxqzmjossuamve.
+ * Generated via Supabase MCP `generate_typescript_types` for project rytaokimqywrzztepncc (lms_dev).
  * Do not edit by hand — regenerate after schema migrations.
  */
 
@@ -9,7 +9,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.5';
+    PostgrestVersion: '14.18';
   };
   public: {
     Tables: {
@@ -234,6 +234,13 @@ export type Database = {
             columns: ['showroom_id'];
             isOneToOne: false;
             referencedRelation: 'showrooms';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'finance_entries_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'public_vehicle_list';
             referencedColumns: ['id'];
           },
           {
@@ -472,6 +479,83 @@ export type Database = {
           },
         ];
       };
+      lead_attribution: {
+        Row: {
+          channel: string;
+          created_at: string;
+          first_channel: string;
+          first_landing_path: string | null;
+          first_referrer_host: string | null;
+          first_utm_campaign: string | null;
+          first_utm_content: string | null;
+          first_utm_medium: string | null;
+          first_utm_source: string | null;
+          first_utm_term: string | null;
+          last_landing_path: string | null;
+          last_referrer_host: string | null;
+          last_utm_campaign: string | null;
+          last_utm_content: string | null;
+          last_utm_medium: string | null;
+          last_utm_source: string | null;
+          last_utm_term: string | null;
+          lead_id: string;
+          session_id: string;
+          visitor_id: string;
+        };
+        Insert: {
+          channel: string;
+          created_at?: string;
+          first_channel: string;
+          first_landing_path?: string | null;
+          first_referrer_host?: string | null;
+          first_utm_campaign?: string | null;
+          first_utm_content?: string | null;
+          first_utm_medium?: string | null;
+          first_utm_source?: string | null;
+          first_utm_term?: string | null;
+          last_landing_path?: string | null;
+          last_referrer_host?: string | null;
+          last_utm_campaign?: string | null;
+          last_utm_content?: string | null;
+          last_utm_medium?: string | null;
+          last_utm_source?: string | null;
+          last_utm_term?: string | null;
+          lead_id: string;
+          session_id: string;
+          visitor_id: string;
+        };
+        Update: {
+          channel?: string;
+          created_at?: string;
+          first_channel?: string;
+          first_landing_path?: string | null;
+          first_referrer_host?: string | null;
+          first_utm_campaign?: string | null;
+          first_utm_content?: string | null;
+          first_utm_medium?: string | null;
+          first_utm_source?: string | null;
+          first_utm_term?: string | null;
+          last_landing_path?: string | null;
+          last_referrer_host?: string | null;
+          last_utm_campaign?: string | null;
+          last_utm_content?: string | null;
+          last_utm_medium?: string | null;
+          last_utm_source?: string | null;
+          last_utm_term?: string | null;
+          lead_id?: string;
+          session_id?: string;
+          visitor_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'lead_attribution_lead_id_fkey';
+            columns: ['lead_id'];
+            isOneToOne: true;
+            referencedRelation: 'leads';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       lead_status_history: {
         Row: {
           changed_at: string;
@@ -675,11 +759,71 @@ export type Database = {
             foreignKeyName: 'leads_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
+            referencedRelation: 'public_vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'leads_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
             referencedRelation: 'vehicle_list';
             referencedColumns: ['id'];
           },
           {
             foreignKeyName: 'leads_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      listed_price_history: {
+        Row: {
+          changed_at: string;
+          changed_by: string | null;
+          id: number;
+          price: number | null;
+          vehicle_id: string;
+        };
+        Insert: {
+          changed_at?: string;
+          changed_by?: string | null;
+          id?: never;
+          price?: number | null;
+          vehicle_id: string;
+        };
+        Update: {
+          changed_at?: string;
+          changed_by?: string | null;
+          id?: never;
+          price?: number | null;
+          vehicle_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'listed_price_history_changed_by_fkey';
+            columns: ['changed_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'listed_price_history_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'public_vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'listed_price_history_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'listed_price_history_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
             referencedRelation: 'vehicles';
@@ -878,6 +1022,27 @@ export type Database = {
           },
         ];
       };
+      public_request_log: {
+        Row: {
+          created_at: string;
+          id: number;
+          key: string;
+          kind: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: never;
+          key: string;
+          kind: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: never;
+          key?: string;
+          kind?: string;
+        };
+        Relationships: [];
+      };
       recently_viewed: {
         Row: {
           buyer_id: string;
@@ -903,6 +1068,13 @@ export type Database = {
             columns: ['buyer_id'];
             isOneToOne: false;
             referencedRelation: 'buyers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'recently_viewed_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'public_vehicle_list';
             referencedColumns: ['id'];
           },
           {
@@ -964,6 +1136,13 @@ export type Database = {
             columns: ['buyer_id'];
             isOneToOne: false;
             referencedRelation: 'buyers';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'saved_vehicles_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'public_vehicle_list';
             referencedColumns: ['id'];
           },
           {
@@ -1234,6 +1413,13 @@ export type Database = {
             foreignKeyName: 'vehicle_documents_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
+            referencedRelation: 'public_vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_documents_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
             referencedRelation: 'vehicle_list';
             referencedColumns: ['id'];
           },
@@ -1289,6 +1475,13 @@ export type Database = {
             foreignKeyName: 'vehicle_financials_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: true;
+            referencedRelation: 'public_vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_financials_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: true;
             referencedRelation: 'vehicle_list';
             referencedColumns: ['id'];
           },
@@ -1335,6 +1528,13 @@ export type Database = {
             columns: ['uploaded_by'];
             isOneToOne: false;
             referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_media_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'public_vehicle_list';
             referencedColumns: ['id'];
           },
           {
@@ -1406,6 +1606,13 @@ export type Database = {
             foreignKeyName: 'vehicle_quotes_vehicle_id_fkey';
             columns: ['vehicle_id'];
             isOneToOne: false;
+            referencedRelation: 'public_vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_quotes_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
             referencedRelation: 'vehicle_list';
             referencedColumns: ['id'];
           },
@@ -1452,6 +1659,13 @@ export type Database = {
             columns: ['changed_by'];
             isOneToOne: false;
             referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'vehicle_status_history_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'public_vehicle_list';
             referencedColumns: ['id'];
           },
           {
@@ -1590,6 +1804,134 @@ export type Database = {
           },
         ];
       };
+      web_events: {
+        Row: {
+          id: number;
+          occurred_at: string;
+          path: string;
+          props: Json;
+          received_at: string;
+          session_id: string;
+          type: string;
+          vehicle_id: string | null;
+          visitor_id: string;
+        };
+        Insert: {
+          id?: never;
+          occurred_at: string;
+          path: string;
+          props?: Json;
+          received_at?: string;
+          session_id: string;
+          type: string;
+          vehicle_id?: string | null;
+          visitor_id: string;
+        };
+        Update: {
+          id?: never;
+          occurred_at?: string;
+          path?: string;
+          props?: Json;
+          received_at?: string;
+          session_id?: string;
+          type?: string;
+          vehicle_id?: string | null;
+          visitor_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'web_events_session_id_fkey';
+            columns: ['session_id'];
+            isOneToOne: false;
+            referencedRelation: 'web_sessions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'web_events_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'public_vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'web_events_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicle_list';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'web_events_vehicle_id_fkey';
+            columns: ['vehicle_id'];
+            isOneToOne: false;
+            referencedRelation: 'vehicles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      web_sessions: {
+        Row: {
+          channel: string;
+          city: string | null;
+          device: string;
+          has_fbclid: boolean;
+          has_gclid: boolean;
+          id: string;
+          in_app_browser: string | null;
+          ip_hash: string;
+          landing_path: string;
+          last_seen_at: string;
+          referrer_host: string | null;
+          started_at: string;
+          utm_campaign: string | null;
+          utm_content: string | null;
+          utm_medium: string | null;
+          utm_source: string | null;
+          utm_term: string | null;
+          visitor_id: string;
+        };
+        Insert: {
+          channel: string;
+          city?: string | null;
+          device: string;
+          has_fbclid?: boolean;
+          has_gclid?: boolean;
+          id: string;
+          in_app_browser?: string | null;
+          ip_hash: string;
+          landing_path: string;
+          last_seen_at?: string;
+          referrer_host?: string | null;
+          started_at?: string;
+          utm_campaign?: string | null;
+          utm_content?: string | null;
+          utm_medium?: string | null;
+          utm_source?: string | null;
+          utm_term?: string | null;
+          visitor_id: string;
+        };
+        Update: {
+          channel?: string;
+          city?: string | null;
+          device?: string;
+          has_fbclid?: boolean;
+          has_gclid?: boolean;
+          id?: string;
+          in_app_browser?: string | null;
+          ip_hash?: string;
+          landing_path?: string;
+          last_seen_at?: string;
+          referrer_host?: string | null;
+          started_at?: string;
+          utm_campaign?: string | null;
+          utm_content?: string | null;
+          utm_medium?: string | null;
+          utm_source?: string | null;
+          utm_term?: string | null;
+          visitor_id?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       public_vehicle_list: {
@@ -1607,11 +1949,28 @@ export type Database = {
           model_id: string | null;
           model_name: string | null;
           num_previous_owners: number | null;
+          public_status: string | null;
+          sold_on: string | null;
           transmission: string | null;
           variant_name: string | null;
           year: number | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'models_make_id_fkey';
+            columns: ['make_id'];
+            isOneToOne: false;
+            referencedRelation: 'makes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'variants_model_id_fkey';
+            columns: ['model_id'];
+            isOneToOne: false;
+            referencedRelation: 'models';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       vehicle_list: {
         Row: {
@@ -1702,11 +2061,7 @@ export type Database = {
     };
     Functions: {
       cancel_follow_up: {
-        Args: {
-          p_cancelled_at: string;
-          p_cancelled_by: string;
-          p_id: string;
-        };
+        Args: { p_cancelled_at: string; p_cancelled_by: string; p_id: string };
         Returns: undefined;
       };
       complete_follow_up: {
@@ -1714,16 +2069,16 @@ export type Database = {
           p_completed_at: string;
           p_completed_by: string;
           p_id: string;
-          p_next_assigned_to?: string | null;
-          p_next_created_by?: string | null;
-          p_next_due_at?: string | null;
-          p_next_id?: string | null;
-          p_next_lead_id?: string | null;
-          p_next_notes?: string | null;
-          p_next_notification_id?: string | null;
-          p_next_scheduled_at?: string | null;
-          p_next_task_type?: string | null;
-          p_notes: string | null;
+          p_next_assigned_to?: string;
+          p_next_created_by?: string;
+          p_next_due_at?: string;
+          p_next_id?: string;
+          p_next_lead_id?: string;
+          p_next_notes?: string;
+          p_next_notification_id?: string;
+          p_next_scheduled_at?: string;
+          p_next_task_type?: string;
+          p_notes: string;
           p_outcome: string;
         };
         Returns: undefined;
@@ -1731,13 +2086,13 @@ export type Database = {
       dashboard_summary: {
         Args: {
           p_aged_before: string;
-          p_assignee_id: string | null;
+          p_assignee_id: string;
           p_from: string;
           p_list_limit: number;
           p_now: string;
           p_prev_from: string;
           p_prev_until: string;
-          p_showroom_id: string | null;
+          p_showroom_id: string;
           p_today_end: string;
         };
         Returns: Json;
@@ -1749,7 +2104,7 @@ export type Database = {
       insights_demand: {
         Args: {
           p_from: string;
-          p_showroom_id: string | null;
+          p_showroom_id: string;
           p_top_limit: number;
           p_until: string;
         };
@@ -1765,7 +2120,7 @@ export type Database = {
           p_from: string;
           p_prev_from: string;
           p_prev_until: string;
-          p_showroom_id: string | null;
+          p_showroom_id: string;
           p_until: string;
         };
         Returns: Json;
@@ -1783,62 +2138,62 @@ export type Database = {
       insights_vehicle_stats: {
         Args: {
           p_from: string;
-          p_showroom_id: string | null;
+          p_showroom_id: string;
           p_until: string;
-          p_vehicle_id: string | null;
+          p_vehicle_id: string;
         };
         Returns: Json;
       };
       save_lead: {
         Args: {
-          p_actor_id?: string | null;
-          p_assigned_to?: string | null;
-          p_budget: number | null;
-          p_contact_created_by: string | null;
-          p_contact_email: string | null;
-          p_contact_full_name: string | null;
+          p_actor_id?: string;
+          p_assigned_to?: string;
+          p_budget: number;
+          p_contact_created_by: string;
+          p_contact_email: string;
+          p_contact_full_name: string;
           p_contact_id: string;
-          p_contact_phone: string | null;
+          p_contact_phone: string;
           p_created_by: string;
-          p_current_vehicle: string | null;
-          p_deleted_at: string | null;
-          p_finance_required: boolean | null;
+          p_current_vehicle: string;
+          p_deleted_at: string;
+          p_finance_required: boolean;
           p_id: string;
-          p_notes: string | null;
+          p_notes: string;
           p_preferred_body_types?: string[];
           p_preferred_colours?: string[];
           p_preferred_fuel_types?: string[];
-          p_preferred_km_max?: number | null;
-          p_preferred_make_id?: string | null;
-          p_preferred_max_owners?: number | null;
-          p_preferred_model_id?: string | null;
+          p_preferred_km_max?: number;
+          p_preferred_make_id?: string;
+          p_preferred_max_owners?: number;
+          p_preferred_model_id?: string;
           p_preferred_transmissions?: string[];
-          p_preferred_variant_id?: string | null;
-          p_preferred_vehicle: string | null;
-          p_preferred_year_max?: number | null;
-          p_preferred_year_min?: number | null;
-          p_purchase_timeline: string | null;
+          p_preferred_variant_id?: string;
+          p_preferred_vehicle: string;
+          p_preferred_year_max?: number;
+          p_preferred_year_min?: number;
+          p_purchase_timeline: string;
           p_showroom_id: string;
           p_source: string;
           p_status: string;
-          p_status_notes: string | null;
-          p_trade_in_required: boolean | null;
+          p_status_notes: string;
+          p_trade_in_required: boolean;
           p_update_assignee?: boolean;
-          p_vehicle_id: string | null;
+          p_vehicle_id: string;
           p_write_history: boolean;
         };
         Returns: undefined;
       };
       save_staff_user: {
         Args: {
-          p_deleted_at: string | null;
-          p_email: string | null;
+          p_deleted_at: string;
+          p_email: string;
           p_full_name: string;
-          p_granted_by: string | null;
+          p_granted_by: string;
           p_id: string;
           p_phone: string;
           p_role_names: string[];
-          p_showroom_id: string | null;
+          p_showroom_id: string;
         };
         Returns: undefined;
       };
@@ -1848,23 +2203,23 @@ export type Database = {
           p_acquisition_type: string;
           p_actor_id: string;
           p_colour: string;
-          p_deleted_at: string | null;
-          p_description: string | null;
+          p_deleted_at: string;
+          p_description: string;
           p_fuel_type: string;
           p_id: string;
-          p_insurance_valid_until: string | null;
+          p_insurance_valid_until: string;
           p_km_driven: number;
-          p_loan_status: string | null;
-          p_location: string | null;
+          p_loan_status: string;
+          p_location: string;
           p_num_previous_owners: number;
           p_owner_id: string;
-          p_rc_status: string | null;
+          p_rc_status: string;
+          p_reason?: string;
           p_registration_number: string;
-          p_service_history: string | null;
+          p_service_history: string;
           p_showroom_id: string;
-          p_sold_lead_id?: string | null;
+          p_sold_lead_id?: string;
           p_status: string;
-          p_reason?: string | null;
           p_submitted_by: string;
           p_transmission: string;
           p_variant_id: string;
@@ -1879,12 +2234,28 @@ export type Database = {
           p_due_at: string;
           p_id: string;
           p_lead_id: string;
-          p_notes: string | null;
+          p_notes: string;
           p_notification_id: string;
           p_scheduled_at: string;
           p_task_type: string;
         };
         Returns: undefined;
+      };
+      submit_public_preference_lead: {
+        Args: {
+          p_attribution?: Json;
+          p_body_types?: string[];
+          p_budget_max?: number;
+          p_fuel_types?: string[];
+          p_full_name: string;
+          p_ip_hash: string;
+          p_make?: string;
+          p_model?: string;
+          p_phone: string;
+          p_reference_vehicle_id?: string;
+          p_transmissions?: string[];
+        };
+        Returns: Json;
       };
       submit_public_test_drive: {
         Args: {
@@ -1892,7 +2263,7 @@ export type Database = {
           p_full_name: string;
           p_ip_hash: string;
           p_phone: string;
-          p_vehicle_id: string | null;
+          p_vehicle_id: string;
         };
         Returns: Json;
       };
