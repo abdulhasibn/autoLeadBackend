@@ -21,6 +21,10 @@ export interface PublicVehicleReadModel {
   readonly colour: string | null;
   readonly description: string | null;
   readonly listedPrice: number | null;
+  /** `sold` for a car sold within the public window (90 days); it stays visible, not bookable. */
+  readonly status: 'available' | 'sold';
+  /** ISO date (`YYYY-MM-DD`); set only when `status` is `sold`. */
+  readonly soldOn: string | null;
 }
 
 export type PublicVehicleSort = 'newest' | 'price_asc' | 'price_desc' | 'km_asc';
@@ -62,6 +66,6 @@ export interface PublicVehicleWithPhotos {
 export interface IPublicVehicleQueries {
   list(criteria: PublicVehicleCriteria, page: Pagination): Promise<Page<PublicVehicleListing>>;
   get(id: string): Promise<PublicVehicleWithPhotos | null>;
-  /** Every Listed vehicle, unpaginated: the source of the filter options. */
+  /** Every available vehicle (sold ones excluded), unpaginated: the source of the filter options. */
   listAll(): Promise<readonly PublicVehicleReadModel[]>;
 }

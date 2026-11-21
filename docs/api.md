@@ -206,13 +206,14 @@ Anonymous. CORS is limited to `PUBLIC_SITE_ORIGINS`. Only Listed vehicles (`open
 
 | Method | Path | Success |
 |--------|------|---------|
-| `GET` | `/public/vehicles` | `200` page of summaries. Query: `makeId`, `modelId`, `bodyType`, `fuelType`, `transmission` (CSV), `priceMin`, `priceMax`, `yearMin`, `kmMax`, `sort` (`newest` \| `price_asc` \| `price_desc` \| `km_asc`), `limit` (≤ 48, default 24), `offset` |
-| `GET` | `/public/vehicles/:id` | `200` detail: summary + `description` + `photos[]` (`{ url, category }`, in display order) |
-| `GET` | `/public/filters` | `200` `{ makes[{ id, name, models[] }], bodyTypes, fuelTypes, transmissions, priceRange, yearRange }` built from current stock |
+| `GET` | `/public/vehicles` | `200` page of summaries: available cars first (with the requested `sort`), then cars sold in the last 90 days, newest sale first (`sort` does not reorder sold cars). Query: `makeId`, `modelId`, `bodyType`, `fuelType`, `transmission` (CSV), `priceMin`, `priceMax`, `yearMin`, `kmMax`, `sort` (`newest` \| `price_asc` \| `price_desc` \| `km_asc`), `limit` (≤ 48, default 24), `offset` |
+| `GET` | `/public/vehicles/:id` | `200` detail: summary + `description` + `photos[]` (`{ url, category }`, in display order). A car sold in the last 90 days returns normally with `status: "sold"`; dropped, removed, older-sold and unknown ids are `404` |
+| `GET` | `/public/filters` | `200` `{ makes[{ id, name, models[] }], bodyTypes, fuelTypes, transmissions, priceRange, yearRange }` built from available stock (sold cars excluded) |
 | `POST` | `/public/test-drive-requests` | `201` new lead, `200` repeat on an active lead → `{ outcome, vehicleAvailable, showroom }` |
+| `POST` | `/public/preference-requests` | `201` → `{ showroom }`, whether a lead was created or merged |
 | `POST` | `/public/events` | `204` always. Website analytics beacon (ADR-0016), see below |
 
-Summary fields: `id, make, model, variant, bodyType, year, fuelType, transmission, kmDriven, previousOwners, colour, listedPrice` (rupees or `null` → show "Price on request"), `coverImageUrl`. Photo URLs are signed for 24 hours; GET responses carry `Cache-Control: s-maxage=300`.
+Summary fields: `id, make, model, variant, bodyType, year, fuelType, transmission, kmDriven, previousOwners, colour, listedPrice` (rupees or `null` → show "Price on request"), `coverImageUrl`, `status` (`"available"` \| `"sold"`). A `sold` car is shown for 90 days after its sale (sale date, else last update) for social proof: same fields, no extra data; the site should disable booking for it. Photo URLs are signed for 24 hours; GET responses carry `Cache-Control: s-maxage=300`.
 
 All `/public` responses send `Cross-Origin-Resource-Policy: cross-origin` (staff routes keep helmet's `same-origin`).
 
@@ -221,10 +222,28 @@ Test-drive body: `{ vehicleId, fullName, phone, fax?, attribution? }`. The phone
 - Creates a `website` lead, unassigned, in the vehicle's showroom, attributed to the **Website** system user, and notifies every admin (`website_lead`). The vehicle flips `open` → `linked`.
 - An existing contact with that phone is reused and **never renamed**; a different name is kept in the lead notes.
 - An active lead for the same phone + vehicle gets a note appended instead of a duplicate (`200`, `outcome: "updated"`); its assignee (or every admin) is notified.
-- If the car sold meanwhile, the lead is still created without the vehicle and `vehicleAvailable` is `false`.
+- If the car sold meanwhile (including a car still visible as `status: "sold"`), the lead is still created without the vehicle and `vehicleAvailable` is `false`.
 - `showroom` (`name, address, city, phone, openingHours, googleMapsUrl`) is returned **only here**; no public GET exposes the address.
 - Rate limits: 5 requests per IP per hour, and 3 per phone + vehicle per day → `429 RATE_LIMITED`. Invalid phone → `422 INVALID_PHONE`.
 - `attribution` (optional; older clients omit it): `{ visitorId, sessionId, firstTouch, lastTouch }` (uuids + touches as below). The server classifies each touch. On a **new** lead it stores `lead_attribution`, and a Meta last touch (`instagram_ads`, `instagram_organic`, `facebook_ads`, `facebook_organic`) makes the lead source `instagram` / `facebook` instead of `website`. A repeat request stores nothing new.
+
+Preference body: `{ fullName, phone, fax?, attribution?, budgetMax?, bodyTypes?, fuelTypes?, transmissions?, make?, model?, referenceVehicleId? }`. `fullName`, `phone`, `fax` and `attribution` behave as on test-drive requests. Body limit 10 KB. No car is needed: this is the "tell us what you want" form.
+
+| Field | Rule |
+|-------|------|
+| `budgetMax` | Rupees, number, 50 000 to 10 000 000 |
+| `bodyTypes` | Max 5 of `hatchback, sedan, suv, muv, mpv, crossover, coupe, convertible, sports, pick-up` |
+| `fuelTypes` | Max 5 of `petrol, diesel, cng, electric, hybrid` |
+| `transmissions` | Max 5 of `manual, automatic, amt, cvt, dct` |
+| `make`, `model` | Trimmed, max 60 chars; matched to the catalog case-insensitively (a model only under its make); unmatched text stays in the notes |
+| `referenceVehicleId` | uuid of a car the visitor liked; named in the notes, never linked |
+
+- Creates a car-less `website` lead (`instagram` / `facebook` for a Meta last touch), unassigned, with the preferences (budget, body, fuel, transmission, catalog make/model) filled in and a note, and notifies every admin (`website_lead`).
+- If the contact already has a `new` web lead with no car (source `website` / `instagram` / `facebook`), it is merged into instead, **add-only**: picks are added to the lists, budget and make/model fill only empty fields, and a note is appended. Nothing staff recorded is overwritten. Other leads are never touched.
+- The answer is the same `201 { showroom }` either way, with no lead id, so the endpoint never reveals whether a phone number is already a customer.
+- `make` / `model` accept letters, numbers, spaces and `. & ' -` only (else `422`); unmatched text goes into the note.
+- An existing contact is reused and never renamed. `showroom` is returned as on test-drive requests. A filled `fax` gets a fake `201 { outcome: "created", showroom: null }`.
+- Errors: `422 VALIDATION_ERROR` (unknown enum value, budget out of range, more than 5 choices, bad uuid), `422 INVALID_PHONE`, `429 RATE_LIMITED` (5 per IP per hour, 3 per phone per day, counted separately from test-drive limits).
 
 **Analytics events** (`POST /public/events`). The site posts JSON with `Content-Type: text/plain` through `navigator.sendBeacon` (no CORS preflight); `application/json` works too. Body limit 16 KB.
 
@@ -239,13 +258,15 @@ Test-drive body: `{ vehicleId, fullName, phone, fax?, attribution? }`. The phone
   },
   events: [{                                 // 1..20
     type: "page_view" | "car_view" | "gallery_open" | "filter_apply" | "test_drive_open"
-        | "whatsapp_click" | "call_click" | "directions_click",
+        | "whatsapp_click" | "call_click" | "directions_click"
+        | "preference_open" | "preference_contact_submit" | "preference_details_submit",
     at: ISO time, path: string (≤ 300), vehicleId?: uuid,
     props?: { [key]: string | number | boolean | null }   // ≤ 12 keys
   }]
 }
 ```
 
+- `preference_open` carries `props.source` (where the form was opened from). The three `preference_*` types are allowed by `web_events_type_check` from migration `public_sold_and_preference_lead`.
 - Always `204`, even for invalid or oversized bodies: nothing is reported back. Bot and blank user agents are dropped.
 - The channel is classified server-side: `instagram_ads | instagram_organic | facebook_ads | facebook_organic | google_ads | google_organic | whatsapp | direct | referral | other`. UTM tags win (`utm_medium` containing `paid`, or `cpc`/`ppc`/`cpm`/`display` → ads); without them a `gclid` → `google_ads`, then the in-app browser or referrer names the network; nothing at all → `direct`.
 - A session keeps the touch of its first batch. At most 500 events per session per hour are stored; event times are clamped to the last 24 hours. Events are kept 13 months.
