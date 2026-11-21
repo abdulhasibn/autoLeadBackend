@@ -35,7 +35,6 @@ import { join } from 'node:path';
 
 import type { Json, TablesInsert } from '../src/infrastructure/supabase/database.types';
 import { createRandom, roundTo } from './lib/random';
-import { buildFinanceSeed, type FinanceSeedResult } from './lib/seed-finance';
 import { check, type Db, run, serviceRoleClient } from './lib/supabase';
 
 const SHOWROOM_ID = 'b0000000-0000-4000-8000-000000000001';
@@ -166,7 +165,7 @@ interface VehicleRow {
   deleted_at: string | null;
 }
 
-/** Plaintext listed price, plus the sealed finance deal merged in by seedFinance(). */
+/** Plaintext listed price. */
 interface FinancialsRow {
   vehicle_id: string;
   listed_price: number | null;
@@ -2055,46 +2054,6 @@ function seedFollowUps(): void {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Buyer activity (encrypted finance seeding arrives with finance phase 5)
-// ---------------------------------------------------------------------------
-
-async function seedFinance(): Promise<FinanceSeedResult> {
-  const result = await buildFinanceSeed({
-    cars: vehicles.map((vehicle) => ({
-      id: vehicle.id,
-      registration: vehicle.row.registration_number,
-      createdAt: vehicle.created,
-      listedPrice: vehicle.listed,
-      deleted: vehicle.deleted,
-      soldAt: vehicle.status === 'sold' ? (vehicle.soldAt ?? null) : null,
-      soldLeadId: vehicle.soldLeadId,
-      leadIds: leads.filter((l) => l.vehicleId === vehicle.id && !l.deleted).map((l) => l.id),
-    })),
-    adminId: adminId(),
-    showroomId: SHOWROOM_ID,
-    start: START,
-    now: NOW,
-    financeKey: process.env.SEED_FINANCE_KEY?.trim() || undefined,
-  });
-  // Merge each car's sealed deal into its vehicle_financials row.
-  const byVehicle = new Map(rows.vehicle_financials.map((f) => [f.vehicle_id, f]));
-  for (const [vehicleId, deal] of result.deals) {
-    const row = byVehicle.get(vehicleId);
-    if (row === undefined) {
-      rows.vehicle_financials.push({
-        vehicle_id: vehicleId,
-        listed_price: null,
-        updated_at: iso(NOW),
-        ...deal,
-      });
-    } else {
-      Object.assign(row, deal);
-    }
-  }
-  return result;
-}
-
 function seedBuyerActivity(): void {
   for (const buyer of buyers) {
     const seen = vehicles.filter(
@@ -2383,10 +2342,7 @@ async function main(): Promise<void> {
   seedFollowUps();
   seedBuyerActivity();
   finaliseRows();
-  console.log('Sealing finance data…');
-  const finance = await seedFinance();
   printSummary();
-  for (const line of finance.summary) console.log(`  ${line}`);
   if (DRY_RUN) return;
 
   console.log('Writing rows…');
@@ -2410,10 +2366,6 @@ async function main(): Promise<void> {
     db.from('lead_status_history').insert(b),
   );
   await insert('audit_logs', rows.audit_logs, (b) => db.from('audit_logs').insert(b));
-  await insert('finance_vault', [finance.vault], (b) => db.from('finance_vault').insert(b));
-  await insert('finance_tags', finance.tags, (b) => db.from('finance_tags').insert(b));
-  await insert('finance_entries', finance.entries, (b) => db.from('finance_entries').insert(b));
-  await insert('vehicle_quotes', finance.quotes, (b) => db.from('vehicle_quotes').insert(b));
   for (const vehicle of vehicles.filter((v) => v.soldLeadId !== null)) {
     check(
       await db.from('vehicles').update({ sold_lead_id: vehicle.soldLeadId }).eq('id', vehicle.id),
@@ -2436,16 +2388,7 @@ async function main(): Promise<void> {
   );
 
   console.log(`Done. Log in as admin@example.com / ${PASSWORD} (every seeded login uses it).`);
-  console.log(
-    `Finance is set up (test-only keys). Finance key: ${finance.financeKey}` +
-      (finance.financeKeyGenerated
-        ? ' (generated; set SEED_FINANCE_KEY to fix it)'
-        : ' (from SEED_FINANCE_KEY)'),
-  );
-  console.log(`Recovery key: ${finance.recoveryKey}`);
-  if (finance.clientCarRegistration !== null) {
-    console.log(`The client's worked example is car ${finance.clientCarRegistration}.`);
-  }
+  console.log('Finance vault not seeded — open /finance to set it up.');
 }
 
 run(main);
