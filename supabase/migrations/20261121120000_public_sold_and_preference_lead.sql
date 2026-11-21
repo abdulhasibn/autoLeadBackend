@@ -1,10 +1,11 @@
 -- Public site: recently sold cars + "tell us what you want" preference lead.
 --
--- 1. public_vehicle_list also lists cars sold in the last 90 days, tagged with
---    public_status ('available' | 'sold') and sold_on. Two columns appended, so
---    the view is replaced in place (grants and security_invoker are kept).
---    Sold cars expose no more than available ones: same columns, same
---    listed_price, no sold_lead_id.
+-- 1. public_vehicle_list gains public_status ('available' | 'sold') and sold_on,
+--    appended so the view is replaced in place (grants and security_invoker
+--    kept). Rows are unchanged here; 20261121120200_public_sold_window widens
+--    the filter to recently sold cars once the backend that reads
+--    public_status is live. Sold cars will expose no more than available ones:
+--    same columns, same listed_price, no sold_lead_id.
 -- 2. submit_public_preference_lead: a buyer leaves a contact plus optional
 --    preferences (budget, body, fuel, transmission, make/model, a reference car).
 --    Same rate limiting, contact find-or-create and attribution as
@@ -57,14 +58,11 @@ join public.variants va on va.id = v.variant_id
 join public.models mo on mo.id = va.model_id
 join public.makes mk on mk.id = mo.make_id
 left join public.vehicle_financials f on f.vehicle_id = v.id
+-- Same rows as before on purpose: the backend live on prod does not filter on
+-- public_status, so sold cars only join the list in
+-- 20261121120200_public_sold_window, applied after the new backend ships.
 where v.deleted_at is null
-  and (
-    v.status in ('open', 'linked')
-    or (
-      v.status = 'sold'
-      and coalesce(f.sold_on, v.updated_at::date) >= current_date - 90
-    )
-  );
+  and v.status in ('open', 'linked');
 
 revoke all on public.public_vehicle_list from anon, authenticated;
 grant select on public.public_vehicle_list to service_role;
