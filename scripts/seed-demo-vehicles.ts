@@ -19,6 +19,7 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { TablesInsert } from '../src/infrastructure/supabase/database.types';
+import { rpcArgs } from '../src/infrastructure/supabase/rpc-args';
 import { createRandom, roundTo } from './lib/random';
 import { check, type Db, run, serviceRoleClient } from './lib/supabase';
 
@@ -373,33 +374,36 @@ async function seedVehicle(
   const status = dropped ? 'dropped' : 'open';
   const insuranceUntil = new Date(now.getTime() + between(-30, 330) * 86_400_000);
   check(
-    await db.rpc('save_vehicle', {
-      p_id: vehicleId,
-      p_showroom_id: SHOWROOM_ID,
-      p_owner_id: ownerId,
-      p_variant_id: variant.id,
-      p_year: year,
-      p_registration_number: registrationNumber(used),
-      p_fuel_type: variantFuel(variant.fuel_type),
-      p_transmission: variantTransmission(variant.transmission),
-      p_km_driven: roundTo(Math.max(3000, age * between(7000, 14000)), 500),
-      p_num_previous_owners: age <= 3 ? 1 : between(1, 3),
-      p_colour: pick(COLOURS),
-      p_insurance_valid_until: insuranceUntil.toISOString().slice(0, 10),
-      p_rc_status: loanActive ? 'hypothecation' : 'clear',
-      p_service_history: pick(['full', 'full', 'partial', 'unknown']),
-      p_accident_history: rand() < 0.1,
-      p_loan_status: loanActive ? 'active' : 'clear',
-      p_location: pick(LOCATIONS),
-      p_description: `${pick(HIGHLIGHTS)}. ${pick(HIGHLIGHTS)}.`,
-      p_status: status,
-      p_acquisition_type: acquisition,
-      p_submitted_by: actorId,
-      p_deleted_at: null,
-      p_actor_id: actorId,
-      p_reason: dropped ? pick(DROP_REASONS) : null,
-      p_sold_lead_id: null,
-    }),
+    await db.rpc(
+      'save_vehicle',
+      rpcArgs<'save_vehicle'>({
+        p_id: vehicleId,
+        p_showroom_id: SHOWROOM_ID,
+        p_owner_id: ownerId,
+        p_variant_id: variant.id,
+        p_year: year,
+        p_registration_number: registrationNumber(used),
+        p_fuel_type: variantFuel(variant.fuel_type),
+        p_transmission: variantTransmission(variant.transmission),
+        p_km_driven: roundTo(Math.max(3000, age * between(7000, 14000)), 500),
+        p_num_previous_owners: age <= 3 ? 1 : between(1, 3),
+        p_colour: pick(COLOURS),
+        p_insurance_valid_until: insuranceUntil.toISOString().slice(0, 10),
+        p_rc_status: loanActive ? 'hypothecation' : 'clear',
+        p_service_history: pick(['full', 'full', 'partial', 'unknown']),
+        p_accident_history: rand() < 0.1,
+        p_loan_status: loanActive ? 'active' : 'clear',
+        p_location: pick(LOCATIONS),
+        p_description: `${pick(HIGHLIGHTS)}. ${pick(HIGHLIGHTS)}.`,
+        p_status: status,
+        p_acquisition_type: acquisition,
+        p_submitted_by: actorId,
+        p_deleted_at: null,
+        p_actor_id: actorId,
+        p_reason: dropped ? pick(DROP_REASONS) : null,
+        p_sold_lead_id: null,
+      }),
+    ),
     'save vehicle',
   );
 
