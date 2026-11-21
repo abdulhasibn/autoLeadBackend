@@ -2,6 +2,7 @@ import cors from 'cors';
 import express, { Router } from 'express';
 
 import type { PublicVehiclesController } from './controllers/public-vehicles.controller';
+import type { SubmitPreferenceController } from './controllers/submit-preference.controller';
 import type { SubmitTestDriveController } from './controllers/submit-test-drive.controller';
 
 // Public bodies are a name and a phone number; anything bigger is abuse.
@@ -12,6 +13,7 @@ export interface MarketplaceRouterDeps {
   readonly allowedOrigins: readonly string[];
   readonly publicVehiclesController: PublicVehiclesController;
   readonly submitTestDriveController: SubmitTestDriveController;
+  readonly submitPreferenceController: SubmitPreferenceController;
 }
 
 /**
@@ -30,6 +32,11 @@ export function createMarketplaceRouter(deps: MarketplaceRouterDeps): Router {
     '/test-drive-requests',
     express.json({ limit: PUBLIC_JSON_BODY_LIMIT }),
     deps.submitTestDriveController.handle(),
+  );
+  router.post(
+    '/preference-requests',
+    express.json({ limit: PUBLIC_JSON_BODY_LIMIT }),
+    deps.submitPreferenceController.handle(),
   );
 
   return router;

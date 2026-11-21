@@ -1607,6 +1607,8 @@ export type Database = {
           model_id: string | null;
           model_name: string | null;
           num_previous_owners: number | null;
+          public_status: string | null;
+          sold_on: string | null;
           transmission: string | null;
           variant_name: string | null;
           year: number | null;
@@ -1885,6 +1887,22 @@ export type Database = {
           p_task_type: string;
         };
         Returns: undefined;
+      };
+      submit_public_preference_lead: {
+        Args: {
+          p_attribution?: Json;
+          p_body_types?: string[];
+          p_budget_max?: number;
+          p_full_name: string;
+          p_fuel_types?: string[];
+          p_ip_hash: string;
+          p_make?: string;
+          p_model?: string;
+          p_phone: string;
+          p_reference_vehicle_id?: string;
+          p_transmissions?: string[];
+        };
+        Returns: Json;
       };
       submit_public_test_drive: {
         Args: {

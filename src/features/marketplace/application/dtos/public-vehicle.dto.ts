@@ -14,6 +14,7 @@ export interface PublicVehicleSummaryDto {
   readonly colour: string | null;
   readonly listedPrice: number | null;
   readonly coverImageUrl: string | null;
+  readonly status: 'available' | 'sold';
 }
 
 export interface PublicVehiclePhotoDto {
@@ -61,5 +62,6 @@ export function toPublicVehicleSummary(
     colour: vehicle.colour,
     listedPrice: vehicle.listedPrice,
     coverImageUrl,
+    status: vehicle.status,
   };
 }

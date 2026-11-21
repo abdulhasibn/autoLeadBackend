@@ -15,6 +15,10 @@ export const WEB_EVENT_TYPES = [
   'whatsapp_click',
   'call_click',
   'directions_click',
+  // Website "tell us what you want" flow; needs the web_events_type_check CHECK widened.
+  'preference_open',
+  'preference_contact_submit',
+  'preference_details_submit',
 ] as const;
 
 export type WebEventType = (typeof WEB_EVENT_TYPES)[number];

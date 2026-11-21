@@ -74,6 +74,14 @@ describe('ingestEventsBodySchema', () => {
     expect(ingestEventsBodySchema.safeParse(batch()).success).toBe(true);
   });
 
+  it.each(['preference_open', 'preference_contact_submit', 'preference_details_submit'])(
+    'accepts the %s event',
+    (type) => {
+      const events = [{ ...event, type, props: { source: 'hero' } }];
+      expect(ingestEventsBodySchema.safeParse(batch({ events })).success).toBe(true);
+    },
+  );
+
   it.each([
     ['an empty batch', batch({ events: [] })],
     ['more than 20 events', batch({ events: Array.from({ length: 21 }, () => event) })],

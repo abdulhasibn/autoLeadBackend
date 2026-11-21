@@ -25,6 +25,7 @@ const SUMMARY_KEYS = [
   'make',
   'model',
   'previousOwners',
+  'status',
   'transmission',
   'variant',
   'year',
@@ -103,6 +104,18 @@ describe('GetPublicVehicleUseCase', () => {
 
     await expect(useCase.execute(VEHICLE_ID)).rejects.toBeInstanceOf(NotFoundError);
     expect(signer.calls).toEqual([]);
+  });
+
+  it('returns a recently sold car with status sold', async () => {
+    const useCase = new GetPublicVehicleUseCase(
+      new FakePublicVehicleQueries([publicVehicle({ status: 'sold', soldOn: '2026-11-01' })]),
+      new FakeSigner(),
+    );
+
+    const detail = await useCase.execute(VEHICLE_ID);
+
+    expect(detail.status).toBe('sold');
+    expect(detail).not.toHaveProperty('soldOn');
   });
 });
 

@@ -216,6 +216,143 @@
           }
         },
         {
+          "name": "Submit Preference Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 or 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Asha Rao\",\n  \"phone\": \"98765 43210\",\n  \"budgetMax\": 1500000,\n  \"bodyTypes\": [\n    \"suv\",\n    \"hatchback\"\n  ],\n  \"fuelTypes\": [\n    \"petrol\"\n  ],\n  \"transmissions\": [\n    \"automatic\"\n  ],\n  \"make\": \"Hyundai\",\n  \"model\": \"Creta\",\n  \"referenceVehicleId\": \"{{vehicleId}}\",\n  \"attribution\": {\n    \"visitorId\": \"{{visitorId}}\",\n    \"sessionId\": \"{{webSessionId}}\",\n    \"firstTouch\": {\n      \"hasFbclid\": false,\n      \"hasGclid\": false,\n      \"referrer\": \"https://www.google.com\",\n      \"landingPath\": \"/\",\n      \"inAppBrowser\": null\n    },\n    \"lastTouch\": {\n      \"utmSource\": \"instagram\",\n      \"utmMedium\": \"paid_social\",\n      \"utmCampaign\": \"diwali\",\n      \"utmContent\": \"creta-reel\",\n      \"utmTerm\": \"instagram_reels\",\n      \"hasFbclid\": true,\n      \"hasGclid\": false,\n      \"landingPath\": \"/cars/{{vehicleId}}\",\n      \"inAppBrowser\": \"instagram\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/public/preference-requests",
+            "description": "**Story:** A website visitor who has not picked a car tells the showroom what they are looking for, so a salesperson can call them back with matches.\n\nPOST /public/preference-requests — a visitor leaves a contact plus what they are looking for; no car needed. `201` new lead, `200` merged into their open web lead → `{ outcome, showroom }`.\n\nAuth: none (anonymous, CORS limited to the site origins). Body limit 10 KB.\n\nBody: `fullName` (required, 2–80 letters), `phone` (required, Indian mobile in any common shape), `fax` (honeypot, leave empty; any value gets a fake `201` and nothing is recorded), `attribution` (optional, as on test-drive requests), `budgetMax` (optional, rupees, 50000–10000000), `bodyTypes` (optional, max 5 of hatchback, sedan, suv, muv, mpv, crossover, coupe, convertible, sports, pick-up), `fuelTypes` (optional, max 5 of petrol, diesel, cng, electric, hybrid), `transmissions` (optional, max 5 of manual, automatic, amt, cvt, dct), `make` / `model` (optional, ≤ 60 chars, matched to the catalog case-insensitively), `referenceVehicleId` (optional uuid; a car they liked, mentioned in the lead notes only).\n\nThe lead is a car-less `website` lead (source `instagram` / `facebook` for a Meta last touch). A contact's most recent open web lead with no car (status new, contacted, interested, follow_up) is merged into instead of duplicated. `showroom` is returned here, as on test-drive requests.\n\nErrors: `422 VALIDATION_ERROR`; `422 INVALID_PHONE`; `429 RATE_LIMITED` (5 per IP per hour, 3 per phone per day)."
+          },
+          "response": [
+            {
+              "name": "201 Created — new lead",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fullName\": \"Asha Rao\",\n  \"phone\": \"98765 43210\",\n  \"budgetMax\": 1500000,\n  \"bodyTypes\": [\n    \"suv\",\n    \"hatchback\"\n  ],\n  \"fuelTypes\": [\n    \"petrol\"\n  ],\n  \"transmissions\": [\n    \"automatic\"\n  ],\n  \"make\": \"Hyundai\",\n  \"model\": \"Creta\",\n  \"referenceVehicleId\": \"{{vehicleId}}\",\n  \"attribution\": {\n    \"visitorId\": \"{{visitorId}}\",\n    \"sessionId\": \"{{webSessionId}}\",\n    \"firstTouch\": {\n      \"hasFbclid\": false,\n      \"hasGclid\": false,\n      \"referrer\": \"https://www.google.com\",\n      \"landingPath\": \"/\",\n      \"inAppBrowser\": null\n    },\n    \"lastTouch\": {\n      \"utmSource\": \"instagram\",\n      \"utmMedium\": \"paid_social\",\n      \"utmCampaign\": \"diwali\",\n      \"utmContent\": \"creta-reel\",\n      \"utmTerm\": \"instagram_reels\",\n      \"hasFbclid\": true,\n      \"hasGclid\": false,\n      \"landingPath\": \"/cars/{{vehicleId}}\",\n      \"inAppBrowser\": \"instagram\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/public/preference-requests",
+                "description": "**Story:** A website visitor who has not picked a car tells the showroom what they are looking for, so a salesperson can call them back with matches.\n\nPOST /public/preference-requests — a visitor leaves a contact plus what they are looking for; no car needed. `201` new lead, `200` merged into their open web lead → `{ outcome, showroom }`.\n\nAuth: none (anonymous, CORS limited to the site origins). Body limit 10 KB.\n\nBody: `fullName` (required, 2–80 letters), `phone` (required, Indian mobile in any common shape), `fax` (honeypot, leave empty; any value gets a fake `201` and nothing is recorded), `attribution` (optional, as on test-drive requests), `budgetMax` (optional, rupees, 50000–10000000), `bodyTypes` (optional, max 5 of hatchback, sedan, suv, muv, mpv, crossover, coupe, convertible, sports, pick-up), `fuelTypes` (optional, max 5 of petrol, diesel, cng, electric, hybrid), `transmissions` (optional, max 5 of manual, automatic, amt, cvt, dct), `make` / `model` (optional, ≤ 60 chars, matched to the catalog case-insensitively), `referenceVehicleId` (optional uuid; a car they liked, mentioned in the lead notes only).\n\nThe lead is a car-less `website` lead (source `instagram` / `facebook` for a Meta last touch). A contact's most recent open web lead with no car (status new, contacted, interested, follow_up) is merged into instead of duplicated. `showroom` is returned here, as on test-drive requests.\n\nErrors: `422 VALIDATION_ERROR`; `422 INVALID_PHONE`; `429 RATE_LIMITED` (5 per IP per hour, 3 per phone per day)."
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"outcome\": \"created\",\n  \"showroom\": {\n    \"name\": \"Wheels Experts\",\n    \"address\": \"100 Feet Road\",\n    \"city\": \"Bengaluru\",\n    \"phone\": \"+918888000000\",\n    \"openingHours\": null,\n    \"googleMapsUrl\": null\n  }\n}"
+            },
+            {
+              "name": "200 OK — merged into open lead",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fullName\": \"Asha Rao\",\n  \"phone\": \"98765 43210\",\n  \"budgetMax\": 1500000,\n  \"bodyTypes\": [\n    \"suv\",\n    \"hatchback\"\n  ],\n  \"fuelTypes\": [\n    \"petrol\"\n  ],\n  \"transmissions\": [\n    \"automatic\"\n  ],\n  \"make\": \"Hyundai\",\n  \"model\": \"Creta\",\n  \"referenceVehicleId\": \"{{vehicleId}}\",\n  \"attribution\": {\n    \"visitorId\": \"{{visitorId}}\",\n    \"sessionId\": \"{{webSessionId}}\",\n    \"firstTouch\": {\n      \"hasFbclid\": false,\n      \"hasGclid\": false,\n      \"referrer\": \"https://www.google.com\",\n      \"landingPath\": \"/\",\n      \"inAppBrowser\": null\n    },\n    \"lastTouch\": {\n      \"utmSource\": \"instagram\",\n      \"utmMedium\": \"paid_social\",\n      \"utmCampaign\": \"diwali\",\n      \"utmContent\": \"creta-reel\",\n      \"utmTerm\": \"instagram_reels\",\n      \"hasFbclid\": true,\n      \"hasGclid\": false,\n      \"landingPath\": \"/cars/{{vehicleId}}\",\n      \"inAppBrowser\": \"instagram\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/public/preference-requests",
+                "description": "**Story:** A website visitor who has not picked a car tells the showroom what they are looking for, so a salesperson can call them back with matches.\n\nPOST /public/preference-requests — a visitor leaves a contact plus what they are looking for; no car needed. `201` new lead, `200` merged into their open web lead → `{ outcome, showroom }`.\n\nAuth: none (anonymous, CORS limited to the site origins). Body limit 10 KB.\n\nBody: `fullName` (required, 2–80 letters), `phone` (required, Indian mobile in any common shape), `fax` (honeypot, leave empty; any value gets a fake `201` and nothing is recorded), `attribution` (optional, as on test-drive requests), `budgetMax` (optional, rupees, 50000–10000000), `bodyTypes` (optional, max 5 of hatchback, sedan, suv, muv, mpv, crossover, coupe, convertible, sports, pick-up), `fuelTypes` (optional, max 5 of petrol, diesel, cng, electric, hybrid), `transmissions` (optional, max 5 of manual, automatic, amt, cvt, dct), `make` / `model` (optional, ≤ 60 chars, matched to the catalog case-insensitively), `referenceVehicleId` (optional uuid; a car they liked, mentioned in the lead notes only).\n\nThe lead is a car-less `website` lead (source `instagram` / `facebook` for a Meta last touch). A contact's most recent open web lead with no car (status new, contacted, interested, follow_up) is merged into instead of duplicated. `showroom` is returned here, as on test-drive requests.\n\nErrors: `422 VALIDATION_ERROR`; `422 INVALID_PHONE`; `429 RATE_LIMITED` (5 per IP per hour, 3 per phone per day)."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"outcome\": \"updated\",\n  \"showroom\": {\n    \"name\": \"Wheels Experts\",\n    \"address\": \"100 Feet Road\",\n    \"city\": \"Bengaluru\",\n    \"phone\": \"+918888000000\",\n    \"openingHours\": null,\n    \"googleMapsUrl\": null\n  }\n}"
+            },
+            {
+              "name": "422 — VALIDATION_ERROR",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fullName\": \"Asha Rao\",\n  \"phone\": \"98765 43210\",\n  \"budgetMax\": 1500000,\n  \"bodyTypes\": [\n    \"suv\",\n    \"hatchback\"\n  ],\n  \"fuelTypes\": [\n    \"petrol\"\n  ],\n  \"transmissions\": [\n    \"automatic\"\n  ],\n  \"make\": \"Hyundai\",\n  \"model\": \"Creta\",\n  \"referenceVehicleId\": \"{{vehicleId}}\",\n  \"attribution\": {\n    \"visitorId\": \"{{visitorId}}\",\n    \"sessionId\": \"{{webSessionId}}\",\n    \"firstTouch\": {\n      \"hasFbclid\": false,\n      \"hasGclid\": false,\n      \"referrer\": \"https://www.google.com\",\n      \"landingPath\": \"/\",\n      \"inAppBrowser\": null\n    },\n    \"lastTouch\": {\n      \"utmSource\": \"instagram\",\n      \"utmMedium\": \"paid_social\",\n      \"utmCampaign\": \"diwali\",\n      \"utmContent\": \"creta-reel\",\n      \"utmTerm\": \"instagram_reels\",\n      \"hasFbclid\": true,\n      \"hasGclid\": false,\n      \"landingPath\": \"/cars/{{vehicleId}}\",\n      \"inAppBrowser\": \"instagram\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": "{{baseUrl}}/public/preference-requests",
+                "description": "**Story:** A website visitor who has not picked a car tells the showroom what they are looking for, so a salesperson can call them back with matches.\n\nPOST /public/preference-requests — a visitor leaves a contact plus what they are looking for; no car needed. `201` new lead, `200` merged into their open web lead → `{ outcome, showroom }`.\n\nAuth: none (anonymous, CORS limited to the site origins). Body limit 10 KB.\n\nBody: `fullName` (required, 2–80 letters), `phone` (required, Indian mobile in any common shape), `fax` (honeypot, leave empty; any value gets a fake `201` and nothing is recorded), `attribution` (optional, as on test-drive requests), `budgetMax` (optional, rupees, 50000–10000000), `bodyTypes` (optional, max 5 of hatchback, sedan, suv, muv, mpv, crossover, coupe, convertible, sports, pick-up), `fuelTypes` (optional, max 5 of petrol, diesel, cng, electric, hybrid), `transmissions` (optional, max 5 of manual, automatic, amt, cvt, dct), `make` / `model` (optional, ≤ 60 chars, matched to the catalog case-insensitively), `referenceVehicleId` (optional uuid; a car they liked, mentioned in the lead notes only).\n\nThe lead is a car-less `website` lead (source `instagram` / `facebook` for a Meta last touch). A contact's most recent open web lead with no car (status new, contacted, interested, follow_up) is merged into instead of duplicated. `showroom` is returned here, as on test-drive requests.\n\nErrors: `422 VALIDATION_ERROR`; `422 INVALID_PHONE`; `429 RATE_LIMITED` (5 per IP per hour, 3 per phone per day)."
+              },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"budgetMax is too low\"\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "Send Analytics Events (beacon)",
           "event": [
             {
@@ -252,7 +389,7 @@
               }
             },
             "url": "{{baseUrl}}/public/events",
-            "description": "POST /public/events — always `204`, whatever happens (beacons never read the answer).\n\nThe site sends JSON with `Content-Type: text/plain` via `navigator.sendBeacon` so the request stays CORS-simple; `application/json` is accepted too. Body limit 16 KB.\n\nBody: `{ visitorId, sessionId, touch, events[1..20] }`. Event `type` ∈ `page_view | car_view | gallery_open | filter_apply | test_drive_open | whatsapp_click | call_click | directions_click`; `at` ISO time; `path` ≤ 300; `vehicleId?` uuid; `props?` ≤ 12 scalar values.\n\nDropped silently: bot / blank user agents, invalid bodies, events past 500 per session per hour. The channel is classified server-side; city comes from `x-vercel-ip-city`."
+            "description": "POST /public/events — always `204`, whatever happens (beacons never read the answer).\n\nThe site sends JSON with `Content-Type: text/plain` via `navigator.sendBeacon` so the request stays CORS-simple; `application/json` is accepted too. Body limit 16 KB.\n\nBody: `{ visitorId, sessionId, touch, events[1..20] }`. Event `type` ∈ `page_view | car_view | gallery_open | filter_apply | test_drive_open | whatsapp_click | call_click | directions_click | preference_open | preference_contact_submit | preference_details_submit`; `at` ISO time; `path` ≤ 300; `vehicleId?` uuid; `props?` ≤ 12 scalar values.\n\nDropped silently: bot / blank user agents, invalid bodies, events past 500 per session per hour. The channel is classified server-side; city comes from `x-vercel-ip-city`."
           }
         }
       ]

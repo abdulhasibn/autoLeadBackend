@@ -16,7 +16,7 @@ import type {
 // `public_vehicle_list` already limits rows to Listed, live vehicles and
 // columns to the public whitelist; never read `vehicles` or `vehicle_list` here.
 const COLUMNS =
-  'id, make_id, model_id, make_name, model_name, variant_name, body_types, year, fuel_type, transmission, km_driven, num_previous_owners, colour, description, listed_price';
+  'id, make_id, model_id, make_name, model_name, variant_name, body_types, year, fuel_type, transmission, km_driven, num_previous_owners, colour, description, listed_price, public_status, sold_on';
 
 type Row = Omit<Database['public']['Views']['public_vehicle_list']['Row'], 'created_at'>;
 
@@ -92,6 +92,15 @@ export class SupabasePublicVehicleQueries implements IPublicVehicleQueries {
       query = query.lte('km_driven', criteria.kmMax);
     }
 
+    // Available cars first ('available' < 'sold'). PostgREST cannot scope the
+    // requested sort to available rows, so sold rows are ordered by sold_on
+    // (newest sale first; available rows have a null sold_on and sort first
+    // within their group, so the requested sort below applies to them alone
+    // and only breaks sold_on ties among sold rows).
+    query = query
+      .order('public_status', { ascending: true })
+      .order('sold_on', { ascending: false, nullsFirst: true });
+
     switch (criteria.sort) {
       case 'price_asc':
         query = query.order('listed_price', { ascending: true, nullsFirst: false });
@@ -155,6 +164,7 @@ export class SupabasePublicVehicleQueries implements IPublicVehicleQueries {
     const { data, error } = await this.db
       .from('public_vehicle_list')
       .select(COLUMNS)
+      .eq('public_status', 'available')
       .limit(LIST_ALL_LIMIT);
 
     if (error !== null) {
@@ -197,6 +207,8 @@ function toReadModel(row: Row): PublicVehicleReadModel[] {
       colour: row.colour,
       description: row.description,
       listedPrice: row.listed_price === null ? null : Number(row.listed_price),
+      status: row.public_status === 'sold' ? 'sold' : 'available',
+      soldOn: row.sold_on,
     },
   ];
 }

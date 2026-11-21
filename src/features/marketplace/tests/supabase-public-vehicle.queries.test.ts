@@ -51,6 +51,8 @@ function viewRow(id: string): Record<string, unknown> {
     colour: null,
     description: null,
     listed_price: '1450000',
+    public_status: 'available',
+    sold_on: null,
   };
 }
 
@@ -89,6 +91,47 @@ describe('SupabasePublicVehicleQueries', () => {
     expect(calls).toContainEqual(['eq', 'front.category', 'front']);
     expect(calls).toContainEqual(['limit', 1, { referencedTable: 'front' }]);
     expect(calls).toContainEqual(['limit', 1, { referencedTable: 'first' }]);
+  });
+
+  it('orders available cars first, then sold cars by newest sale, then the requested sort', async () => {
+    const db = new RecordingClient({
+      data: [
+        { ...viewRow('a'), front: [], first: [] },
+        {
+          ...viewRow('b'),
+          public_status: 'sold',
+          sold_on: '2026-11-01',
+          front: [],
+          first: [],
+        },
+      ],
+      error: null,
+      count: 2,
+    });
+
+    const page = await new SupabasePublicVehicleQueries(db.client()).list(
+      { sort: 'price_asc' },
+      { limit: 24, offset: 0 },
+    );
+
+    expect(page.items.map((item) => [item.vehicle.status, item.vehicle.soldOn])).toEqual([
+      ['available', null],
+      ['sold', '2026-11-01'],
+    ]);
+    const orders = (db.requests[0]?.calls ?? [])
+      .filter(([method, column]) => method === 'order' && !String(column).includes('sort_order'))
+      .map(([, column]) => column)
+      .filter((column) => !['uploaded_at'].includes(String(column)));
+    expect(orders).toEqual(['public_status', 'sold_on', 'listed_price', 'created_at', 'id']);
+  });
+
+  it('lists only available cars for the filter options', async () => {
+    const db = new RecordingClient({ data: [viewRow('a')], error: null });
+
+    const all = await new SupabasePublicVehicleQueries(db.client()).listAll();
+
+    expect(all.map((vehicle) => vehicle.status)).toEqual(['available']);
+    expect(db.requests[0]?.calls).toContainEqual(['eq', 'public_status', 'available']);
   });
 
   it('loads a vehicle with its photos in one request', async () => {

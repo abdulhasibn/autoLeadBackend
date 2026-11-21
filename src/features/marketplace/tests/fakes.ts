@@ -13,6 +13,11 @@ import type {
   PublicVehicleWithPhotos,
 } from '../domain/public-vehicle.queries';
 import type {
+  IPreferenceIntake,
+  PreferenceIntakeInput,
+  PreferenceIntakeResult,
+} from '../domain/preference-intake.port';
+import type {
   ITestDriveIntake,
   IVehicleLinkSync,
   TestDriveIntakeInput,
@@ -57,6 +62,8 @@ export function publicVehicle(
     colour: 'White',
     description: 'One owner, full service history',
     listedPrice: 1450000,
+    status: 'available',
+    soldOn: null,
     ...overrides,
   };
 }
@@ -123,6 +130,33 @@ export class FakeTestDriveIntake implements ITestDriveIntake {
       outcome: 'created',
       vehicleAvailable: true,
       linkedVehicleId: input.vehicleId as VehicleId,
+      showroom: {
+        name: 'Wheels Experts',
+        address: '100 Feet Road',
+        city: 'Bengaluru',
+        phone: '+918888000000',
+        openingHours: null,
+        googleMapsUrl: null,
+      },
+      ...this.result,
+    };
+  }
+}
+
+export class FakePreferenceIntake implements IPreferenceIntake {
+  readonly submitted: PreferenceIntakeInput[] = [];
+  rateLimited = false;
+
+  constructor(private readonly result: Partial<PreferenceIntakeResult> = {}) {}
+
+  async submit(input: PreferenceIntakeInput): Promise<PreferenceIntakeResult> {
+    if (this.rateLimited) {
+      throw new PublicRateLimitedError();
+    }
+    this.submitted.push(input);
+    return {
+      leadId: 'lead-1',
+      outcome: 'created',
       showroom: {
         name: 'Wheels Experts',
         address: '100 Feet Road',

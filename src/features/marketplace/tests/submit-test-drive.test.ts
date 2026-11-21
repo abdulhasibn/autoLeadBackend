@@ -8,14 +8,17 @@ import type { Logger } from '../../../shared/logging/logger.port';
 import { GetPublicFilterOptionsUseCase } from '../application/use-cases/get-public-filter-options.use-case';
 import { GetPublicVehicleUseCase } from '../application/use-cases/get-public-vehicle.use-case';
 import { ListPublicVehiclesUseCase } from '../application/use-cases/list-public-vehicles.use-case';
+import { SubmitPreferenceUseCase } from '../application/use-cases/submit-preference.use-case';
 import { SubmitTestDriveUseCase } from '../application/use-cases/submit-test-drive.use-case';
 import { InvalidMobileError } from '../domain/errors/invalid-mobile.error';
 import { PublicRateLimitedError } from '../domain/errors/public-rate-limited.error';
 import { WEBSITE_SYSTEM_USER_ID } from '../domain/test-drive-intake.port';
 import { PublicVehiclesController } from '../presentation/controllers/public-vehicles.controller';
+import { SubmitPreferenceController } from '../presentation/controllers/submit-preference.controller';
 import { SubmitTestDriveController } from '../presentation/controllers/submit-test-drive.controller';
 import { createMarketplaceRouter } from '../presentation/marketplace.routes';
 import {
+  FakePreferenceIntake,
   FakePublicVehicleQueries,
   FakeSigner,
   FakeTestDriveIntake,
@@ -202,6 +205,10 @@ describe('marketplace routes', () => {
         ),
         submitTestDriveController: new SubmitTestDriveController(
           new SubmitTestDriveUseCase(intake, new FakeVehicleLinkSync(), new FakeTouchClassifier()),
+          'test-key',
+        ),
+        submitPreferenceController: new SubmitPreferenceController(
+          new SubmitPreferenceUseCase(new FakePreferenceIntake(), new FakeTouchClassifier()),
           'test-key',
         ),
       }),

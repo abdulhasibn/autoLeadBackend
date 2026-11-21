@@ -5,15 +5,18 @@ import type { ErrorMapper } from '../../presentation/http/errors/error-mapping';
 import { GetPublicFilterOptionsUseCase } from './application/use-cases/get-public-filter-options.use-case';
 import { GetPublicVehicleUseCase } from './application/use-cases/get-public-vehicle.use-case';
 import { ListPublicVehiclesUseCase } from './application/use-cases/list-public-vehicles.use-case';
+import { SubmitPreferenceUseCase } from './application/use-cases/submit-preference.use-case';
 import { SubmitTestDriveUseCase } from './application/use-cases/submit-test-drive.use-case';
 import { InvalidMobileError } from './domain/errors/invalid-mobile.error';
 import { PublicRateLimitedError } from './domain/errors/public-rate-limited.error';
 import type { IVehicleLinkSync } from './domain/test-drive-intake.port';
 import type { ITouchClassifier } from './domain/touch-classifier.port';
+import { SupabasePreferenceIntake } from './infrastructure/supabase-preference-intake';
 import { SupabasePublicMediaSigner } from './infrastructure/supabase-public-media-signer';
 import { SupabasePublicVehicleQueries } from './infrastructure/supabase-public-vehicle.queries';
 import { SupabaseTestDriveIntake } from './infrastructure/supabase-test-drive-intake';
 import { PublicVehiclesController } from './presentation/controllers/public-vehicles.controller';
+import { SubmitPreferenceController } from './presentation/controllers/submit-preference.controller';
 import { SubmitTestDriveController } from './presentation/controllers/submit-test-drive.controller';
 import { createMarketplaceRouter } from './presentation/marketplace.routes';
 
@@ -53,6 +56,10 @@ export function composeMarketplace(
         deps.vehicleLinkSync,
         deps.touchClassifier,
       ),
+      deps.ipHashKey,
+    ),
+    submitPreferenceController: new SubmitPreferenceController(
+      new SubmitPreferenceUseCase(new SupabasePreferenceIntake(infraClient), deps.touchClassifier),
       deps.ipHashKey,
     ),
   });

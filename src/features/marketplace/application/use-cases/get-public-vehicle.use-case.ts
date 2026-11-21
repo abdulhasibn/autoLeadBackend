@@ -9,7 +9,11 @@ export class GetPublicVehicleUseCase {
     private readonly signer: IPublicMediaSigner,
   ) {}
 
-  /** Sold, dropped and removed vehicles are indistinguishable from unknown ids. */
+  /**
+   * Available cars and cars sold within the public window (`status: 'sold'`)
+   * return normally. Dropped, removed, long-sold and unknown ids are
+   * indistinguishable: all 404.
+   */
   async execute(id: string): Promise<PublicVehicleDetailDto> {
     const found = await this.queries.get(id);
     if (found === null) {
