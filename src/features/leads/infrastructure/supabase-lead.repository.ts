@@ -5,6 +5,7 @@ import type { LeadId } from '../../../domain/shared/lead-id';
 import type { Phone } from '../../../domain/shared/phone.value-object';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
+import { rpcArgs } from '../../../infrastructure/supabase/rpc-args';
 import type { Contact } from '../domain/contact.entity';
 import type { ContactId } from '../domain/contact-id';
 import type { FollowUp, ScheduledFollowUp } from '../domain/follow-up.entity';
@@ -101,43 +102,46 @@ export class SupabaseLeadRepository implements ILeadRepository {
 
   async save(lead: Lead, write: LeadWrite): Promise<void> {
     const contact = write.contact ?? null;
-    const { error } = await this.db.rpc('save_lead', {
-      p_id: lead.id,
-      p_showroom_id: lead.showroomId,
-      p_vehicle_id: lead.vehicleId,
-      p_contact_id: contact === null ? lead.contactId : contact.id,
-      p_contact_full_name: contact === null ? null : contact.fullName,
-      p_contact_phone: contact === null ? null : contact.phone.value,
-      p_contact_email:
-        contact === null ? null : contact.email === null ? null : contact.email.value,
-      p_contact_created_by: contact === null ? null : contact.createdBy,
-      p_source: lead.source.value,
-      p_status: lead.status.value,
-      p_budget: lead.budget,
-      p_preferred_vehicle: lead.preferredVehicle,
-      p_purchase_timeline: lead.purchaseTimeline,
-      p_finance_required: lead.financeRequired,
-      p_current_vehicle: lead.currentVehicle,
-      p_trade_in_required: lead.tradeInRequired,
-      p_notes: lead.notes,
-      p_created_by: lead.createdBy,
-      p_deleted_at: lead.deletedAt === null ? null : lead.deletedAt.toISOString(),
-      p_write_history: lead.hasStatusChanged,
-      p_status_notes: write.statusNotes ?? null,
-      p_assigned_to: lead.assignedTo,
-      p_update_assignee: lead.hasAssigneeChanged,
-      p_actor_id: write.actorId,
-      p_preferred_make_id: lead.preferredCatalog.makeId,
-      p_preferred_model_id: lead.preferredCatalog.modelId,
-      p_preferred_variant_id: lead.preferredCatalog.variantId,
-      p_preferred_colours: [...lead.preference.colours],
-      p_preferred_fuel_types: [...lead.preference.fuelTypes],
-      p_preferred_transmissions: [...lead.preference.transmissions],
-      p_preferred_body_types: [...lead.preference.bodyTypes],
-      p_preferred_year_min: lead.preference.yearMin,
-      p_preferred_km_max: lead.preference.kmMax,
-      p_preferred_max_owners: lead.preference.maxOwners,
-    });
+    const { error } = await this.db.rpc(
+      'save_lead',
+      rpcArgs<'save_lead'>({
+        p_id: lead.id,
+        p_showroom_id: lead.showroomId,
+        p_vehicle_id: lead.vehicleId,
+        p_contact_id: contact === null ? lead.contactId : contact.id,
+        p_contact_full_name: contact === null ? null : contact.fullName,
+        p_contact_phone: contact === null ? null : contact.phone.value,
+        p_contact_email:
+          contact === null ? null : contact.email === null ? null : contact.email.value,
+        p_contact_created_by: contact === null ? null : contact.createdBy,
+        p_source: lead.source.value,
+        p_status: lead.status.value,
+        p_budget: lead.budget,
+        p_preferred_vehicle: lead.preferredVehicle,
+        p_purchase_timeline: lead.purchaseTimeline,
+        p_finance_required: lead.financeRequired,
+        p_current_vehicle: lead.currentVehicle,
+        p_trade_in_required: lead.tradeInRequired,
+        p_notes: lead.notes,
+        p_created_by: lead.createdBy,
+        p_deleted_at: lead.deletedAt === null ? null : lead.deletedAt.toISOString(),
+        p_write_history: lead.hasStatusChanged,
+        p_status_notes: write.statusNotes ?? null,
+        p_assigned_to: lead.assignedTo,
+        p_update_assignee: lead.hasAssigneeChanged,
+        p_actor_id: write.actorId,
+        p_preferred_make_id: lead.preferredCatalog.makeId,
+        p_preferred_model_id: lead.preferredCatalog.modelId,
+        p_preferred_variant_id: lead.preferredCatalog.variantId,
+        p_preferred_colours: [...lead.preference.colours],
+        p_preferred_fuel_types: [...lead.preference.fuelTypes],
+        p_preferred_transmissions: [...lead.preference.transmissions],
+        p_preferred_body_types: [...lead.preference.bodyTypes],
+        p_preferred_year_min: lead.preference.yearMin,
+        p_preferred_km_max: lead.preference.kmMax,
+        p_preferred_max_owners: lead.preference.maxOwners,
+      }),
+    );
 
     if (error !== null) {
       translateLeadWriteError(error, 'Failed to save lead');
@@ -145,17 +149,20 @@ export class SupabaseLeadRepository implements ILeadRepository {
   }
 
   async scheduleFollowUp(followUp: ScheduledFollowUp): Promise<void> {
-    const { error } = await this.db.rpc('schedule_follow_up', {
-      p_id: followUp.id,
-      p_lead_id: followUp.leadId,
-      p_assigned_to: followUp.assignedTo,
-      p_task_type: followUp.taskType.value,
-      p_scheduled_at: followUp.scheduledAt.toISOString(),
-      p_notes: followUp.notes,
-      p_created_by: followUp.createdBy,
-      p_notification_id: followUp.notificationId,
-      p_due_at: followUp.dueAt.toISOString(),
-    });
+    const { error } = await this.db.rpc(
+      'schedule_follow_up',
+      rpcArgs<'schedule_follow_up'>({
+        p_id: followUp.id,
+        p_lead_id: followUp.leadId,
+        p_assigned_to: followUp.assignedTo,
+        p_task_type: followUp.taskType.value,
+        p_scheduled_at: followUp.scheduledAt.toISOString(),
+        p_notes: followUp.notes,
+        p_created_by: followUp.createdBy,
+        p_notification_id: followUp.notificationId,
+        p_due_at: followUp.dueAt.toISOString(),
+      }),
+    );
 
     if (error !== null) {
       translateLeadWriteError(error, 'Failed to schedule follow-up');
@@ -199,26 +206,29 @@ export class SupabaseLeadRepository implements ILeadRepository {
       throw new Error('completeFollowUp needs a completed follow-up');
     }
 
-    const { error } = await this.db.rpc('complete_follow_up', {
-      p_id: followUp.id,
-      p_completed_by: completion.by,
-      p_completed_at: completion.at.toISOString(),
-      p_outcome: completion.outcome.value,
-      p_notes: completion.notes,
-      ...(next === null
-        ? {}
-        : {
-            p_next_id: next.id,
-            p_next_lead_id: next.leadId,
-            p_next_assigned_to: next.assignedTo,
-            p_next_task_type: next.taskType.value,
-            p_next_scheduled_at: next.scheduledAt.toISOString(),
-            p_next_notes: next.notes,
-            p_next_created_by: next.createdBy,
-            p_next_notification_id: next.notificationId,
-            p_next_due_at: next.dueAt.toISOString(),
-          }),
-    });
+    const { error } = await this.db.rpc(
+      'complete_follow_up',
+      rpcArgs<'complete_follow_up'>({
+        p_id: followUp.id,
+        p_completed_by: completion.by,
+        p_completed_at: completion.at.toISOString(),
+        p_outcome: completion.outcome.value,
+        p_notes: completion.notes,
+        ...(next === null
+          ? {}
+          : {
+              p_next_id: next.id,
+              p_next_lead_id: next.leadId,
+              p_next_assigned_to: next.assignedTo,
+              p_next_task_type: next.taskType.value,
+              p_next_scheduled_at: next.scheduledAt.toISOString(),
+              p_next_notes: next.notes,
+              p_next_created_by: next.createdBy,
+              p_next_notification_id: next.notificationId,
+              p_next_due_at: next.dueAt.toISOString(),
+            }),
+      }),
+    );
 
     if (error !== null) {
       translateFollowUpWriteError(error, 'Failed to complete follow-up');

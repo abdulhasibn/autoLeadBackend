@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
 import type { Database } from '../../../infrastructure/supabase/database.types';
+import { rpcArgs } from '../../../infrastructure/supabase/rpc-args';
 import type {
   DashboardRange,
   DashboardScope,
@@ -17,17 +18,20 @@ export class SupabaseDashboardQueries implements IDashboardQueries {
     scope: DashboardScope,
     range: DashboardRange,
   ): Promise<DashboardSummaryReadModel> {
-    const { data, error } = await this.db.rpc('dashboard_summary', {
-      p_showroom_id: scope.showroomId,
-      p_assignee_id: scope.assigneeId,
-      p_from: range.from.toISOString(),
-      p_now: range.now.toISOString(),
-      p_prev_from: range.previousFrom.toISOString(),
-      p_prev_until: range.previousUntil.toISOString(),
-      p_today_end: range.todayEnd.toISOString(),
-      p_aged_before: range.agedBefore.toISOString(),
-      p_list_limit: range.listLimit,
-    });
+    const { data, error } = await this.db.rpc(
+      'dashboard_summary',
+      rpcArgs<'dashboard_summary'>({
+        p_showroom_id: scope.showroomId,
+        p_assignee_id: scope.assigneeId,
+        p_from: range.from.toISOString(),
+        p_now: range.now.toISOString(),
+        p_prev_from: range.previousFrom.toISOString(),
+        p_prev_until: range.previousUntil.toISOString(),
+        p_today_end: range.todayEnd.toISOString(),
+        p_aged_before: range.agedBefore.toISOString(),
+        p_list_limit: range.listLimit,
+      }),
+    );
 
     if (error !== null) {
       throw new DatabaseUnavailableError(`Failed to load dashboard: ${error.message}`);

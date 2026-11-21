@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
 import type { UserId } from '../../../domain/shared/user-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
+import { rpcArgs } from '../../../infrastructure/supabase/rpc-args';
 import type { StaffRole } from '../domain/staff-role.value-object';
 import type { StaffUser } from '../domain/staff-user.entity';
 import type { IUserRepository } from '../domain/user.repository';
@@ -44,16 +45,19 @@ export class SupabaseUserRepository implements IUserRepository {
   }
 
   async save(user: StaffUser, grantedBy: UserId): Promise<void> {
-    const { error } = await this.db.rpc('save_staff_user', {
-      p_id: user.id,
-      p_full_name: user.fullName,
-      p_phone: user.phone.value,
-      p_email: user.email,
-      p_showroom_id: user.showroomId,
-      p_deleted_at: user.deletedAt === null ? null : user.deletedAt.toISOString(),
-      p_role_names: user.liveRoles.map((role) => role.name),
-      p_granted_by: grantedBy,
-    });
+    const { error } = await this.db.rpc(
+      'save_staff_user',
+      rpcArgs<'save_staff_user'>({
+        p_id: user.id,
+        p_full_name: user.fullName,
+        p_phone: user.phone.value,
+        p_email: user.email,
+        p_showroom_id: user.showroomId,
+        p_deleted_at: user.deletedAt === null ? null : user.deletedAt.toISOString(),
+        p_role_names: user.liveRoles.map((role) => role.name),
+        p_granted_by: grantedBy,
+      }),
+    );
 
     if (error !== null) {
       translateWriteError(error, 'Failed to save staff user');

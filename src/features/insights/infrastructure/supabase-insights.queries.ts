@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
 import type { ShowroomId } from '../../../domain/shared/showroom-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
+import { rpcArgs } from '../../../infrastructure/supabase/rpc-args';
 import type {
   DemandReadModel,
   IInsightsQueries,
@@ -35,14 +36,17 @@ export class SupabaseInsightsQueries implements IInsightsQueries {
     previous: InsightsRange,
     campaignLimit: number,
   ): Promise<TrafficReadModel> {
-    const { data, error } = await this.db.rpc('insights_traffic', {
-      p_showroom_id: showroomId,
-      p_from: current.from.toISOString(),
-      p_until: current.until.toISOString(),
-      p_prev_from: previous.from.toISOString(),
-      p_prev_until: previous.until.toISOString(),
-      p_campaign_limit: campaignLimit,
-    });
+    const { data, error } = await this.db.rpc(
+      'insights_traffic',
+      rpcArgs<'insights_traffic'>({
+        p_showroom_id: showroomId,
+        p_from: current.from.toISOString(),
+        p_until: current.until.toISOString(),
+        p_prev_from: previous.from.toISOString(),
+        p_prev_until: previous.until.toISOString(),
+        p_campaign_limit: campaignLimit,
+      }),
+    );
     if (error !== null) {
       throw new DatabaseUnavailableError(`Failed to load traffic insights: ${error.message}`);
     }
@@ -54,12 +58,15 @@ export class SupabaseInsightsQueries implements IInsightsQueries {
     range: InsightsRange,
     includeVehicleId: string | null,
   ): Promise<readonly VehicleStatsReadModel[]> {
-    const { data, error } = await this.db.rpc('insights_vehicle_stats', {
-      p_showroom_id: showroomId,
-      p_from: range.from.toISOString(),
-      p_until: range.until.toISOString(),
-      p_vehicle_id: includeVehicleId,
-    });
+    const { data, error } = await this.db.rpc(
+      'insights_vehicle_stats',
+      rpcArgs<'insights_vehicle_stats'>({
+        p_showroom_id: showroomId,
+        p_from: range.from.toISOString(),
+        p_until: range.until.toISOString(),
+        p_vehicle_id: includeVehicleId,
+      }),
+    );
     if (error !== null) {
       throw new DatabaseUnavailableError(`Failed to load vehicle insights: ${error.message}`);
     }
@@ -90,12 +97,15 @@ export class SupabaseInsightsQueries implements IInsightsQueries {
     range: InsightsRange,
     zeroResultLimit: number,
   ): Promise<DemandReadModel> {
-    const { data, error } = await this.db.rpc('insights_demand', {
-      p_showroom_id: showroomId,
-      p_from: range.from.toISOString(),
-      p_until: range.until.toISOString(),
-      p_top_limit: zeroResultLimit,
-    });
+    const { data, error } = await this.db.rpc(
+      'insights_demand',
+      rpcArgs<'insights_demand'>({
+        p_showroom_id: showroomId,
+        p_from: range.from.toISOString(),
+        p_until: range.until.toISOString(),
+        p_top_limit: zeroResultLimit,
+      }),
+    );
     if (error !== null) {
       throw new DatabaseUnavailableError(`Failed to load demand insights: ${error.message}`);
     }
