@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 import type { AppConfig } from '../../config/environment';
+import { addToSpan } from '../../shared/timing/request-spans';
 import type { Database } from './database.types';
 
 /**
@@ -16,6 +17,19 @@ export const STATELESS_AUTH_OPTIONS = {
 } as const;
 
 /**
+ * Adds the time of every service-role call to the request's `query` span, so
+ * the Server-Timing header shows how long a request waited on the database.
+ */
+export const timedFetch: typeof fetch = async (input, init) => {
+  const startedAt = performance.now();
+  try {
+    return await fetch(input, init);
+  } finally {
+    addToSpan('query', performance.now() - startedAt);
+  }
+};
+
+/**
  * The only file in the codebase that may call `createClient`.
  * Constructed once per process lifetime by the composition root and injected
  * into repositories — never imported directly by presentation/application/domain code.
@@ -25,6 +39,7 @@ export function createSupabaseInfraClient(
 ): SupabaseClient<Database> {
   return createClient<Database>(config.supabase.url, config.supabase.serviceRoleKey, {
     auth: STATELESS_AUTH_OPTIONS,
+    global: { fetch: timedFetch },
   });
 }
 

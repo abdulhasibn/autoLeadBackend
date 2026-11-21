@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatServerTimingHeader } from './request-spans';
+import { addToSpan, enterRequestSpans, formatServerTimingHeader } from './request-spans';
 
 describe('formatServerTimingHeader', () => {
   it('emits known spans in auth / policy / query / total order', () => {
@@ -16,5 +16,16 @@ describe('formatServerTimingHeader', () => {
 
   it('omits missing spans', () => {
     expect(formatServerTimingHeader({ total: 3 })).toBe('total;dur=3');
+  });
+});
+
+describe('addToSpan', () => {
+  it('sums repeated work into one span inside a request', () => {
+    const store = enterRequestSpans();
+
+    addToSpan('query', 10.4);
+    addToSpan('query', 5.2);
+
+    expect(store.spans.query).toBe(15);
   });
 });
