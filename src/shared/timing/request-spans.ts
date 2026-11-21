@@ -32,6 +32,19 @@ export async function measureSpan<T>(name: RequestSpanName, work: () => Promise<
   }
 }
 
+/**
+ * Adds `durationMs` to a span, for work that happens several times per
+ * request (each database call adds to `query`). Calls that overlap are summed,
+ * so the span can exceed the request's wall time.
+ */
+export function addToSpan(name: RequestSpanName, durationMs: number): void {
+  const store = storage.getStore();
+  if (store === undefined) {
+    return;
+  }
+  store.spans[name] = (store.spans[name] ?? 0) + Math.round(durationMs);
+}
+
 export function formatServerTimingHeader(spans: Readonly<Record<string, number>>): string {
   const seen = new Set<string>();
   const parts: string[] = [];

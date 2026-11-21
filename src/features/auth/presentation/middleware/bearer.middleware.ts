@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 
 import { AuthenticationRequiredError } from '../../../../domain/errors/authentication-required.error';
+import { measureSpan } from '../../../../shared/timing/request-spans';
 import type { AuthenticateActorUseCase } from '../../application/use-cases/authenticate-actor.use-case';
 
 /**
@@ -28,7 +29,7 @@ export function createBearerMiddleware(
         return next(new AuthenticationRequiredError());
       }
 
-      const ctx = await authenticateActor.execute(token);
+      const ctx = await measureSpan('auth', () => authenticateActor.execute(token));
       if (ctx === null) {
         return next(new AuthenticationRequiredError());
       }

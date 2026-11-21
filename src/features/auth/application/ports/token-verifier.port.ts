@@ -7,4 +7,11 @@ import type { UserId } from '../../../../domain/shared/user-id';
  */
 export interface ITokenVerifier {
   verify(bearerToken: string): Promise<UserId | null>;
+
+  /**
+   * The user id the token claims (its `sub`), read without checking the
+   * signature, expiry or session. Null when the token cannot be decoded.
+   * Only a hint for starting work early: never authorize from it.
+   */
+  claimedSubject(bearerToken: string): UserId | null;
 }

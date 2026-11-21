@@ -77,6 +77,23 @@ export class SupabaseAuthAdapter implements IAuthProvider, ITokenVerifier {
 
     return toUserId(data.user.id);
   }
+
+  claimedSubject(bearerToken: string): UserId | null {
+    const payload = bearerToken.split('.')[1];
+    if (payload === undefined || payload === '') {
+      return null;
+    }
+    try {
+      const claims: unknown = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+      if (typeof claims !== 'object' || claims === null || !('sub' in claims)) {
+        return null;
+      }
+      const { sub } = claims;
+      return typeof sub === 'string' && sub !== '' ? toUserId(sub) : null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 /**
