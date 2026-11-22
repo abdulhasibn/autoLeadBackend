@@ -16,7 +16,7 @@ import type {
 // `public_vehicle_list` already limits rows to Listed, live vehicles and
 // columns to the public whitelist; never read `vehicles` or `vehicle_list` here.
 const COLUMNS =
-  'id, make_id, model_id, make_name, model_name, variant_name, body_types, year, fuel_type, transmission, km_driven, num_previous_owners, colour, description, listed_price, public_status, sold_on';
+  'id, make_id, model_id, make_name, model_name, variant_name, body_types, year, fuel_type, transmission, km_driven, num_previous_owners, colour, description, listed_price, public_status, sold_on, insurance_valid_until, insurance_nil, rc_status, service_history, accident_history';
 
 type Row = Omit<Database['public']['Views']['public_vehicle_list']['Row'], 'created_at'>;
 
@@ -209,6 +209,11 @@ function toReadModel(row: Row): PublicVehicleReadModel[] {
       listedPrice: row.listed_price === null ? null : Number(row.listed_price),
       status: row.public_status === 'sold' ? 'sold' : 'available',
       soldOn: row.sold_on,
+      insuranceValidUntil: row.insurance_valid_until,
+      insuranceNil: row.insurance_nil ?? false,
+      rcStatus: row.rc_status,
+      serviceHistory: row.service_history,
+      accidentHistory: row.accident_history ?? false,
     },
   ];
 }

@@ -26,6 +26,7 @@ export interface VehicleReadModel {
   readonly numPreviousOwners: number;
   readonly colour: string;
   readonly insuranceValidUntil: string | null;
+  readonly insuranceNil: boolean;
   readonly rcStatus: string | null;
   readonly serviceHistory: string | null;
   readonly accidentHistory: boolean;

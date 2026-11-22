@@ -68,6 +68,7 @@ export class CreateVehicleUseCase {
       numPreviousOwners: PreviousOwners.create(command.numPreviousOwners),
       colour: command.colour,
       insuranceValidUntil: parseOptionalDate(command.insuranceValidUntil),
+      insuranceNil: command.insuranceNil ?? false,
       rcStatus: parseRcStatus(command.rcStatus),
       serviceHistory: parseServiceHistory(command.serviceHistory),
       accidentHistory: command.accidentHistory,

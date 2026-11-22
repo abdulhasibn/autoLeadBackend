@@ -33,6 +33,7 @@ export const createVehicleBodySchema = z.object({
   numPreviousOwners: previousOwnersSchema,
   colour: colourSchema,
   insuranceValidUntil: optionalInsuranceDateSchema,
+  insuranceNil: z.boolean().optional().default(false),
   rcStatus: optionalRcStatusSchema,
   serviceHistory: optionalServiceHistorySchema,
   accidentHistory: z.boolean().optional().default(false),

@@ -3,7 +3,8 @@ import type { Page, Pagination } from '../../../shared/pagination/pagination';
 /**
  * A Listed vehicle as an anonymous visitor may see it (ADR-0010). Read from
  * `public_vehicle_list`, which carries only these columns: no plate, owner,
- * documents, RC or loan state, and no price other than the listed one.
+ * documents or loan state, and no price other than the listed one. Insurance,
+ * RC status, service and accident history are shown on the detail page.
  */
 export interface PublicVehicleReadModel {
   readonly id: string;
@@ -25,6 +26,15 @@ export interface PublicVehicleReadModel {
   readonly status: 'available' | 'sold';
   /** ISO date (`YYYY-MM-DD`); set only when `status` is `sold`. */
   readonly soldOn: string | null;
+  /** ISO date; null when not recorded or Nil. */
+  readonly insuranceValidUntil: string | null;
+  /** True: recorded as no insurance. */
+  readonly insuranceNil: boolean;
+  /** clear | hypothecation | under_transfer, or null when not recorded. */
+  readonly rcStatus: string | null;
+  /** full | partial | none | unknown, or null when not recorded. */
+  readonly serviceHistory: string | null;
+  readonly accidentHistory: boolean;
 }
 
 export type PublicVehicleSort = 'newest' | 'price_asc' | 'price_desc' | 'km_asc';

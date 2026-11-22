@@ -28,6 +28,7 @@ export function toVehicleDto(vehicle: Vehicle, listedPrice: number | null = null
     colour: vehicle.colour,
     insuranceValidUntil:
       vehicle.insuranceValidUntil === null ? null : vehicle.insuranceValidUntil.value,
+    insuranceNil: vehicle.insuranceNil,
     rcStatus: vehicle.rcStatus,
     serviceHistory: vehicle.serviceHistory,
     accidentHistory: vehicle.accidentHistory,

@@ -32,6 +32,11 @@ export class GetPublicVehicleUseCase {
       ...toPublicVehicleSummary(vehicle, cover?.url ?? null),
       description: vehicle.description,
       photos: signed,
+      insuranceValidUntil: vehicle.insuranceNil ? null : vehicle.insuranceValidUntil,
+      insuranceNil: vehicle.insuranceNil,
+      rcStatus: vehicle.rcStatus,
+      serviceHistory: vehicle.serviceHistory,
+      accidentHistory: vehicle.accidentHistory,
     };
   }
 }

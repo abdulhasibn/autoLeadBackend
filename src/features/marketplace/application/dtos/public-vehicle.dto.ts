@@ -25,6 +25,13 @@ export interface PublicVehiclePhotoDto {
 export interface PublicVehicleDetailDto extends PublicVehicleSummaryDto {
   readonly description: string | null;
   readonly photos: readonly PublicVehiclePhotoDto[];
+  /** ISO date; null when not recorded or Nil. */
+  readonly insuranceValidUntil: string | null;
+  /** True: the car has no insurance. False with a null date: not recorded. */
+  readonly insuranceNil: boolean;
+  readonly rcStatus: string | null;
+  readonly serviceHistory: string | null;
+  readonly accidentHistory: boolean;
 }
 
 export interface PublicFilterOptionsDto {

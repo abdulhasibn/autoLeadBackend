@@ -83,7 +83,18 @@ describe('GetPublicVehicleUseCase', () => {
 
     const vehicle = await useCase.execute(VEHICLE_ID);
 
-    expect(Object.keys(vehicle).sort()).toEqual([...SUMMARY_KEYS, 'description', 'photos'].sort());
+    expect(Object.keys(vehicle).sort()).toEqual(
+      [
+        ...SUMMARY_KEYS,
+        'description',
+        'photos',
+        'insuranceValidUntil',
+        'insuranceNil',
+        'rcStatus',
+        'serviceHistory',
+        'accidentHistory',
+      ].sort(),
+    );
     expect(vehicle.photos.map((photo) => photo.category)).toEqual(['interior', 'front']);
     expect(vehicle.coverImageUrl).toBe(`https://signed.test/${VEHICLE_ID}/front.jpg`);
   });

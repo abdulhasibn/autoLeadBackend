@@ -68,6 +68,11 @@ export function publicVehicle(
     listedPrice: 1450000,
     status: 'available',
     soldOn: null,
+    insuranceValidUntil: '2027-03-31',
+    insuranceNil: false,
+    rcStatus: 'clear',
+    serviceHistory: 'full',
+    accidentHistory: false,
     ...overrides,
   };
 }

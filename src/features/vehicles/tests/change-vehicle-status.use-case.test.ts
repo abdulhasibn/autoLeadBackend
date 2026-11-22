@@ -43,6 +43,7 @@ function seedVehicle(): Vehicle {
     numPreviousOwners: PreviousOwners.create(1),
     colour: 'White',
     insuranceValidUntil: null,
+    insuranceNil: false,
     rcStatus: null,
     serviceHistory: null,
     accidentHistory: false,
