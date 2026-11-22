@@ -5,4 +5,5 @@ export interface IVehicleMediaRepository {
   findById(id: MediaId): Promise<VehicleMedia | null>;
   save(media: VehicleMedia): Promise<void>;
   delete(id: MediaId): Promise<void>;
+  updatePlacement(media: VehicleMedia): Promise<void>;
 }

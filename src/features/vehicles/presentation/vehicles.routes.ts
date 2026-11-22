@@ -7,6 +7,7 @@ import type { CreateVehicleController } from './controllers/create-vehicle.contr
 import type { CreateVehicleDocumentUploadController } from './controllers/create-vehicle-document-upload.controller';
 import type { CreateVehicleMediaUploadController } from './controllers/create-vehicle-media-upload.controller';
 import type { DeleteVehicleDocumentController } from './controllers/delete-vehicle-document.controller';
+import type { ReorderVehicleMediaController } from './controllers/reorder-vehicle-media.controller';
 import type { DeleteVehicleMediaController } from './controllers/delete-vehicle-media.controller';
 import type { GetVehicleController } from './controllers/get-vehicle.controller';
 import type { ListVehicleDocumentsController } from './controllers/list-vehicle-documents.controller';
@@ -29,6 +30,7 @@ export interface VehiclesRouterDeps {
   readonly confirmVehicleMediaController: ConfirmVehicleMediaController;
   readonly listVehicleMediaController: ListVehicleMediaController;
   readonly deleteVehicleMediaController: DeleteVehicleMediaController;
+  readonly reorderVehicleMediaController: ReorderVehicleMediaController;
   readonly createVehicleDocumentUploadController: CreateVehicleDocumentUploadController;
   readonly confirmVehicleDocumentController: ConfirmVehicleDocumentController;
   readonly listVehicleDocumentsController: ListVehicleDocumentsController;
@@ -48,6 +50,7 @@ export function createVehiclesRouter(deps: VehiclesRouterDeps): Router {
   router.post('/:id/media/uploads', deps.createVehicleMediaUploadController.handle());
   router.post('/:id/media', deps.confirmVehicleMediaController.handle());
   router.get('/:id/media', deps.listVehicleMediaController.handle());
+  router.put('/:id/media/order', deps.reorderVehicleMediaController.handle());
   router.delete('/:id/media/:mediaId', deps.deleteVehicleMediaController.handle());
   router.post('/:id/documents/uploads', deps.createVehicleDocumentUploadController.handle());
   router.post('/:id/documents', deps.confirmVehicleDocumentController.handle());

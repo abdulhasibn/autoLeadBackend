@@ -38,6 +38,20 @@ export class VehicleMedia {
     );
   }
 
+  /** Same photo, moved to another slot (angle) and/or position. */
+  withPlacement(category: MediaCategory, sortOrder: number): VehicleMedia {
+    assertSortOrder(sortOrder);
+    return new VehicleMedia(
+      this.id,
+      this.vehicleId,
+      this.storagePath,
+      category,
+      sortOrder,
+      this.uploadedBy,
+      this.uploadedAt,
+    );
+  }
+
   static reconstitute(props: VehicleMediaProps): VehicleMedia {
     return new VehicleMedia(
       props.id,
