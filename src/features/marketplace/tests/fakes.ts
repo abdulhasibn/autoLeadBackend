@@ -13,6 +13,10 @@ import type {
   PublicVehicleWithPhotos,
 } from '../domain/public-vehicle.queries';
 import type {
+  IPublicCatalogQueries,
+  PublicVariantReadModel,
+} from '../domain/public-catalog.queries';
+import type {
   IPreferenceIntake,
   PreferenceIntakeInput,
   PreferenceIntakeResult,
@@ -198,5 +202,24 @@ export class FakeTouchClassifier implements ITouchClassifier {
       };
     }
     return { channel: 'direct', referrerHost: null };
+  }
+}
+
+export class FakePublicCatalogQueries implements IPublicCatalogQueries {
+  readonly requested: string[] = [];
+  constructor(private readonly variants: readonly PublicVariantReadModel[] = []) {}
+
+  async listMakes() {
+    return [{ id: 'make-1', name: 'Maruti Suzuki' }];
+  }
+
+  async listModels(makeId: string) {
+    this.requested.push(makeId);
+    return [{ id: 'model-1', name: 'Swift' }];
+  }
+
+  async listVariants(modelId: string) {
+    this.requested.push(modelId);
+    return this.variants;
   }
 }

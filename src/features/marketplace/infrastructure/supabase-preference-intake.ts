@@ -44,6 +44,9 @@ export class SupabasePreferenceIntake implements IPreferenceIntake {
       ...(input.transmissions.length === 0 ? {} : { p_transmissions: [...input.transmissions] }),
       ...(input.make === null ? {} : { p_make: input.make }),
       ...(input.model === null ? {} : { p_model: input.model }),
+      ...(input.makeId === null ? {} : { p_make_id: input.makeId }),
+      ...(input.modelId === null ? {} : { p_model_id: input.modelId }),
+      ...(input.variantId === null ? {} : { p_variant_id: input.variantId }),
       ...(input.referenceVehicleId === null
         ? {}
         : { p_reference_vehicle_id: input.referenceVehicleId }),

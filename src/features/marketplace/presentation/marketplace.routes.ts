@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express, { Router } from 'express';
 
+import type { PublicCatalogController } from './controllers/public-catalog.controller';
 import type { PublicVehiclesController } from './controllers/public-vehicles.controller';
 import type { SubmitPreferenceController } from './controllers/submit-preference.controller';
 import type { SubmitTestDriveController } from './controllers/submit-test-drive.controller';
@@ -12,6 +13,7 @@ export interface MarketplaceRouterDeps {
   /** Browser origins allowed to call these routes; empty allows none. */
   readonly allowedOrigins: readonly string[];
   readonly publicVehiclesController: PublicVehiclesController;
+  readonly publicCatalogController: PublicCatalogController;
   readonly submitTestDriveController: SubmitTestDriveController;
   readonly submitPreferenceController: SubmitPreferenceController;
 }
@@ -28,6 +30,9 @@ export function createMarketplaceRouter(deps: MarketplaceRouterDeps): Router {
   router.get('/vehicles', deps.publicVehiclesController.list());
   router.get('/vehicles/:id', deps.publicVehiclesController.get());
   router.get('/filters', deps.publicVehiclesController.filters());
+  router.get('/catalog/makes', deps.publicCatalogController.makes());
+  router.get('/catalog/makes/:makeId/models', deps.publicCatalogController.models());
+  router.get('/catalog/models/:modelId/variants', deps.publicCatalogController.variants());
   router.post(
     '/test-drive-requests',
     express.json({ limit: PUBLIC_JSON_BODY_LIMIT }),

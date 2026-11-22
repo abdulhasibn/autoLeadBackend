@@ -27,6 +27,14 @@ export const listPublicVehiclesQuerySchema = z
   })
   .superRefine(refineRange('priceMin', 'priceMax'));
 
+export const publicMakeIdParamSchema = z.object({
+  makeId: z.string().uuid('makeId must be a UUID'),
+});
+
+export const publicModelIdParamSchema = z.object({
+  modelId: z.string().uuid('modelId must be a UUID'),
+});
+
 export const publicVehicleIdParamSchema = z.object({
   id: z.string().uuid('id must be a UUID'),
 });
@@ -89,5 +97,10 @@ export const submitPreferenceBodySchema = z.object({
   transmissions: choicesSchema(TRANSMISSIONS),
   make: catalogNameSchema,
   model: catalogNameSchema,
+  // Catalog picks from the website's dropdowns. The most specific id wins and
+  // the database derives its parents; `make` / `model` text stays for older clients.
+  makeId: z.string().uuid('makeId must be a UUID').optional(),
+  modelId: z.string().uuid('modelId must be a UUID').optional(),
+  variantId: z.string().uuid('variantId must be a UUID').optional(),
   referenceVehicleId: z.string().uuid('referenceVehicleId must be a UUID').optional(),
 });

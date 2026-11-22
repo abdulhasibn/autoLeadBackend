@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '../../infrastructure/supabase/database.types';
 import type { ErrorMapper } from '../../presentation/http/errors/error-mapping';
+import { GetPublicCatalogUseCase } from './application/use-cases/get-public-catalog.use-case';
 import { GetPublicFilterOptionsUseCase } from './application/use-cases/get-public-filter-options.use-case';
 import { GetPublicVehicleUseCase } from './application/use-cases/get-public-vehicle.use-case';
 import { ListPublicVehiclesUseCase } from './application/use-cases/list-public-vehicles.use-case';
@@ -12,9 +13,11 @@ import { PublicRateLimitedError } from './domain/errors/public-rate-limited.erro
 import type { IVehicleLinkSync } from './domain/test-drive-intake.port';
 import type { ITouchClassifier } from './domain/touch-classifier.port';
 import { SupabasePreferenceIntake } from './infrastructure/supabase-preference-intake';
+import { SupabasePublicCatalogQueries } from './infrastructure/supabase-public-catalog.queries';
 import { SupabasePublicMediaSigner } from './infrastructure/supabase-public-media-signer';
 import { SupabasePublicVehicleQueries } from './infrastructure/supabase-public-vehicle.queries';
 import { SupabaseTestDriveIntake } from './infrastructure/supabase-test-drive-intake';
+import { PublicCatalogController } from './presentation/controllers/public-catalog.controller';
 import { PublicVehiclesController } from './presentation/controllers/public-vehicles.controller';
 import { SubmitPreferenceController } from './presentation/controllers/submit-preference.controller';
 import { SubmitTestDriveController } from './presentation/controllers/submit-test-drive.controller';
@@ -49,6 +52,9 @@ export function composeMarketplace(
       new ListPublicVehiclesUseCase(queries, signer),
       new GetPublicVehicleUseCase(queries, signer),
       new GetPublicFilterOptionsUseCase(queries),
+    ),
+    publicCatalogController: new PublicCatalogController(
+      new GetPublicCatalogUseCase(new SupabasePublicCatalogQueries(infraClient)),
     ),
     submitTestDriveController: new SubmitTestDriveController(
       new SubmitTestDriveUseCase(

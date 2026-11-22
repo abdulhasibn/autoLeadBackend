@@ -33,6 +33,9 @@ export class SubmitPreferenceController {
           transmissions: body.transmissions,
           make: body.make,
           model: body.model,
+          makeId: body.makeId,
+          modelId: body.modelId,
+          variantId: body.variantId,
           referenceVehicleId: body.referenceVehicleId,
         });
         // Same answer whether a lead was created or merged, and no lead id:
