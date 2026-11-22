@@ -2250,10 +2250,13 @@ export type Database = {
           p_full_name: string;
           p_ip_hash: string;
           p_make?: string;
+          p_make_id?: string;
           p_model?: string;
+          p_model_id?: string;
           p_phone: string;
           p_reference_vehicle_id?: string;
           p_transmissions?: string[];
+          p_variant_id?: string;
         };
         Returns: Json;
       };

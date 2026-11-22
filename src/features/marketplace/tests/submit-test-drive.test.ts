@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { createErrorHandlerMiddleware } from '../../../presentation/http/errors/error-handler.middleware';
 import type { ErrorMapper } from '../../../presentation/http/errors/error-mapping';
 import type { Logger } from '../../../shared/logging/logger.port';
+import { GetPublicCatalogUseCase } from '../application/use-cases/get-public-catalog.use-case';
 import { GetPublicFilterOptionsUseCase } from '../application/use-cases/get-public-filter-options.use-case';
 import { GetPublicVehicleUseCase } from '../application/use-cases/get-public-vehicle.use-case';
 import { ListPublicVehiclesUseCase } from '../application/use-cases/list-public-vehicles.use-case';
@@ -13,12 +14,14 @@ import { SubmitTestDriveUseCase } from '../application/use-cases/submit-test-dri
 import { InvalidMobileError } from '../domain/errors/invalid-mobile.error';
 import { PublicRateLimitedError } from '../domain/errors/public-rate-limited.error';
 import { WEBSITE_SYSTEM_USER_ID } from '../domain/test-drive-intake.port';
+import { PublicCatalogController } from '../presentation/controllers/public-catalog.controller';
 import { PublicVehiclesController } from '../presentation/controllers/public-vehicles.controller';
 import { SubmitPreferenceController } from '../presentation/controllers/submit-preference.controller';
 import { SubmitTestDriveController } from '../presentation/controllers/submit-test-drive.controller';
 import { createMarketplaceRouter } from '../presentation/marketplace.routes';
 import {
   FakePreferenceIntake,
+  FakePublicCatalogQueries,
   FakePublicVehicleQueries,
   FakeSigner,
   FakeTestDriveIntake,
@@ -202,6 +205,9 @@ describe('marketplace routes', () => {
           new ListPublicVehiclesUseCase(queries, signer),
           new GetPublicVehicleUseCase(queries, signer),
           new GetPublicFilterOptionsUseCase(queries),
+        ),
+        publicCatalogController: new PublicCatalogController(
+          new GetPublicCatalogUseCase(new FakePublicCatalogQueries()),
         ),
         submitTestDriveController: new SubmitTestDriveController(
           new SubmitTestDriveUseCase(intake, new FakeVehicleLinkSync(), new FakeTouchClassifier()),

@@ -15,6 +15,10 @@ export interface PreferenceIntakeInput {
   readonly transmissions: readonly string[];
   readonly make: string | null;
   readonly model: string | null;
+  /** Catalog picks; the most specific one set wins, the database derives its parents. */
+  readonly makeId: string | null;
+  readonly modelId: string | null;
+  readonly variantId: string | null;
   /** A car the visitor liked; mentioned in the lead notes, never linked. */
   readonly referenceVehicleId: string | null;
 }

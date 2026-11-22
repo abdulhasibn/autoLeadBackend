@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { createErrorHandlerMiddleware } from '../../../presentation/http/errors/error-handler.middleware';
 import type { ErrorMapper } from '../../../presentation/http/errors/error-mapping';
 import type { Logger } from '../../../shared/logging/logger.port';
+import { GetPublicCatalogUseCase } from '../application/use-cases/get-public-catalog.use-case';
 import { GetPublicFilterOptionsUseCase } from '../application/use-cases/get-public-filter-options.use-case';
 import { GetPublicVehicleUseCase } from '../application/use-cases/get-public-vehicle.use-case';
 import { ListPublicVehiclesUseCase } from '../application/use-cases/list-public-vehicles.use-case';
@@ -12,6 +13,7 @@ import { SubmitPreferenceUseCase } from '../application/use-cases/submit-prefere
 import { SubmitTestDriveUseCase } from '../application/use-cases/submit-test-drive.use-case';
 import { InvalidMobileError } from '../domain/errors/invalid-mobile.error';
 import { PublicRateLimitedError } from '../domain/errors/public-rate-limited.error';
+import { PublicCatalogController } from '../presentation/controllers/public-catalog.controller';
 import { PublicVehiclesController } from '../presentation/controllers/public-vehicles.controller';
 import { SubmitPreferenceController } from '../presentation/controllers/submit-preference.controller';
 import { SubmitTestDriveController } from '../presentation/controllers/submit-test-drive.controller';
@@ -19,6 +21,7 @@ import { createMarketplaceRouter } from '../presentation/marketplace.routes';
 import { submitPreferenceBodySchema } from '../presentation/schemas/public-marketplace.schemas';
 import {
   FakePreferenceIntake,
+  FakePublicCatalogQueries,
   FakePublicVehicleQueries,
   FakeSigner,
   FakeTestDriveIntake,
@@ -66,12 +69,19 @@ describe('submitPreferenceBodySchema', () => {
     ['an over-long make', { make: 'x'.repeat(61) }],
     ['an over-long model', { model: 'x'.repeat(61) }],
     ['a bad reference id', { referenceVehicleId: 'nope' }],
+    ['a bad make id', { makeId: 'nope' }],
+    ['a bad model id', { modelId: 'nope' }],
+    ['a bad variant id', { variantId: 'nope' }],
     ['a short name', { fullName: 'A' }],
     ['a markup name', { fullName: '<script>' }],
   ])('rejects %s', (_label, extra) => {
     expect(submitPreferenceBodySchema.safeParse({ ...base, ...extra }).success).toBe(false);
   });
 });
+
+const MAKE_ID = '44444444-4444-4444-8444-444444444444';
+const MODEL_ID = '55555555-5555-4555-8555-555555555555';
+const VARIANT_ID = '66666666-6666-4666-8666-666666666666';
 
 describe('SubmitPreferenceUseCase', () => {
   it('normalises name and phone and passes preferences to the intake', async () => {
@@ -99,10 +109,32 @@ describe('SubmitPreferenceUseCase', () => {
       transmissions: [],
       make: null,
       model: 'Creta',
+      makeId: null,
+      modelId: null,
+      variantId: null,
       referenceVehicleId: null,
     });
     expect(receipt.outcome).toBe('created');
     expect(receipt.showroom?.address).toBe('100 Feet Road');
+  });
+
+  it('passes catalog picks through to the intake', async () => {
+    const intake = new FakePreferenceIntake();
+    const useCase = new SubmitPreferenceUseCase(intake, new FakeTouchClassifier());
+
+    await useCase.execute({
+      ...base,
+      ipHash: 'h',
+      makeId: MAKE_ID,
+      modelId: MODEL_ID,
+      variantId: VARIANT_ID,
+    });
+
+    expect(intake.submitted[0]).toMatchObject({
+      makeId: MAKE_ID,
+      modelId: MODEL_ID,
+      variantId: VARIANT_ID,
+    });
   });
 
   it('classifies both touches', async () => {
@@ -173,6 +205,9 @@ describe('POST /public/preference-requests', () => {
           new ListPublicVehiclesUseCase(queries, signer),
           new GetPublicVehicleUseCase(queries, signer),
           new GetPublicFilterOptionsUseCase(queries),
+        ),
+        publicCatalogController: new PublicCatalogController(
+          new GetPublicCatalogUseCase(new FakePublicCatalogQueries()),
         ),
         submitTestDriveController: new SubmitTestDriveController(
           new SubmitTestDriveUseCase(

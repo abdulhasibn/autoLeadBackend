@@ -21,6 +21,9 @@ export interface SubmitPreferenceCommand {
   readonly transmissions?: readonly string[];
   readonly make?: string;
   readonly model?: string;
+  readonly makeId?: string;
+  readonly modelId?: string;
+  readonly variantId?: string;
   readonly referenceVehicleId?: string;
 }
 
@@ -64,6 +67,9 @@ export class SubmitPreferenceUseCase {
       transmissions: command.transmissions ?? [],
       make: blankToNull(command.make),
       model: blankToNull(command.model),
+      makeId: command.makeId ?? null,
+      modelId: command.modelId ?? null,
+      variantId: command.variantId ?? null,
       referenceVehicleId: command.referenceVehicleId ?? null,
     });
 

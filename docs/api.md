@@ -209,8 +209,11 @@ Anonymous. CORS is limited to `PUBLIC_SITE_ORIGINS`. Only Listed vehicles (`open
 | `GET` | `/public/vehicles` | `200` page of summaries: available cars first (with the requested `sort`), then cars sold in the last 90 days, newest sale first (`sort` does not reorder sold cars). Query: `makeId`, `modelId`, `bodyType`, `fuelType`, `transmission` (CSV), `priceMin`, `priceMax`, `yearMin`, `kmMax`, `sort` (`newest` \| `price_asc` \| `price_desc` \| `km_asc`), `limit` (≤ 48, default 24), `offset` |
 | `GET` | `/public/vehicles/:id` | `200` detail: summary + `description` + `photos[]` (`{ url, category }`, in display order). A car sold in the last 90 days returns normally with `status: "sold"`; dropped, removed, older-sold and unknown ids are `404` |
 | `GET` | `/public/filters` | `200` `{ makes[{ id, name, models[] }], bodyTypes, fuelTypes, transmissions, priceRange, yearRange }` built from available stock (sold cars excluded) |
+| `GET` | `/public/catalog/makes` | `200` `{ items[{ id, name }] }`: the full vehicle catalog's makes, not just stock. Cached 1h at the CDN |
+| `GET` | `/public/catalog/makes/:makeId/models` | `200` `{ items[{ id, name }] }` |
+| `GET` | `/public/catalog/models/:modelId/variants` | `200` `{ items[{ id, name, fuelType, transmission }] }`; the `NA` placeholder variant is left out |
 | `POST` | `/public/test-drive-requests` | `201` new lead, `200` repeat on an active lead → `{ outcome, vehicleAvailable, showroom }` |
-| `POST` | `/public/preference-requests` | `201` → `{ showroom }`, whether a lead was created or merged |
+| `POST` | `/public/preference-requests` | `201` → `{ showroom }`, whether a lead was created or merged. Optional catalog picks `makeId`, `modelId`, `variantId` (UUIDs): the most specific one wins and its parents are derived, then stored as the lead's preferred make/model/variant. The free-text `make` / `model` still work for older clients |
 | `POST` | `/public/events` | `204` always. Website analytics beacon (ADR-0016), see below |
 
 Summary fields: `id, make, model, variant, bodyType, year, fuelType, transmission, kmDriven, previousOwners, colour, listedPrice` (rupees or `null` → show "Price on request"), `coverImageUrl`, `status` (`"available"` \| `"sold"`). A `sold` car is shown for 90 days after its sale (sale date, else last update) for social proof: same fields, no extra data; the site should disable booking for it. Photo URLs are signed for 24 hours; GET responses carry `Cache-Control: s-maxage=300`.
