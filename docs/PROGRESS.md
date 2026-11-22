@@ -38,15 +38,15 @@
 
 | Field | Production | Dev |
 |-------|------------|-----|
-| Name | `lms_prod` | `lms_dev` |
-| Ref | `tvfizfkunkcamrphrknc` | `rytaokimqywrzztepncc` |
-| Region | Singapore | Sydney |
-| URL | `https://tvfizfkunkcamrphrknc.supabase.co` | `https://rytaokimqywrzztepncc.supabase.co` |
+| Name | `lms_prod` | `lms_dev01` |
+| Ref | `tvfizfkunkcamrphrknc` | `alvatbwtxlptxrdiywwu` |
+| Region | Singapore | Mumbai |
+| URL | `https://tvfizfkunkcamrphrknc.supabase.co` | `https://alvatbwtxlptxrdiywwu.supabase.co` |
 | Used by | `main` deploys | `dev` deploys and local `.env` |
 | Migrations applied | 26 (the 25 repo migrations + `lead_assignment_fix_user_id`, which is not in the repo) | same |
 | Roles seeded | admin, salesperson, owner, buyer | same |
 
-Apply migrations to `lms_dev` first and to `lms_prod` only when the change is promoted to `main`.
+Apply migrations to `lms_dev01` first and to `lms_prod` only when the change is promoted to `main`.
 
 ## Next up
 
@@ -56,6 +56,18 @@ Apply migrations to `lms_dev` first and to `lms_prod` only when the change is pr
 4. Inventory listing guard + pricing (Stint 3.1), then the public marketplace module (ADR-0010).
 
 ## Log
+
+### 2026-11-22 — Dev database moved to Mumbai
+
+- Dev moved from `lms_dev` (`rytaokimqywrzztepncc`, Sydney) to `lms_dev01` (`alvatbwtxlptxrdiywwu`,
+  `ap-south-1`), restored from a full dump of `lms_dev`: same schema, every row and all 30 storage
+  files; counts checked table by table.
+- Not carried by the dump and set by hand: the `custom_access_token_hook` Auth Hook
+  (`private.custom_access_token_hook`) and the two storage buckets.
+- `autolead-backend-dev` (all environments) and `autolead-backend` Preview/Development point at
+  `lms_dev01`; the service key is the new `sb_secret_` format. Prod is unchanged.
+- Known gap carried over: migration versions recorded in the DB differ from the repo filenames
+  for migrations applied through MCP.
 
 ### 2026-11-09 — New Supabase and Vercel accounts, dev and prod split
 

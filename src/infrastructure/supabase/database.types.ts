@@ -1,5 +1,5 @@
 /**
- * Generated via Supabase MCP `generate_typescript_types` for project rytaokimqywrzztepncc (lms_dev).
+ * Generated via Supabase MCP `generate_typescript_types`; schema matches dev project alvatbwtxlptxrdiywwu (lms_dev01).
  * Do not edit by hand — regenerate after schema migrations.
  */
 

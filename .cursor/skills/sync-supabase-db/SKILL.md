@@ -18,7 +18,7 @@ Report first; apply anything to hosted **only after the user confirms**.
 
 | | |
 |---|---|
-| Project | dev `lms_dev` · ref `rytaokimqywrzztepncc` · `ap-southeast-2`; prod `lms_prod` · ref `tvfizfkunkcamrphrknc` · `ap-southeast-1` (see `docs/MIGRATIONS_LOG.md`) |
+| Project | dev `lms_dev01` · ref `alvatbwtxlptxrdiywwu` · `ap-south-1`; prod `lms_prod` · ref `tvfizfkunkcamrphrknc` · `ap-southeast-1` (see `docs/MIGRATIONS_LOG.md`) |
 | Migrations | `supabase/migrations/*.sql` (`<timestamp>_<name>.sql`) |
 | Types | `src/infrastructure/supabase/database.types.ts` |
 | Schema doc | `docs/schema.dbml` |
