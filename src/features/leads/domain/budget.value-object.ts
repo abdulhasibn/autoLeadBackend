@@ -9,7 +9,7 @@ export class Budget {
       throw new Error('Budget must be a non-negative number');
     }
     if (input > MAX_BUDGET) {
-      throw new Error('Budget must be at most ₹10,00,00,000');
+      throw new Error('Budget must be at most ₹1,00,00,00,000');
     }
     return new Budget(input);
   }
