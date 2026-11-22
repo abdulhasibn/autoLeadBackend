@@ -13,7 +13,9 @@
 set lock_timeout = '5s';
 set statement_timeout = '60s';
 
+-- squawk-ignore ban-drop-function -- -- replaced in the same transaction by a 14-argument version whose new args default to null, so callers using the old named args still resolve
 drop function public.submit_public_preference_lead(text, text, text, jsonb, numeric, text[], text[], text[], text, text, uuid);
+-- squawk-ignore ban-drop-function -- -- replaced in the same transaction by a 14-argument version whose new args default to null, so callers using the old named args still resolve
 drop function private.submit_public_preference_lead(text, text, text, jsonb, numeric, text[], text[], text[], text, text, uuid);
 
 create function private.submit_public_preference_lead(
