@@ -6,7 +6,7 @@ import type { Database } from '../../../infrastructure/supabase/database.types';
 import type { AuthSession, SignOutScope } from '../application/ports/auth.port';
 import type { IAuthProvider } from '../application/ports/auth.port';
 import type { ITokenVerifier } from '../application/ports/token-verifier.port';
-import { isProviderFailure, toUnexpectedAuthError } from './supabase-auth-errors';
+import { isProviderFailure, isRateLimited, toUnexpectedAuthError } from './supabase-auth-errors';
 
 /**
  * Supabase Auth adapter — implements IAuthProvider (email + password) and
@@ -71,7 +71,16 @@ export class SupabaseAuthAdapter implements IAuthProvider, ITokenVerifier {
   async verify(bearerToken: string): Promise<UserId | null> {
     const { data, error } = await this.anonClient.auth.getUser(bearerToken);
 
-    if (error !== null || data.user === null) {
+    if (error !== null) {
+      // An outage or throttle says nothing about the token: surface it as
+      // 503 / 429 so clients retry instead of signing the user out. Every
+      // other error (invalid, expired, revoked, session gone) is a plain 401.
+      if (isProviderFailure(error) || isRateLimited(error)) {
+        throw toUnexpectedAuthError(error, 'verify token');
+      }
+      return null;
+    }
+    if (data.user === null) {
       return null;
     }
 

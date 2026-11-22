@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { describe, expect, it } from 'vitest';
 
+import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
 import { AuthenticationRequiredError } from '../../../domain/errors/authentication-required.error';
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
 import { toUserId } from '../../../domain/shared/user-id';
@@ -50,5 +51,23 @@ describe('bearer middleware', () => {
     const { error } = await run(ACTOR, header);
 
     expect(error).toBeInstanceOf(AuthenticationRequiredError);
+  });
+
+  it('passes a provider failure on as itself, not as a 401', async () => {
+    const outage = new DatabaseUnavailableError('Failed to verify token: fetch failed');
+    const authenticate = {
+      execute: async () => {
+        throw outage;
+      },
+    } as unknown as AuthenticateActorUseCase;
+    const req = { headers: { authorization: 'Bearer token-a' } } as Request;
+    let error: unknown;
+    await createBearerMiddleware(authenticate)(req, {} as Response, (err?: unknown) => {
+      error = err;
+    });
+
+    expect(error).toBe(outage);
+    expect(error).not.toBeInstanceOf(AuthenticationRequiredError);
+    expect(req.auth).toBeUndefined();
   });
 });
