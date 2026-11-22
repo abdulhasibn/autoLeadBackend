@@ -41,6 +41,7 @@ const COMMAND = {
   numPreviousOwners: 1,
   colour: 'White',
   insuranceValidUntil: null,
+  insuranceNil: false,
   rcStatus: 'clear',
   serviceHistory: 'full',
   accidentHistory: false,

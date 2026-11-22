@@ -1694,6 +1694,7 @@ export type Database = {
           description: string | null;
           fuel_type: string;
           id: string;
+          insurance_nil: boolean;
           insurance_valid_until: string | null;
           km_driven: number;
           loan_status: string | null;
@@ -1721,6 +1722,7 @@ export type Database = {
           description?: string | null;
           fuel_type: string;
           id?: string;
+          insurance_nil?: boolean;
           insurance_valid_until?: string | null;
           km_driven: number;
           loan_status?: string | null;
@@ -1748,6 +1750,7 @@ export type Database = {
           description?: string | null;
           fuel_type?: string;
           id?: string;
+          insurance_nil?: boolean;
           insurance_valid_until?: string | null;
           km_driven?: number;
           loan_status?: string | null;
@@ -1936,12 +1939,15 @@ export type Database = {
     Views: {
       public_vehicle_list: {
         Row: {
+          accident_history: boolean | null;
           body_types: string[] | null;
           colour: string | null;
           created_at: string | null;
           description: string | null;
           fuel_type: string | null;
           id: string | null;
+          insurance_nil: boolean | null;
+          insurance_valid_until: string | null;
           km_driven: number | null;
           listed_price: number | null;
           make_id: string | null;
@@ -1950,6 +1956,8 @@ export type Database = {
           model_name: string | null;
           num_previous_owners: number | null;
           public_status: string | null;
+          rc_status: string | null;
+          service_history: string | null;
           sold_on: string | null;
           transmission: string | null;
           variant_name: string | null;
@@ -1982,6 +1990,7 @@ export type Database = {
           description: string | null;
           fuel_type: string | null;
           id: string | null;
+          insurance_nil: boolean | null;
           insurance_valid_until: string | null;
           km_driven: number | null;
           listed_price: number | null;
@@ -2207,6 +2216,7 @@ export type Database = {
           p_description: string;
           p_fuel_type: string;
           p_id: string;
+          p_insurance_nil?: boolean;
           p_insurance_valid_until: string;
           p_km_driven: number;
           p_loan_status: string;

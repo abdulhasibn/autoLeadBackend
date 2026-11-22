@@ -207,7 +207,7 @@ Anonymous. CORS is limited to `PUBLIC_SITE_ORIGINS`. Only Listed vehicles (`open
 | Method | Path | Success |
 |--------|------|---------|
 | `GET` | `/public/vehicles` | `200` page of summaries: available cars first (with the requested `sort`), then cars sold in the last 90 days, newest sale first (`sort` does not reorder sold cars). Query: `makeId`, `modelId`, `bodyType`, `fuelType`, `transmission` (CSV), `priceMin`, `priceMax`, `yearMin`, `kmMax`, `sort` (`newest` \| `price_asc` \| `price_desc` \| `km_asc`), `limit` (≤ 48, default 24), `offset` |
-| `GET` | `/public/vehicles/:id` | `200` detail: summary + `description` + `photos[]` (`{ url, category }`, in display order). A car sold in the last 90 days returns normally with `status: "sold"`; dropped, removed, older-sold and unknown ids are `404` |
+| `GET` | `/public/vehicles/:id` | `200` detail: summary + `description` + `photos[]` (`{ url, category }`, in display order) + `insuranceValidUntil` (ISO date or null), `insuranceNil` (true = no insurance; false with a null date = not recorded), `rcStatus` (`clear` / `hypothecation` / `under_transfer` / null), `serviceHistory` (`full` / `partial` / `none` / `unknown` / null), `accidentHistory` (boolean). A car sold in the last 90 days returns normally with `status: "sold"`; dropped, removed, older-sold and unknown ids are `404` |
 | `GET` | `/public/filters` | `200` `{ makes[{ id, name, models[] }], bodyTypes, fuelTypes, transmissions, priceRange, yearRange }` built from available stock (sold cars excluded) |
 | `GET` | `/public/catalog/makes` | `200` `{ items[{ id, name }] }`: the full vehicle catalog's makes, not just stock. Cached 1h at the CDN |
 | `GET` | `/public/catalog/makes/:makeId/models` | `200` `{ items[{ id, name }] }` |
@@ -483,6 +483,7 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
   "numPreviousOwners": 1,
   "colour": "White",
   "insuranceValidUntil": null,
+  "insuranceNil": false,
   "rcStatus": "clear",
   "serviceHistory": "full",
   "accidentHistory": false,
@@ -495,7 +496,7 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
 
 `showroomId` is optional: omit it to use your home showroom (see **Roles**).
 
-**Update body** is the same minus `showroomId`, `ownerId`, `variantId`. `accidentHistory` is required on update. `acquisitionType` is optional: omit it or resend the current value to leave it alone. Changing it is admin-only (a salesperson gets `403 FORBIDDEN`) and refused on a sold car (`422 VEHICLE_SOLD`), because it decides whether finance reads the deal as a purchase rate or a commission.
+**Update body** is the same minus `showroomId`, `ownerId`, `variantId`. `accidentHistory` is required on update. `insuranceNil: true` records "no insurance" and needs `insuranceValidUntil` null (both set: `422 INSURANCE_NIL_WITH_DATE`); omitted on update, it is kept unless a date is sent. `acquisitionType` is optional: omit it or resend the current value to leave it alone. Changing it is admin-only (a salesperson gets `403 FORBIDDEN`) and refused on a sold car (`422 VEHICLE_SOLD`), because it decides whether finance reads the deal as a purchase rate or a commission.
 
 **List query** (all optional, AND-combined): `limit`, `offset`, `status`, `ownerId`, `showroomId`, `registration` (exact, normalised like the stored plate, so `KA-01-AB-1234` finds `KA01AB1234`), plus:
 
@@ -544,6 +545,7 @@ A min above its max is `422 VALIDATION_ERROR`. Price filters arrive with acquisi
   "numPreviousOwners": 1,
   "colour": "White",
   "insuranceValidUntil": null,
+  "insuranceNil": false,
   "rcStatus": "clear",
   "serviceHistory": "full",
   "accidentHistory": false,

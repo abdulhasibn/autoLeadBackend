@@ -54,6 +54,7 @@ export class UpdateVehicleUseCase {
         command.insuranceValidUntil === null
           ? null
           : CalendarDate.create(command.insuranceValidUntil),
+      insuranceNil: command.insuranceNil,
       rcStatus: parseRcStatus(command.rcStatus),
       serviceHistory: parseServiceHistory(command.serviceHistory),
       accidentHistory: command.accidentHistory,

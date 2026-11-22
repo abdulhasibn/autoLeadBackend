@@ -31,6 +31,8 @@ export interface VehicleCreateProps {
   readonly numPreviousOwners: PreviousOwners;
   readonly colour: string;
   readonly insuranceValidUntil: CalendarDate | null;
+  /** True: the car has no insurance ("Nil"); never together with a date. */
+  readonly insuranceNil: boolean;
   readonly rcStatus: RcStatus | null;
   readonly serviceHistory: ServiceHistory | null;
   readonly accidentHistory: boolean;
@@ -60,6 +62,8 @@ export interface VehicleDetailsUpdate {
   readonly numPreviousOwners: PreviousOwners;
   readonly colour: string;
   readonly insuranceValidUntil: CalendarDate | null;
+  /** Omitted: kept, unless a date is now set. */
+  readonly insuranceNil?: boolean;
   readonly rcStatus: RcStatus | null;
   readonly serviceHistory: ServiceHistory | null;
   readonly accidentHistory: boolean;
@@ -88,6 +92,7 @@ export class Vehicle {
     private numPreviousOwnersValue: PreviousOwners,
     private colourValue: string,
     private insuranceValidUntilValue: CalendarDate | null,
+    private insuranceNilValue: boolean,
     private rcStatusValue: RcStatus | null,
     private serviceHistoryValue: ServiceHistory | null,
     private accidentHistoryValue: boolean,
@@ -105,6 +110,7 @@ export class Vehicle {
   ) {}
 
   static create(props: VehicleCreateProps): Vehicle {
+    assertInsuranceConsistent(props.insuranceValidUntil, props.insuranceNil);
     return new Vehicle(
       props.id,
       props.showroomId,
@@ -118,6 +124,7 @@ export class Vehicle {
       props.numPreviousOwners,
       normalizeColour(props.colour),
       props.insuranceValidUntil,
+      props.insuranceNil,
       props.rcStatus,
       props.serviceHistory,
       props.accidentHistory,
@@ -149,6 +156,7 @@ export class Vehicle {
       props.numPreviousOwners,
       props.colour,
       props.insuranceValidUntil,
+      props.insuranceNil,
       props.rcStatus,
       props.serviceHistory,
       props.accidentHistory,
@@ -218,6 +226,10 @@ export class Vehicle {
     return this.insuranceValidUntilValue;
   }
 
+  get insuranceNil(): boolean {
+    return this.insuranceNilValue;
+  }
+
   get rcStatus(): RcStatus | null {
     return this.rcStatusValue;
   }
@@ -273,7 +285,11 @@ export class Vehicle {
     this.kmDrivenValue = update.kmDriven;
     this.numPreviousOwnersValue = update.numPreviousOwners;
     this.colourValue = normalizeColour(update.colour);
+    const nextNil =
+      update.insuranceNil ?? (this.insuranceNilValue && update.insuranceValidUntil === null);
+    assertInsuranceConsistent(update.insuranceValidUntil, nextNil);
     this.insuranceValidUntilValue = update.insuranceValidUntil;
+    this.insuranceNilValue = nextNil;
     this.rcStatusValue = update.rcStatus;
     this.serviceHistoryValue = update.serviceHistory;
     this.accidentHistoryValue = update.accidentHistory;
@@ -357,5 +373,14 @@ export class Vehicle {
     if (this.deletedAtValue !== null) {
       throw new Error('Cannot modify a deleted vehicle');
     }
+  }
+}
+
+function assertInsuranceConsistent(validUntil: CalendarDate | null, nil: boolean): void {
+  if (nil && validUntil !== null) {
+    throw new BusinessRuleViolationError(
+      'INSURANCE_NIL_WITH_DATE',
+      'Insurance is either Nil or valid until a date, not both',
+    );
   }
 }

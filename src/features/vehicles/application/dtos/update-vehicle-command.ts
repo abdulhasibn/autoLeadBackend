@@ -8,6 +8,8 @@ export interface UpdateVehicleCommand {
   readonly numPreviousOwners: number;
   readonly colour: string;
   readonly insuranceValidUntil: string | null;
+  /** Omitted (undefined): kept, unless a date is set. */
+  readonly insuranceNil?: boolean;
   readonly rcStatus: string | null;
   readonly serviceHistory: string | null;
   readonly accidentHistory: boolean;

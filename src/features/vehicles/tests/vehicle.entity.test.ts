@@ -5,6 +5,7 @@ import { toOwnerId } from '../../../domain/shared/owner-id';
 import { toShowroomId } from '../../../domain/shared/showroom-id';
 import { toUserId } from '../../../domain/shared/user-id';
 import { toVehicleId } from '../../../domain/shared/vehicle-id';
+import { CalendarDate } from '../../../domain/shared/calendar-date.value-object';
 import { AcquisitionType } from '../domain/acquisition-type.value-object';
 import { FuelType } from '../../../domain/shared/fuel-type.value-object';
 import { KilometersDriven } from '../domain/kilometers-driven.value-object';
@@ -19,7 +20,9 @@ import { VehicleYear } from '../domain/vehicle-year.value-object';
 
 const NOW = new Date('2026-10-03T00:00:00.000Z');
 
-function makeVehicle(): Vehicle {
+function makeVehicle(
+  insurance: { insuranceValidUntil?: CalendarDate | null; insuranceNil?: boolean } = {},
+): Vehicle {
   return Vehicle.create({
     id: toVehicleId('33333333-3333-4333-8333-333333333333'),
     showroomId: toShowroomId('b0000000-0000-4000-8000-000000000001'),
@@ -33,6 +36,7 @@ function makeVehicle(): Vehicle {
     numPreviousOwners: PreviousOwners.create(1),
     colour: '  White  ',
     insuranceValidUntil: null,
+    insuranceNil: false,
     rcStatus: 'clear',
     serviceHistory: 'full',
     accidentHistory: false,
@@ -43,6 +47,7 @@ function makeVehicle(): Vehicle {
     submittedBy: toUserId('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
     createdAt: NOW,
     updatedAt: NOW,
+    ...insurance,
   });
 }
 
@@ -68,6 +73,7 @@ describe('Vehicle entity', () => {
       numPreviousOwners: PreviousOwners.create(2),
       colour: 'Black',
       insuranceValidUntil: null,
+      insuranceNil: false,
       rcStatus: null,
       serviceHistory: null,
       accidentHistory: true,
@@ -80,6 +86,63 @@ describe('Vehicle entity', () => {
     expect(vehicle.registrationNumber.value).toBe('KA01AB9999');
     expect(vehicle.accidentHistory).toBe(true);
     expect(vehicle.updatedAt).toEqual(at);
+  });
+
+  describe('insurance Nil', () => {
+    const details = (insurance: {
+      insuranceValidUntil: CalendarDate | null;
+      insuranceNil?: boolean;
+    }) => ({
+      year: VehicleYear.create(2019),
+      registrationNumber: RegistrationNumber.create('KA01AB1234'),
+      fuelType: FuelType.create('petrol'),
+      transmission: Transmission.create('manual'),
+      kmDriven: KilometersDriven.create(42000),
+      numPreviousOwners: PreviousOwners.create(1),
+      colour: 'White',
+      rcStatus: null,
+      serviceHistory: null,
+      accidentHistory: false,
+      loanStatus: null,
+      location: null,
+      description: null,
+      updatedAt: NOW,
+      ...insurance,
+    });
+
+    it('records Nil apart from not filled in', () => {
+      expect(makeVehicle().insuranceNil).toBe(false);
+      const nil = makeVehicle({ insuranceNil: true });
+      expect(nil.insuranceNil).toBe(true);
+      expect(nil.insuranceValidUntil).toBeNull();
+    });
+
+    it('refuses Nil together with a date', () => {
+      expect(() =>
+        makeVehicle({ insuranceNil: true, insuranceValidUntil: CalendarDate.create('2027-01-01') }),
+      ).toThrow(expect.objectContaining({ code: 'INSURANCE_NIL_WITH_DATE' }));
+      const vehicle = makeVehicle();
+      expect(() =>
+        vehicle.updateDetails(
+          details({ insuranceNil: true, insuranceValidUntil: CalendarDate.create('2027-01-01') }),
+        ),
+      ).toThrow(expect.objectContaining({ code: 'INSURANCE_NIL_WITH_DATE' }));
+    });
+
+    it('keeps Nil when an update omits it, and clears it when a date is set', () => {
+      const vehicle = makeVehicle({ insuranceNil: true });
+      vehicle.updateDetails(details({ insuranceValidUntil: null }));
+      expect(vehicle.insuranceNil).toBe(true);
+      vehicle.updateDetails(details({ insuranceValidUntil: CalendarDate.create('2027-01-01') }));
+      expect(vehicle.insuranceNil).toBe(false);
+      expect(vehicle.insuranceValidUntil?.value).toBe('2027-01-01');
+    });
+
+    it('turns Nil off explicitly', () => {
+      const vehicle = makeVehicle({ insuranceNil: true });
+      vehicle.updateDetails(details({ insuranceValidUntil: null, insuranceNil: false }));
+      expect(vehicle.insuranceNil).toBe(false);
+    });
   });
 
   it('lets an admin drop and re-list a vehicle with a reason', () => {
@@ -171,6 +234,7 @@ describe('Vehicle entity', () => {
         numPreviousOwners: vehicle.numPreviousOwners,
         colour: vehicle.colour,
         insuranceValidUntil: null,
+        insuranceNil: false,
         rcStatus: null,
         serviceHistory: null,
         accidentHistory: false,

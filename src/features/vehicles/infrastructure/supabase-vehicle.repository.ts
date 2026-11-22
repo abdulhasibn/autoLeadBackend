@@ -11,7 +11,7 @@ import { translateVehicleWriteError } from './translate-vehicle-write-error';
 import { toVehicle, type VehicleRow } from './vehicle.mapper';
 
 const VEHICLE_COLUMNS =
-  'id, showroom_id, owner_id, variant_id, year, registration_number, fuel_type, transmission, km_driven, num_previous_owners, colour, insurance_valid_until, rc_status, service_history, accident_history, loan_status, location, description, status, sold_lead_id, acquisition_type, submitted_by, created_at, updated_at, deleted_at';
+  'id, showroom_id, owner_id, variant_id, year, registration_number, fuel_type, transmission, km_driven, num_previous_owners, colour, insurance_valid_until, insurance_nil, rc_status, service_history, accident_history, loan_status, location, description, status, sold_lead_id, acquisition_type, submitted_by, created_at, updated_at, deleted_at';
 
 export class SupabaseVehicleRepository implements IVehicleRepository {
   constructor(private readonly db: SupabaseClient<Database>) {}
@@ -51,6 +51,7 @@ export class SupabaseVehicleRepository implements IVehicleRepository {
         p_colour: vehicle.colour,
         p_insurance_valid_until:
           vehicle.insuranceValidUntil === null ? null : vehicle.insuranceValidUntil.value,
+        p_insurance_nil: vehicle.insuranceNil,
         p_rc_status: vehicle.rcStatus,
         p_service_history: vehicle.serviceHistory,
         p_accident_history: vehicle.accidentHistory,

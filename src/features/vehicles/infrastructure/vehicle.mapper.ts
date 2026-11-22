@@ -31,6 +31,7 @@ export interface VehicleRow {
   readonly num_previous_owners: number;
   readonly colour: string;
   readonly insurance_valid_until: string | null;
+  readonly insurance_nil: boolean;
   readonly rc_status: string | null;
   readonly service_history: string | null;
   readonly accident_history: boolean;
@@ -79,6 +80,7 @@ export function toVehicle(row: VehicleRow): Vehicle {
         : mapVo(row.insurance_valid_until, row.id, 'insurance_valid_until', (value) =>
             CalendarDate.create(value),
           ),
+    insuranceNil: row.insurance_nil,
     rcStatus: mapVo(row.rc_status, row.id, 'rc_status', parseRcStatus),
     serviceHistory: mapVo(row.service_history, row.id, 'service_history', parseServiceHistory),
     accidentHistory: row.accident_history,
@@ -118,6 +120,7 @@ export function toVehicleReadModel(row: VehicleListRow): VehicleReadModel | null
     numPreviousOwners: row.num_previous_owners,
     colour: row.colour,
     insuranceValidUntil: row.insurance_valid_until,
+    insuranceNil: row.insurance_nil ?? false,
     rcStatus: row.rc_status,
     serviceHistory: row.service_history,
     accidentHistory: row.accident_history,
