@@ -51,6 +51,16 @@ export class SupabaseVehicleMediaRepository implements IVehicleMediaRepository {
     }
   }
 
+  async updatePlacement(media: VehicleMedia): Promise<void> {
+    const { error } = await this.db
+      .from('vehicle_media')
+      .update({ category: media.category.value, sort_order: media.sortOrder })
+      .eq('id', media.id);
+    if (error !== null) {
+      throw new DatabaseUnavailableError(`Failed to reorder vehicle media: ${error.message}`);
+    }
+  }
+
   async delete(id: MediaId): Promise<void> {
     const { error } = await this.db.from('vehicle_media').delete().eq('id', id);
     if (error !== null) {

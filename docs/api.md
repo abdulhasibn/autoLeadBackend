@@ -462,6 +462,7 @@ Creates a second-hand car. Status is always `open` on create. Photos and documen
 | `POST` | `/vehicles/:id/media/uploads` | `200` signed upload ticket |
 | `POST` | `/vehicles/:id/media` | `201` media row + short-lived read URL |
 | `GET` | `/vehicles/:id/media` | `200` page |
+| `PUT` | `/vehicles/:id/media/order` | `204`: body `{ "items": [{ "id", "category", "sortOrder" }] }` (1-100). Moves/swaps photos between angle slots; all ids are checked before any write
 | `DELETE` | `/vehicles/:id/media/:mediaId` | `204` (Admin) |
 | `POST` | `/vehicles/:id/documents/uploads` | `200` signed upload ticket |
 | `POST` | `/vehicles/:id/documents` | `201` document row + short-lived read URL |

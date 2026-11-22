@@ -16,6 +16,7 @@ import { CreateVehicleUseCase } from './application/use-cases/create-vehicle.use
 import { CreateVehicleDocumentUploadUseCase } from './application/use-cases/create-vehicle-document-upload.use-case';
 import { CreateVehicleMediaUploadUseCase } from './application/use-cases/create-vehicle-media-upload.use-case';
 import { DeleteVehicleDocumentUseCase } from './application/use-cases/delete-vehicle-document.use-case';
+import { ReorderVehicleMediaUseCase } from './application/use-cases/reorder-vehicle-media.use-case';
 import { DeleteVehicleMediaUseCase } from './application/use-cases/delete-vehicle-media.use-case';
 import { GetVehicleUseCase } from './application/use-cases/get-vehicle.use-case';
 import { ListMakesUseCase } from './application/use-cases/list-makes.use-case';
@@ -56,6 +57,7 @@ import { CreateVehicleController } from './presentation/controllers/create-vehic
 import { CreateVehicleDocumentUploadController } from './presentation/controllers/create-vehicle-document-upload.controller';
 import { CreateVehicleMediaUploadController } from './presentation/controllers/create-vehicle-media-upload.controller';
 import { DeleteVehicleDocumentController } from './presentation/controllers/delete-vehicle-document.controller';
+import { ReorderVehicleMediaController } from './presentation/controllers/reorder-vehicle-media.controller';
 import { DeleteVehicleMediaController } from './presentation/controllers/delete-vehicle-media.controller';
 import { GetVehicleController } from './presentation/controllers/get-vehicle.controller';
 import { ListMakesController } from './presentation/controllers/list-makes.controller';
@@ -170,6 +172,7 @@ export function composeVehicles(
     deps.clock,
   );
   const deleteVehicleMediaUseCase = new DeleteVehicleMediaUseCase(policy, repo, mediaRepo, storage);
+  const reorderVehicleMediaUseCase = new ReorderVehicleMediaUseCase(policy, repo, mediaRepo);
   const createVehicleDocumentUploadUseCase = new CreateVehicleDocumentUploadUseCase(
     policy,
     repo,
@@ -225,6 +228,7 @@ export function composeVehicles(
     confirmVehicleMediaController: new ConfirmVehicleMediaController(confirmVehicleMediaUseCase),
     listVehicleMediaController: new ListVehicleMediaController(listVehicleMediaUseCase),
     deleteVehicleMediaController: new DeleteVehicleMediaController(deleteVehicleMediaUseCase),
+    reorderVehicleMediaController: new ReorderVehicleMediaController(reorderVehicleMediaUseCase),
     createVehicleDocumentUploadController: new CreateVehicleDocumentUploadController(
       createVehicleDocumentUploadUseCase,
     ),
