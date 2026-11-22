@@ -113,6 +113,10 @@ export class FakeVehicleMediaRepository implements IVehicleMediaRepository {
   async delete(id: MediaId): Promise<void> {
     this.store.delete(id);
   }
+
+  async updatePlacement(media: VehicleMedia): Promise<void> {
+    this.store.set(media.id, media);
+  }
 }
 
 export class FakeVehicleDocumentRepository implements IVehicleDocumentRepository {
