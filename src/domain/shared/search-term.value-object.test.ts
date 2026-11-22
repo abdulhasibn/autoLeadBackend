@@ -26,4 +26,14 @@ describe('SearchTerm', () => {
   it('rejects an overlong term', () => {
     expect(() => SearchTerm.create('a'.repeat(101))).toThrow();
   });
+
+  it('tryCreate gives undefined when nothing is searchable', () => {
+    expect(SearchTerm.tryCreate('%')).toBeUndefined();
+    expect(SearchTerm.tryCreate(' _(")')).toBeUndefined();
+    expect(SearchTerm.tryCreate('a%')?.value).toBe('a');
+  });
+
+  it('tryCreate still rejects an overlong term', () => {
+    expect(() => SearchTerm.tryCreate('a'.repeat(101))).toThrow();
+  });
 });

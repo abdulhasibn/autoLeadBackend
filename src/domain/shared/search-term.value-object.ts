@@ -22,6 +22,21 @@ export class SearchTerm {
     return new SearchTerm(cleaned);
   }
 
+  /**
+   * Like `create`, but a term with nothing searchable left (`%`, `(`, `"`)
+   * means "no search" and gives undefined. An overlong term still throws.
+   */
+  static tryCreate(input: string): SearchTerm | undefined {
+    try {
+      return SearchTerm.create(input);
+    } catch (err) {
+      if (input.trim().length <= MAX_SEARCH_TERM_LENGTH) {
+        return undefined;
+      }
+      throw err;
+    }
+  }
+
   /** The term split on spaces, for matching each word on its own. */
   get words(): readonly string[] {
     return this.value.split(' ');
