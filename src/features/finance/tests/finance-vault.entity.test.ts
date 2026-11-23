@@ -50,6 +50,22 @@ describe('FinanceVault', () => {
     expect(vault.failedUnlocks).toBe(0);
   });
 
+  it('reports the tries left, restarting after the window and at 0 while blocked', () => {
+    const vault = pendingVault();
+    expect(vault.attemptsLeft(T0)).toBe(5);
+
+    vault.recordFailedUnlock(minutes(0));
+    vault.recordFailedUnlock(minutes(1));
+    expect(vault.attemptsLeft(minutes(2))).toBe(3);
+    expect(vault.attemptsLeft(minutes(40))).toBe(5);
+
+    vault.recordFailedUnlock(minutes(2));
+    vault.recordFailedUnlock(minutes(3));
+    vault.recordFailedUnlock(minutes(4));
+    expect(vault.attemptsLeft(minutes(5))).toBe(0);
+    expect(vault.attemptsLeft(minutes(19))).toBe(5);
+  });
+
   it('starts a new count when the last failure is older than the window', () => {
     const vault = pendingVault();
     for (let i = 0; i < 4; i++) {

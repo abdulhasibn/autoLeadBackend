@@ -382,7 +382,12 @@ export function composeFinance(
       return { status: 409, code: err.code, message: err.message };
     }
     if (err instanceof InvalidFinanceKeyError) {
-      return { status: 422, code: err.code, message: err.message };
+      return {
+        status: 422,
+        code: err.code,
+        message: err.message,
+        ...(err.attemptsLeft === undefined ? {} : { details: { attemptsLeft: err.attemptsLeft } }),
+      };
     }
     if (err instanceof FinanceUnlockBlockedError) {
       return { status: 429, code: err.code, message: err.message };

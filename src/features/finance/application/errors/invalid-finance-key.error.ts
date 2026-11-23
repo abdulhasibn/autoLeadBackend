@@ -5,7 +5,14 @@
 export class InvalidFinanceKeyError extends Error {
   readonly code = 'INVALID_FINANCE_KEY';
 
-  constructor(message = 'The key is not correct') {
+  /**
+   * @param attemptsLeft wrong keys still allowed before the unlock pause
+   *   (0 when this one triggered it); omitted where no lockout counting applies.
+   */
+  constructor(
+    readonly attemptsLeft?: number,
+    message = 'The key is not correct',
+  ) {
     super(message);
     this.name = 'InvalidFinanceKeyError';
   }

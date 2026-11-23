@@ -284,6 +284,20 @@ describe('finance vault lifecycle', () => {
       await expect(unlock.execute({ financeKey: keys.financeKey }, ADMIN)).resolves.toBeDefined();
     });
 
+    it('tells the admin how many tries are left, counting down to 0 on the fifth wrong key', async () => {
+      await activeVault();
+      const left: Array<number | undefined> = [];
+      for (let i = 0; i < 5; i++) {
+        const err = await unlock
+          .execute({ financeKey: wrongFinanceKey() }, ADMIN)
+          .catch((e: unknown) => e);
+        expect(err).toBeInstanceOf(InvalidFinanceKeyError);
+        left.push((err as InvalidFinanceKeyError).attemptsLeft);
+      }
+
+      expect(left).toEqual([4, 3, 2, 1, 0]);
+    });
+
     it('applies the same lockout to recovery', async () => {
       await activeVault();
       for (let i = 0; i < 5; i++) {

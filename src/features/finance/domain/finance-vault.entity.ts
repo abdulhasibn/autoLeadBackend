@@ -121,6 +121,16 @@ export class FinanceVault {
     return until !== null && until.getTime() > now.getTime();
   }
 
+  /** Wrong keys still allowed before unlock is paused; 0 while blocked. */
+  attemptsLeft(now: Date): number {
+    if (this.isUnlockBlocked(now)) {
+      return 0;
+    }
+    const last = this.props.lastFailedUnlockAt;
+    const withinWindow = last !== null && now.getTime() - last.getTime() < FAILED_UNLOCK_WINDOW_MS;
+    return Math.max(0, MAX_FAILED_UNLOCKS - (withinWindow ? this.props.failedUnlocks : 0));
+  }
+
   /** Whole minutes until unlock is allowed again (at least 1 while blocked). */
   minutesUntilUnblocked(now: Date): number {
     const until = this.props.unlockBlockedUntil;
