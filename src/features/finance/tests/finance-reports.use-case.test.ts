@@ -306,10 +306,89 @@ describe('finance reports', () => {
       sales: 560000,
       landingCost: 547000,
       commissions: 0,
+      commissionSalesValue: 0,
       profit: 13000,
       carsMissingPurchaseRate: 0,
       uncountedSales: 0,
     });
+  });
+
+  it("'Sales' means purchased cars on every screen; a commission car's price is shown apart", async () => {
+    const baleno = kit.vehicles.cars.get(BALENO);
+    if (baleno !== undefined) baleno.saleModel = 'commission';
+    await new SetVehicleDealUseCase(
+      kit.policy,
+      kit.sessionService,
+      kit.vehicles,
+      kit.deals,
+      kit.dealSealer,
+      kit.clock,
+    ).execute(
+      {
+        sessionToken: token,
+        vehicleId: BALENO,
+        purchaseRatePaise: null,
+        commissionBasisPoints: 500,
+        purchasedOn: null,
+        ownerExpectedPricePaise: null,
+        minimumSellingPricePaise: null,
+        note: null,
+      },
+      ADMIN,
+    );
+    markCarSold(kit, BALENO);
+    await new RecordVehicleSaleUseCase(
+      kit.policy,
+      kit.sessionService,
+      kit.vehicles,
+      kit.leadConversion,
+      kit.deals,
+      kit.dealSealer,
+      kit.entries,
+      kit.entrySealer,
+      kit.clock,
+      kit.entries,
+      kit.ids,
+    ).execute(
+      {
+        sessionToken: token,
+        vehicleId: BALENO,
+        finalisedPricePaise: 30_000_000,
+        soldOn: '2026-10-28',
+        leadId: null,
+      },
+      ADMIN,
+    );
+
+    const oct = (await pnl.execute(range(), ADMIN)).buckets[1];
+    const totals = (await pnl.execute(range(), ADMIN)).totals;
+    expect(oct).toMatchObject({
+      sales: 560000,
+      commissions: 15000,
+      commissionSalesValue: 300000,
+      carsSold: 2,
+    });
+
+    const cars = await vehicleProfit.execute(
+      {
+        sessionToken: token,
+        from: '2026-10-01',
+        to: '2026-10-31',
+        showroomId: null,
+        sort: 'profit',
+      },
+      ADMIN,
+    );
+    expect(cars.totals).toMatchObject({
+      cars: 2,
+      sales: 560000,
+      commissionSalesValue: 300000,
+      commissions: 15000,
+    });
+    // The two reports agree on "Sales"; the owners' car is not in either.
+    expect(totals.sales).toBe(cars.totals.sales);
+    // Commission-car value is information only: profit is unchanged by it.
+    expect(cars.totals.profit).toBe(13000 + 15000);
   });
 
   it('a car sold without a purchase rate stays out of sales and profit, and is flagged', async () => {
@@ -367,6 +446,7 @@ describe('finance reports', () => {
       sales: 560000,
       landingCost: 547000,
       commissions: 0,
+      commissionSalesValue: 0,
       profit: 13000,
       carsMissingPurchaseRate: 1,
       uncountedSales: 300000,
@@ -417,6 +497,8 @@ describe('finance reports', () => {
       from: '2026-11-01',
       to: '2026-11-03',
       sales: 0,
+      commissions: 0,
+      commissionSalesValue: 0,
       netProfit: -87000,
       businessExpenses: 85000,
       cashIn: 0,

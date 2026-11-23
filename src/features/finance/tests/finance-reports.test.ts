@@ -213,6 +213,8 @@ describe('buildProfitAndLoss with a commission car', () => {
     const [oct, nov] = pnl.buckets;
 
     expect(rupees(oct?.commissions ?? 0)).toBe(28000); // 5% of 560000
+    // The owner's car's price is information only: not in sales.
+    expect(rupees(oct?.commissionSalesValue ?? 0)).toBe(560000);
     expect(oct).toMatchObject({
       sales: 0,
       costOfSales: 0,
@@ -235,6 +237,7 @@ describe('buildProfitAndLoss with a commission car', () => {
 
     expect(pnl.totals).toMatchObject({
       commissions: 0,
+      commissionSalesValue: 0,
       grossProfit: 0,
       carsMissingPurchaseRate: 1,
       uncountedSales: 56_000_000,

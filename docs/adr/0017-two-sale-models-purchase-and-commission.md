@@ -23,6 +23,7 @@ How the money moves on a commission sale (client's answers):
   - owed by buyer = finalised − Σ `sale` income, as before
 - **P&L** adds a `commissions` line on the sale date, part of gross profit. A commission car's costs never appear in P&L. A sold car missing its purchase rate *or* commission % is counted in `carsMissingPurchaseRate` and `uncountedSales`, as before.
 - Purchase cars are unchanged.
+- **"Sales" means purchased cars, on every screen** (amended 2026-11-23, issue UX-1). P&L `sales`, the finance summary's `sales` and the profit-per-car report's `totals.sales` all sum the finalised prices of sold purchase cars with a known rate. A commission car's full price is never "sales": it is returned apart as `commissionSalesValue` (P&L line and buckets, summary windows, profit-per-car totals), information only, outside cost of sales and profit. What we earn on those cars is `commissions`; the summary window also returns it. Screens label the figure "Sales (purchased cars)" and show the commission-car value and commission beside it. Rejected: counting commission cars' price as sales (overstates revenue with owners' money and needs a made-up cost of sales).
 
 ## Considered Options
 
