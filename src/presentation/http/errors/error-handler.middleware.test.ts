@@ -25,6 +25,32 @@ function appWithCapturedLogs(): { app: express.Express; output: () => string } {
   return { app, output: () => chunks.join('') };
 }
 
+describe('error handler: feature error details', () => {
+  it('passes a feature mapping details through to the response', async () => {
+    class Boom extends Error {}
+    const app = express();
+    app.get('/boom', () => {
+      throw new Boom('x');
+    });
+    const logger = createLogger({ logLevel: 'silent', nodeEnv: 'test' });
+    app.use(
+      createErrorHandlerMiddleware(logger, [
+        (err) =>
+          err instanceof Boom
+            ? { status: 422, code: 'BOOM', message: 'nope', details: { attemptsLeft: 2 } }
+            : null,
+      ]),
+    );
+
+    const res = await supertest(app).get('/boom');
+
+    expect(res.status).toBe(422);
+    expect(res.body).toEqual({
+      error: { code: 'BOOM', message: 'nope', details: { attemptsLeft: 2 } },
+    });
+  });
+});
+
 describe('error handler: request bodies the JSON parser rejects', () => {
   it('answers 400 INVALID_JSON and never logs the body', async () => {
     const { app, output } = appWithCapturedLogs();

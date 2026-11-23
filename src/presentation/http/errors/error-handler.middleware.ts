@@ -124,10 +124,15 @@ function mapError(
     .find((mapping): mapping is HttpErrorMapping => mapping !== null);
 
   if (featureMapping !== undefined) {
-    return {
-      status: featureMapping.status,
-      body: { error: { code: featureMapping.code, message: featureMapping.message } },
-    };
+    const error =
+      featureMapping.details === undefined
+        ? { code: featureMapping.code, message: featureMapping.message }
+        : {
+            code: featureMapping.code,
+            message: featureMapping.message,
+            details: featureMapping.details,
+          };
+    return { status: featureMapping.status, body: { error } };
   }
 
   return {

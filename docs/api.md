@@ -175,7 +175,7 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | 409 | `FINANCE_NOT_INITIALIZED` | Finance used before `POST /finance/vault/setup` |
 | 409 | `FINANCE_ALREADY_INITIALIZED` | Setting up or confirming a vault that is already confirmed |
 | 409 | `FINANCE_VAULT_NOT_CONFIRMED` | Unlocking, changing the key or recovering before the recovery key was confirmed |
-| 422 | `INVALID_FINANCE_KEY` | Well-formed finance or recovery key that doesn't open the vault (counts toward the lockout) |
+| 422 | `INVALID_FINANCE_KEY` | Well-formed finance or recovery key that doesn't open the vault (counts toward the lockout). `error.details.attemptsLeft` is how many wrong keys remain before the pause (`0` when this one triggered it) |
 | 423 | `FINANCE_LOCKED` | Finance route without a valid `X-Finance-Session` (missing, expired, locked, or another user's): show the unlock screen |
 | 429 | `FINANCE_UNLOCK_BLOCKED` | Five wrong keys within 15 minutes; key entry is paused for 15 minutes |
 | 409 | `FINANCE_TAG_NAME_TAKEN` | Another tag (archived or not) already has that name, ignoring case |
@@ -1156,7 +1156,7 @@ Every finance response sends `Cache-Control: no-store`. Salespeople get `403`.
 - Any `423 FINANCE_LOCKED` means: drop the token and show the unlock screen.
 - `POST /finance/lock` ends it (use on "Lock" and sign-out). Always `204`.
 
-**Lockout.** Five wrong keys within 15 minutes (finance or recovery key) pause key entry for 15 minutes: `429 FINANCE_UNLOCK_BLOCKED`, with the minutes left in the message.
+**Lockout.** Five wrong keys within 15 minutes (finance or recovery key) pause key entry for 15 minutes: `429 FINANCE_UNLOCK_BLOCKED`, with the minutes left in the message. Every `422 INVALID_FINANCE_KEY` from unlock, recover or confirm carries `error.details.attemptsLeft` (5 minus the wrong keys in the current 15-minute window), so the app can say "2 tries left before a 15-minute pause".
 
 **Change key.** Needs an unlocked session and the current key. Returns the new finance key once. Other sessions end; the caller's stays unlocked. No data is re-encrypted.
 

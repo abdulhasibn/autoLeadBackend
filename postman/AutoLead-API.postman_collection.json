@@ -2748,7 +2748,7 @@
                   }
                 ],
                 "url": "{{baseUrl}}/finance/vault/confirm",
-                "description": "**Story:** Right after setup, the admin types the recovery key back in to prove it was saved; that activates finance.\n\nPOST /finance/vault/confirm — activates a pending vault.\n\n**Auth:** Bearer, Admin only.\n\n- Body `recoveryKey` (string, required): `RK-` key from setup. Case, spaces, dashes and O/I/L look-alikes are ignored; the prefix is optional.\n- `200` vault status with `confirmed: true`.\n- `422 INVALID_FINANCE_KEY` wrong key (counts toward the lockout); `422 VALIDATION_ERROR` not key-shaped; `409 FINANCE_NOT_INITIALIZED` no vault; `409 FINANCE_ALREADY_INITIALIZED` already confirmed; `429 FINANCE_UNLOCK_BLOCKED`.\n\n- Every finance response sends `Cache-Control: no-store`.\n- Salespeople get `403 FORBIDDEN`. See docs/api.md#finance--admin-only-encrypted-adr-0014.",
+                "description": "**Story:** Right after setup, the admin types the recovery key back in to prove it was saved; that activates finance.\n\nPOST /finance/vault/confirm — activates a pending vault.\n\n**Auth:** Bearer, Admin only.\n\n- Body `recoveryKey` (string, required): `RK-` key from setup. Case, spaces, dashes and O/I/L look-alikes are ignored; the prefix is optional.\n- `200` vault status with `confirmed: true`.\n- `422 INVALID_FINANCE_KEY` wrong key (counts toward the lockout; `error.details.attemptsLeft` = tries left before the 15-minute pause); `422 VALIDATION_ERROR` not key-shaped; `409 FINANCE_NOT_INITIALIZED` no vault; `409 FINANCE_ALREADY_INITIALIZED` already confirmed; `429 FINANCE_UNLOCK_BLOCKED`.\n\n- Every finance response sends `Cache-Control: no-store`.\n- Salespeople get `403 FORBIDDEN`. See docs/api.md#finance--admin-only-encrypted-adr-0014.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"recoveryKey\": \"{{recoveryKey}}\"\n}",
@@ -2824,7 +2824,7 @@
                       "value": "application/json"
                     }
                   ],
-                  "body": "{\n  \"error\": {\n    \"code\": \"INVALID_FINANCE_KEY\",\n    \"message\": \"The key is not correct\"\n  }\n}"
+                  "body": "{\n  \"error\": {\n    \"code\": \"INVALID_FINANCE_KEY\",\n    \"message\": \"The key is not correct\",\n    \"details\": {\n      \"attemptsLeft\": 2\n    }\n  }\n}"
                 }
               ]
             },
@@ -2853,7 +2853,7 @@
                   }
                 ],
                 "url": "{{baseUrl}}/finance/unlock",
-                "description": "**Story:** The admin enters the finance key to open the finance screens; the app gets a session token to send with every finance request.\n\nPOST /finance/unlock — starts an unlock session.\n\n**Auth:** Bearer, Admin only.\n\n- Body `financeKey` (string, required): `FK-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX`, forgiving input as for the recovery key.\n- `200` `{ sessionToken, expiresAt }`. Send the token as `X-Finance-Session`. Keep it in memory (web) or Keychain/Keystore (mobile).\n- The session locks after 30 minutes idle (each finance request extends it) and after 8 hours at most.\n- `422 INVALID_FINANCE_KEY`; five wrong keys in 15 minutes → `429 FINANCE_UNLOCK_BLOCKED` for 15 minutes; `409 FINANCE_VAULT_NOT_CONFIRMED`; `409 FINANCE_NOT_INITIALIZED`.\n- The test script stores the token as `financeSessionToken`.\n\n- Every finance response sends `Cache-Control: no-store`.\n- Salespeople get `403 FORBIDDEN`. See docs/api.md#finance--admin-only-encrypted-adr-0014.",
+                "description": "**Story:** The admin enters the finance key to open the finance screens; the app gets a session token to send with every finance request.\n\nPOST /finance/unlock — starts an unlock session.\n\n**Auth:** Bearer, Admin only.\n\n- Body `financeKey` (string, required): `FK-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX`, forgiving input as for the recovery key.\n- `200` `{ sessionToken, expiresAt }`. Send the token as `X-Finance-Session`. Keep it in memory (web) or Keychain/Keystore (mobile).\n- The session locks after 30 minutes idle (each finance request extends it) and after 8 hours at most.\n- `422 INVALID_FINANCE_KEY` (with `error.details.attemptsLeft`, the tries left before the pause); five wrong keys in 15 minutes → `429 FINANCE_UNLOCK_BLOCKED` for 15 minutes; `409 FINANCE_VAULT_NOT_CONFIRMED`; `409 FINANCE_NOT_INITIALIZED`.\n- The test script stores the token as `financeSessionToken`.\n\n- Every finance response sends `Cache-Control: no-store`.\n- Salespeople get `403 FORBIDDEN`. See docs/api.md#finance--admin-only-encrypted-adr-0014.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"financeKey\": \"{{financeKey}}\"\n}",
@@ -2929,7 +2929,7 @@
                       "value": "application/json"
                     }
                   ],
-                  "body": "{\n  \"error\": {\n    \"code\": \"INVALID_FINANCE_KEY\",\n    \"message\": \"The key is not correct\"\n  }\n}"
+                  "body": "{\n  \"error\": {\n    \"code\": \"INVALID_FINANCE_KEY\",\n    \"message\": \"The key is not correct\",\n    \"details\": {\n      \"attemptsLeft\": 2\n    }\n  }\n}"
                 },
                 {
                   "id": "992a2a59-05b4-4c1b-90c8-2f1a56c9ae8d",
@@ -3233,7 +3233,7 @@
                       "value": "application/json"
                     }
                   ],
-                  "body": "{\n  \"error\": {\n    \"code\": \"INVALID_FINANCE_KEY\",\n    \"message\": \"The key is not correct\"\n  }\n}"
+                  "body": "{\n  \"error\": {\n    \"code\": \"INVALID_FINANCE_KEY\",\n    \"message\": \"The key is not correct\",\n    \"details\": {\n      \"attemptsLeft\": 2\n    }\n  }\n}"
                 }
               ]
             }

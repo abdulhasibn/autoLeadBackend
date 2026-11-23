@@ -91,7 +91,7 @@ export class VaultKeyring {
         actorId: ctx.userId,
         at: now,
       });
-      throw new InvalidFinanceKeyError();
+      throw new InvalidFinanceKeyError(vault.attemptsLeft(now));
     }
 
     if (vault.recordSuccessfulUnlock(now)) {
