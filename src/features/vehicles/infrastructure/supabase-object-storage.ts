@@ -14,6 +14,8 @@ const BUCKETS: Record<VehicleStorageKind, string> = {
   documents: 'vehicle-documents',
 };
 
+const HEAD_READ_TIMEOUT_MS = 5000;
+
 export class SupabaseObjectStorage implements ObjectStoragePort {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
@@ -49,6 +51,32 @@ export class SupabaseObjectStorage implements ObjectStoragePort {
     }
 
     return (data ?? []).some((item) => item.name === name);
+  }
+
+  async readHead(
+    kind: VehicleStorageKind,
+    storagePath: string,
+    length: number,
+  ): Promise<Uint8Array | null> {
+    const { url } = await this.createSignedReadUrl({ kind, storagePath, expiresInSeconds: 60 });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: { Range: `bytes=0-${length - 1}` },
+        signal: AbortSignal.timeout(HEAD_READ_TIMEOUT_MS),
+      });
+    } catch (cause) {
+      throw new DatabaseUnavailableError('Failed to read stored object', { cause });
+    }
+    if (response.status === 404 || response.status === 400) {
+      return null;
+    }
+    // 200 (range ignored) or 206; either way only the leading bytes are kept.
+    if (!response.ok) {
+      throw new DatabaseUnavailableError(`Failed to read stored object: ${response.status}`);
+    }
+    const body = new Uint8Array(await response.arrayBuffer());
+    return body.slice(0, length);
   }
 
   async createSignedReadUrl(input: {

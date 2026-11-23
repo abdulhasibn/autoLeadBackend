@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import { NotFoundError } from '../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
 import { toOwnerId } from '../../../domain/shared/owner-id';
@@ -111,6 +112,42 @@ describe('ConfirmVehicleMediaUseCase', () => {
         ADMIN,
       ),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('rejects a text file and removes the stored object', async () => {
+    storage.seed('media', STORAGE_PATH, new TextEncoder().encode('this is not a real file'));
+    await expect(
+      useCase.execute(
+        { vehicleId: VEHICLE_ID, storagePath: STORAGE_PATH, category: 'front', sortOrder: 0 },
+        ADMIN,
+      ),
+    ).rejects.toMatchObject({
+      code: 'INVALID_FILE_CONTENT',
+    });
+    expect(await storage.exists('media', STORAGE_PATH)).toBe(false);
+  });
+
+  it('does not save a row for a rejected file', async () => {
+    storage.seed('media', STORAGE_PATH, new TextEncoder().encode('GIF89a'));
+    await expect(
+      useCase.execute(
+        { vehicleId: VEHICLE_ID, storagePath: STORAGE_PATH, category: 'front', sortOrder: 0 },
+        ADMIN,
+      ),
+    ).rejects.toBeInstanceOf(BusinessRuleViolationError);
+    expect(media.store.size).toBe(0);
+  });
+
+  it('fails closed when the stored object cannot be read', async () => {
+    storage.unreadable.add(STORAGE_PATH);
+    await expect(
+      useCase.execute(
+        { vehicleId: VEHICLE_ID, storagePath: STORAGE_PATH, category: 'front', sortOrder: 0 },
+        ADMIN,
+      ),
+    ).rejects.toThrow('storage unavailable');
+    expect(media.store.size).toBe(0);
+    expect(await storage.exists('media', STORAGE_PATH)).toBe(true);
   });
 
   it('throws when the vehicle is missing', async () => {

@@ -66,11 +66,12 @@ function seedVehicle(): Vehicle {
 describe('ConfirmVehicleDocumentUseCase', () => {
   let useCase: ConfirmVehicleDocumentUseCase;
   let documents: FakeVehicleDocumentRepository;
+  let storage: FakeObjectStorage;
   let ids: FakeIdGenerator;
 
   beforeEach(() => {
     const vehicles = new FakeVehicleRepository();
-    const storage = new FakeObjectStorage();
+    storage = new FakeObjectStorage();
     documents = new FakeVehicleDocumentRepository();
     ids = new FakeIdGenerator();
     vehicles.seed(seedVehicle());
@@ -83,6 +84,32 @@ describe('ConfirmVehicleDocumentUseCase', () => {
       new FakeClock(NOW),
       ids,
     );
+  });
+
+  it('rejects a text file and removes the stored object', async () => {
+    storage.seed('documents', STORAGE_PATH, new TextEncoder().encode('this is not a real file'));
+    await expect(
+      useCase.execute(
+        { vehicleId: VEHICLE_ID, storagePath: STORAGE_PATH, docType: 'rc', fileName: null },
+        ADMIN,
+      ),
+    ).rejects.toMatchObject({
+      code: 'INVALID_FILE_CONTENT',
+    });
+    expect(await storage.exists('documents', STORAGE_PATH)).toBe(false);
+    expect(documents.store.size).toBe(0);
+  });
+
+  it('fails closed when the stored object cannot be read', async () => {
+    storage.unreadable.add(STORAGE_PATH);
+    await expect(
+      useCase.execute(
+        { vehicleId: VEHICLE_ID, storagePath: STORAGE_PATH, docType: 'rc', fileName: null },
+        ADMIN,
+      ),
+    ).rejects.toThrow('storage unavailable');
+    expect(documents.store.size).toBe(0);
+    expect(await storage.exists('documents', STORAGE_PATH)).toBe(true);
   });
 
   it('stores and returns the original file name', async () => {

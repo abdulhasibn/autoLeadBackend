@@ -147,6 +147,7 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | 422 | `INVALID_CURRENT_PASSWORD` | `POST /auth/change-password` with the wrong current password (deliberately not 401, so it doesn't trigger a refresh) |
 | 422 | `PASSWORD_UNCHANGED` | New password equals the current one |
 | 422 | `WEAK_PASSWORD` | Supabase rejected the new password as too weak |
+| 422 | `INVALID_FILE_CONTENT` | Confirming a photo or document whose stored bytes are not a supported file type (the object is removed) |
 | 422 | `INVALID_RESET_CODE` | Wrong or expired reset code (codes last 15 minutes and work once) |
 | 429 | `RATE_LIMITED` | Supabase Auth throttled the request; wait a minute |
 | 403 | `FORBIDDEN` | Authenticated but wrong role |
@@ -610,7 +611,7 @@ sold    → (terminal)
 
 1. `POST /vehicles/:id/media/uploads` with `{ "category": "front", "contentType": "image/jpeg" }`.
 2. `PUT` the bytes to `uploadUrl` using the returned `token` (Supabase signed upload).
-3. `POST /vehicles/:id/media` with `{ "storagePath", "category", "sortOrder" }` — `storagePath` must be the one from step 1 and the object must exist.
+3. `POST /vehicles/:id/media` with `{ "storagePath", "category", "sortOrder" }` — `storagePath` must be the one from step 1 and the object must exist. The API reads the stored object's first bytes: a file that is not really a JPEG, PNG or WebP (documents: PDF, JPEG or PNG) is deleted from storage and answers `422 INVALID_FILE_CONTENT` (a renamed text file passes the signed upload, so this is the only content check). If storage can't be read, `503 DB_UNAVAILABLE`.
 4. `GET` lists include `url` and `urlExpiresAt` (about 10 minutes). Documents stay `isSensitive: true`.
 
 Documents also accept an optional `"fileName"` on step 3 (`{ "storagePath", "docType", "fileName": "RC_Document.pdf" }`), the name to show in the document list. Any folder part is dropped and it must be 1–255 characters. Document rows return `fileName` (`null` for documents uploaded without one; fall back to `docType`).

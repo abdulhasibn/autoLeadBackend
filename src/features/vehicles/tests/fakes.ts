@@ -137,12 +137,28 @@ export class FakeVehicleDocumentRepository implements IVehicleDocumentRepository
 
 export class FakeObjectStorage implements ObjectStoragePort {
   readonly objects = new Set<string>();
+  /** First bytes by `kind:path`; objects seeded without bytes get a valid header for their extension. */
+  readonly heads = new Map<string, Uint8Array>();
+  /** Paths whose read fails, like a storage outage. */
+  readonly unreadable = new Set<string>();
   /** Paths the batch signer reports as failed (e.g. the object was removed). */
   readonly unsignable = new Set<string>();
   batchSignCalls = 0;
 
-  seed(kind: VehicleStorageKind, storagePath: string): void {
+  seed(kind: VehicleStorageKind, storagePath: string, head?: Uint8Array): void {
     this.objects.add(`${kind}:${storagePath}`);
+    if (head !== undefined) this.heads.set(`${kind}:${storagePath}`, head);
+  }
+
+  async readHead(
+    kind: VehicleStorageKind,
+    storagePath: string,
+    length: number,
+  ): Promise<Uint8Array | null> {
+    const key = `${kind}:${storagePath}`;
+    if (this.unreadable.has(storagePath)) throw new Error('storage unavailable');
+    if (!this.objects.has(key)) return null;
+    return (this.heads.get(key) ?? validHeadFor(storagePath)).slice(0, length);
   }
 
   async createSignedUpload(input: {
@@ -332,4 +348,21 @@ export class FakeLinkedLeadCounts implements ILinkedLeadCounts {
     this.calls += 1;
     return new Map([...this.counts].filter(([id]) => vehicleIds.includes(id)));
   }
+}
+
+const HEADS: Record<string, number[]> = {
+  jpg: [0xff, 0xd8, 0xff, 0xe0],
+  png: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+  webp: [...'RIFF']
+    .map((c) => c.charCodeAt(0))
+    .concat(
+      [0, 0, 0, 0],
+      [...'WEBP'].map((c) => c.charCodeAt(0)),
+    ),
+  pdf: [...'%PDF-1.4'].map((c) => c.charCodeAt(0)),
+};
+
+function validHeadFor(storagePath: string): Uint8Array {
+  const ext = storagePath.slice(storagePath.lastIndexOf('.') + 1);
+  return new Uint8Array(HEADS[ext] ?? HEADS.jpg ?? []);
 }
