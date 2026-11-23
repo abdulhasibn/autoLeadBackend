@@ -1576,6 +1576,15 @@
           }
         },
         {
+          "name": "Contact Lookup by Phone",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/leads/contact-lookup?phone=9876543210",
+            "description": "**Story:** While creating a lead, staff learn whether the phone already belongs to a contact, so they see the existing name instead of renaming that contact.\n\nGET /leads/contact-lookup?phone= — Admin or Salesperson.\n\n- `phone` (required): an Indian mobile in any common shape (`98765 43210`, `+91…`, `0…`); anything else answers 422.\n\n200 `{ \"exists\", \"contact\": { \"id\", \"fullName\" } | null }`. `contact` is filled for admins only; a salesperson gets `exists` with `contact: null`. Creating a lead with that phone reuses the contact and never renames it."
+          }
+        },
+        {
           "name": "Vehicle Lead Matches",
           "request": {
             "method": "GET",

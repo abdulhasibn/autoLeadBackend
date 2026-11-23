@@ -14,6 +14,7 @@ import { requireLinkableVehicle } from '../services/require-linkable-vehicle';
 import { buildLeadPreference } from '../services/build-lead-preference';
 import type { VehicleLinkRefresher } from '../services/vehicle-link-refresher';
 import { Contact } from '../../domain/contact.entity';
+import { withReusedContactNote } from '../../domain/reused-contact-note';
 import { toContactId } from '../../domain/contact-id';
 import { Budget } from '../../domain/budget.value-object';
 import { Lead } from '../../domain/lead.entity';
@@ -48,6 +49,10 @@ export class CreateLeadUseCase {
     const email = command.email === null ? null : Email.create(command.email);
 
     let contact = await this.repo.findLiveContactByPhone(phone);
+    // An existing contact is reused, never renamed (as on the public site): only a
+    // missing email is filled, and a different typed name goes into the lead notes.
+    let contactChanged = true;
+    let notes = command.notes;
     if (contact === null) {
       contact = Contact.create({
         id: toContactId(this.ids.generate()),
@@ -59,7 +64,10 @@ export class CreateLeadUseCase {
         updatedAt: now,
       });
     } else {
-      contact.refreshProfile(command.fullName, email, now);
+      contactChanged = contact.fillMissingEmail(email, now);
+      if (contact.isNamedDifferently(command.fullName)) {
+        notes = withReusedContactNote(notes, command.fullName, contact.fullName);
+      }
     }
 
     const lead = Lead.create({
@@ -76,13 +84,16 @@ export class CreateLeadUseCase {
       financeRequired: command.financeRequired,
       currentVehicle: command.currentVehicle,
       tradeInRequired: command.tradeInRequired,
-      notes: command.notes,
+      notes,
       createdBy: ctx.userId,
       createdAt: now,
       updatedAt: now,
     });
 
-    await this.repo.save(lead, { actorId: ctx.userId, contact });
+    await this.repo.save(
+      lead,
+      contactChanged ? { actorId: ctx.userId, contact } : { actorId: ctx.userId },
+    );
     if (vehicleId !== null) {
       await this.vehicleLinks.refresh(vehicleId, ctx.userId);
     }

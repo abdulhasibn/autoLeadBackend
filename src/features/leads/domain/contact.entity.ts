@@ -71,6 +71,28 @@ export class Contact {
     return this.deletedAtValue;
   }
 
+  /**
+   * Reusing an existing contact for another lead: never rename it, only fill an
+   * email it doesn't have yet. Returns whether anything changed.
+   */
+  fillMissingEmail(email: Email | null, at: Date): boolean {
+    if (this.deletedAtValue !== null) {
+      throw new Error('Cannot modify a deleted contact');
+    }
+    if (email === null || this.emailValue !== null) {
+      return false;
+    }
+    this.emailValue = email;
+    this.updatedAtValue = at;
+    return true;
+  }
+
+  /** True when `typedName` names a different person than this contact (case and spacing ignored). */
+  isNamedDifferently(typedName: string): boolean {
+    const key = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
+    return key(typedName) !== key(this.fullNameValue);
+  }
+
   refreshProfile(fullName: string, email: Email | null, at: Date): void {
     if (this.deletedAtValue !== null) {
       throw new Error('Cannot modify a deleted contact');

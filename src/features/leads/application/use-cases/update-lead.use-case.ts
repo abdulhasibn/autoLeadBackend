@@ -10,6 +10,7 @@ import type { UpdateLeadCommand } from '../dtos/update-lead-command';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
 import { Budget } from '../../domain/budget.value-object';
 import { Contact } from '../../domain/contact.entity';
+import { withReusedContactNote } from '../../domain/reused-contact-note';
 import { type ContactId, toContactId } from '../../domain/contact-id';
 import { LeadSource } from '../../domain/lead-source.value-object';
 import type { ILeadRepository } from '../../domain/lead.repository';
@@ -42,6 +43,7 @@ export class UpdateLeadUseCase {
     const phone = Phone.createIndianMobile(command.phone);
     const email = command.email === null ? null : Email.create(command.email);
     let contact = await this.resolveContact(lead.contactId, phone);
+    let notes = command.notes;
     if (contact === null) {
       contact = Contact.create({
         id: toContactId(this.ids.generate()),
@@ -52,8 +54,15 @@ export class UpdateLeadUseCase {
         createdAt: now,
         updatedAt: now,
       });
-    } else {
+    } else if (contact.id === lead.contactId) {
+      // Editing the lead's own contact: its name and email are updated.
       contact.refreshProfile(command.fullName, email, now);
+    } else {
+      // The new phone belongs to another existing contact: reuse it, never rename it.
+      contact.fillMissingEmail(email, now);
+      if (contact.isNamedDifferently(command.fullName)) {
+        notes = withReusedContactNote(notes, command.fullName, contact.fullName);
+      }
     }
 
     lead.updateDetails(
@@ -65,7 +74,7 @@ export class UpdateLeadUseCase {
         financeRequired: command.financeRequired,
         currentVehicle: command.currentVehicle,
         tradeInRequired: command.tradeInRequired,
-        notes: command.notes,
+        notes,
       },
       now,
     );

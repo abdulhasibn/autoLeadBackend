@@ -23,6 +23,7 @@ import { AssociateLeadVehicleUseCase } from './application/use-cases/associate-l
 import { ChangeLeadStatusUseCase } from './application/use-cases/change-lead-status.use-case';
 import { CreateLeadUseCase } from './application/use-cases/create-lead.use-case';
 import { GetLeadUseCase } from './application/use-cases/get-lead.use-case';
+import { LookupContactByPhoneUseCase } from './application/use-cases/lookup-contact-by-phone.use-case';
 import { ListLeadFollowUpsUseCase } from './application/use-cases/list-lead-follow-ups.use-case';
 import { ListLeadVehicleMatchesUseCase } from './application/use-cases/list-lead-vehicle-matches.use-case';
 import { ListLeadStatusHistoryUseCase } from './application/use-cases/list-lead-status-history.use-case';
@@ -50,6 +51,7 @@ import { SellVehicleToLeadController } from './presentation/controllers/sell-veh
 import type { IRecordedSaleLookup } from './domain/recorded-sale-lookup.port';
 import { CreateLeadController } from './presentation/controllers/create-lead.controller';
 import { GetLeadController } from './presentation/controllers/get-lead.controller';
+import { LookupContactByPhoneController } from './presentation/controllers/lookup-contact-by-phone.controller';
 import { ListLeadFollowUpsController } from './presentation/controllers/list-lead-follow-ups.controller';
 import { ListLeadVehicleMatchesController } from './presentation/controllers/list-lead-vehicle-matches.controller';
 import { ListLeadStatusHistoryController } from './presentation/controllers/list-lead-status-history.controller';
@@ -170,6 +172,9 @@ export function composeLeads(
     createLeadController: new CreateLeadController(createLeadUseCase),
     listLeadsController: new ListLeadsController(listLeadsUseCase),
     getLeadController: new GetLeadController(getLeadUseCase),
+    lookupContactByPhoneController: new LookupContactByPhoneController(
+      new LookupContactByPhoneUseCase(policy, repo),
+    ),
     associateLeadVehicleController: new AssociateLeadVehicleController(associateLeadVehicleUseCase),
     assignLeadController: new AssignLeadController(assignLeadUseCase),
     changeLeadStatusController: new ChangeLeadStatusController(changeLeadStatusUseCase),

@@ -109,7 +109,49 @@ describe('CreateLeadUseCase', () => {
 
     const result = await useCase.execute(COMMAND, ADMIN);
     expect(result.contactId).toBe('aaaaaaaa-1111-4111-8111-aaaaaaaa1111');
-    expect(result.contactFullName).toBe('Rahul Sharma');
+    // The contact is reused, never renamed (DI-6); the typed name goes into the notes.
+    expect(result.contactFullName).toBe('Old Name');
+    expect(result.notes).toBe(
+      'called the showroom\nEntered as "Rahul Sharma"; contact on file: "Old Name".',
+    );
+    expect(repo.writes.at(-1)?.contact).toBeUndefined();
+  });
+
+  it('adds no note when the typed name matches the contact (case and spaces ignored)', async () => {
+    repo.seedContact(
+      Contact.create({
+        id: toContactId('aaaaaaaa-1111-4111-8111-aaaaaaaa1111'),
+        fullName: 'Rahul  sharma',
+        phone: Phone.create('+919811122233'),
+        email: null,
+        createdBy: ADMIN.userId,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      }),
+    );
+
+    const result = await useCase.execute({ ...COMMAND, notes: 'Walk-in' }, ADMIN);
+    expect(result.contactFullName).toBe('Rahul  sharma');
+    expect(result.notes).toBe('Walk-in');
+  });
+
+  it("fills a reused contact's missing email but keeps its name", async () => {
+    repo.seedContact(
+      Contact.create({
+        id: toContactId('aaaaaaaa-1111-4111-8111-aaaaaaaa1111'),
+        fullName: 'Old Name',
+        phone: Phone.create('+919811122233'),
+        email: null,
+        createdBy: ADMIN.userId,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      }),
+    );
+
+    await useCase.execute({ ...COMMAND, email: 'rahul@example.com' }, ADMIN);
+    const written = repo.writes.at(-1)?.contact;
+    expect(written?.fullName).toBe('Old Name');
+    expect(written?.email?.value).toBe('rahul@example.com');
   });
 
   it('starts an admin lead unassigned', async () => {

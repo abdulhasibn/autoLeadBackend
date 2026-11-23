@@ -634,7 +634,7 @@ Document `contentType`: `application/pdf`, `image/jpeg`, `image/png` (max 15 MB)
 
 ### Leads — Admin or Salesperson (assignment is Admin)
 
-Walk-in contact keyed by phone. Creating a lead with an existing live phone reuses that contact and refreshes name/email.
+Walk-in contact keyed by phone. Creating a lead with an existing live phone reuses that contact and **never renames it** (as on the public site): only a missing email is filled, and a different typed name is added to the lead's `notes` as `Entered as "…"; contact on file: "…".` Changing a lead's phone to another existing contact's number works the same way; editing the lead's own contact still updates its name and email. `GET /leads/contact-lookup?phone=` tells you beforehand who owns a number.
 
 A salesperson only sees and works leads where `assignedTo` is their id; any other lead id answers `404`. A lead a salesperson creates is assigned to them. An admin's new lead starts unassigned.
 
@@ -642,6 +642,7 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 |--------|------|---------|
 | `POST` | `/leads` | `201` lead (`nextFollowUp`, `linkedVehicle` and the `preferred…Name` fields are `null` until you GET) |
 | `GET` | `/leads` | `200` page. `?sort=` one of `-created` (default, newest first), `created`, `-updated`, `updated`, `-budget`, `budget` (a leading `-` is descending; leads without a budget come last). Ties break by id. Other values answer `422 VALIDATION_ERROR` |
+| `GET` | `/leads/contact-lookup?phone=` | `200` `{ "exists", "contact": { "id", "fullName" } \| null }`: whether a live contact owns this phone (Indian mobile, any common shape; otherwise `422`). `contact` names it for admins only; a salesperson gets `exists` with `contact: null`, since they only see their own leads |
 | `GET` | `/leads/:id` | `200` lead (includes `nextFollowUp` if scheduled) |
 | `PATCH` | `/leads/:id` | `200` lead (edit CRM fields; embeds and names are `null` until you GET) |
 | `PATCH` | `/leads/:id/vehicle` | `200` `{ "vehicleId" }` |
