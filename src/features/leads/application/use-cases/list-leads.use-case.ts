@@ -42,6 +42,7 @@ export class ListLeadsUseCase {
         financeRequired: query.financeRequired,
         createdFrom: query.createdFrom === undefined ? undefined : new Date(query.createdFrom),
         createdTo: query.createdTo === undefined ? undefined : new Date(query.createdTo),
+        sort: query.sort,
       },
       query.page,
     );

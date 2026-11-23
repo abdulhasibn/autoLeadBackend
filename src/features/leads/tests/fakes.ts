@@ -179,6 +179,17 @@ export class FakeLeadQueries implements ILeadQueries {
       }
       return true;
     });
+    const sort = criteria.sort ?? '-created';
+    const key = sort.replace('-', '') as 'created' | 'updated' | 'budget';
+    const sign = sort.startsWith('-') ? -1 : 1;
+    const value = (lead: LeadReadModel): number | string | null =>
+      key === 'budget' ? lead.budget : key === 'updated' ? lead.updatedAt : lead.createdAt;
+    filtered.sort((a, b) => {
+      const x = value(a);
+      const y = value(b);
+      if (x === null || y === null) return x === y ? 0 : x === null ? 1 : -1;
+      return x === y ? 0 : x < y ? -sign : sign;
+    });
     return toPage(filtered.slice(page.offset, page.offset + page.limit), filtered.length, page);
   }
 

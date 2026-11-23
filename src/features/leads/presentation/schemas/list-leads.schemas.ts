@@ -10,6 +10,7 @@ import {
 } from '../../../../presentation/validation/search.schemas';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../../../../shared/pagination/pagination';
 import { Budget } from '../../domain/budget.value-object';
+import { LEAD_SORTS } from '../../domain/lead.queries';
 import { LeadSource } from '../../domain/lead-source.value-object';
 import { optionalLeadStatusSchema } from './lead-fields.schemas';
 
@@ -40,6 +41,7 @@ export const listLeadsQuerySchema = paginationQuerySchema
     financeRequired: optionalBooleanQuerySchema,
     createdFrom: optionalInstantQuerySchema,
     createdTo: optionalInstantQuerySchema,
+    sort: z.enum(LEAD_SORTS, { error: `sort must be one of ${LEAD_SORTS.join(', ')}` }).optional(),
   })
   .superRefine(refineRange('budgetMin', 'budgetMax'))
   .superRefine(refineRange('createdFrom', 'createdTo'));

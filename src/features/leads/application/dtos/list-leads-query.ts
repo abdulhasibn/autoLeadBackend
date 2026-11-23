@@ -1,3 +1,4 @@
+import type { LeadSort } from '../../domain/lead.queries';
 import type { Pagination } from '../../../../shared/pagination/pagination';
 
 export interface ListLeadsQuery {
@@ -23,5 +24,6 @@ export interface ListLeadsQuery {
   readonly createdFrom?: string;
   /** Exclusive upper bound on created_at (ISO timestamp). */
   readonly createdTo?: string;
+  readonly sort?: LeadSort;
   readonly page: Pagination;
 }

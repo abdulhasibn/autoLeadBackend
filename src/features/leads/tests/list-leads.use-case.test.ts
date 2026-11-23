@@ -68,6 +68,25 @@ describe('ListLeadsUseCase', () => {
     expect(page.items[0]?.contactFullName).toBe('Rahul Sharma');
   });
 
+  it('sorts by budget, leads without one last, and by created date', async () => {
+    const queries = new FakeLeadQueries();
+    const at = (day: number): string => `2026-10-0${day}T00:00:00.000Z`;
+    queries.seed({ ...LEAD, id: 'l-none', budget: null, createdAt: at(2) });
+    queries.seed({ ...LEAD, id: 'l-low', budget: 300000, createdAt: at(3) });
+    queries.seed({ ...LEAD, id: 'l-high', budget: 900000, createdAt: at(1) });
+    const sorted = new ListLeadsUseCase(new LeadManagementPolicy(), queries);
+    const ids = async (sort: Parameters<typeof sorted.execute>[0]['sort']): Promise<string[]> =>
+      (await sorted.execute({ sort, page: { limit: 20, offset: 0 } }, ADMIN)).items.map(
+        (lead) => lead.id,
+      );
+
+    expect(await ids('-budget')).toEqual(['l-high', 'l-low', 'l-none']);
+    expect(await ids('budget')).toEqual(['l-low', 'l-high', 'l-none']);
+    expect(await ids('-created')).toEqual(['l-low', 'l-none', 'l-high']);
+    expect(await ids('created')).toEqual(['l-high', 'l-none', 'l-low']);
+    expect(await ids(undefined)).toEqual(['l-low', 'l-none', 'l-high']);
+  });
+
   it('lets an admin filter by assignee', async () => {
     const page = await useCase.execute(
       { assignedTo: SALES.userId, page: { limit: 20, offset: 0 } },
