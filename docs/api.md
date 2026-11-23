@@ -642,7 +642,7 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 |--------|------|---------|
 | `POST` | `/leads` | `201` lead (`nextFollowUp`, `linkedVehicle` and the `preferred…Name` fields are `null` until you GET) |
 | `GET` | `/leads` | `200` page. `?sort=` one of `-created` (default, newest first), `created`, `-updated`, `updated`, `-budget`, `budget` (a leading `-` is descending; leads without a budget come last). Ties break by id. Other values answer `422 VALIDATION_ERROR` |
-| `GET` | `/leads/contact-lookup?phone=` | `200` `{ "contact": { "id", "fullName" } \| null }`: the live contact that owns this phone (Indian mobile, any common shape; otherwise `422`) |
+| `GET` | `/leads/contact-lookup?phone=` | `200` `{ "exists", "contact": { "id", "fullName" } \| null }`: whether a live contact owns this phone (Indian mobile, any common shape; otherwise `422`). `contact` names it for admins only; a salesperson gets `exists` with `contact: null`, since they only see their own leads |
 | `GET` | `/leads/:id` | `200` lead (includes `nextFollowUp` if scheduled) |
 | `PATCH` | `/leads/:id` | `200` lead (edit CRM fields; embeds and names are `null` until you GET) |
 | `PATCH` | `/leads/:id/vehicle` | `200` `{ "vehicleId" }` |

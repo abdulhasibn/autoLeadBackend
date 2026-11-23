@@ -44,15 +44,16 @@ describe('LookupContactByPhoneUseCase', () => {
   it('names the contact that owns the phone, in any common shape', async () => {
     const result = await useCase.execute('98111 22233', ADMIN);
     expect(result).toEqual({
+      exists: true,
       contact: { id: 'aaaaaaaa-1111-4111-8111-aaaaaaaa1111', fullName: 'Priya Shah' },
     });
   });
 
   it('returns null for a phone nobody has', async () => {
-    expect(await useCase.execute('+919800000009', ADMIN)).toEqual({ contact: null });
+    expect(await useCase.execute('+919800000009', ADMIN)).toEqual({ exists: false, contact: null });
   });
 
-  it('is open to salespeople', async () => {
-    expect((await useCase.execute('+919811122233', SALES)).contact?.fullName).toBe('Priya Shah');
+  it('tells a salesperson the number is taken, without naming the contact', async () => {
+    expect(await useCase.execute('+919811122233', SALES)).toEqual({ exists: true, contact: null });
   });
 });
