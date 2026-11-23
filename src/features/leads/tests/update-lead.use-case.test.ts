@@ -114,7 +114,11 @@ describe('UpdateLeadUseCase', () => {
     await useCase.execute(command({ phone: '+919800000001', fullName: 'Priya N' }), ADMIN);
 
     expect(repo.leads.get(LEAD_ID)?.contactId).toBe(OTHER_CONTACT_ID);
-    expect(repo.writes.at(-1)?.contact?.fullName).toBe('Priya N');
+    // Another contact's record is reused, never renamed (DI-6).
+    expect(repo.writes.at(-1)?.contact?.fullName).toBe('Priya');
+    expect(repo.leads.get(LEAD_ID)?.notes).toContain(
+      'Entered as "Priya N"; contact on file: "Priya".',
+    );
   });
 
   it('creates a contact for a phone nobody has', async () => {

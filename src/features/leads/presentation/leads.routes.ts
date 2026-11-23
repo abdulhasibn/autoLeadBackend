@@ -9,6 +9,7 @@ import type { ReopenConvertedLeadController } from './controllers/reopen-convert
 import type { SellVehicleToLeadController } from './controllers/sell-vehicle-to-lead.controller';
 import type { CreateLeadController } from './controllers/create-lead.controller';
 import type { GetLeadController } from './controllers/get-lead.controller';
+import type { LookupContactByPhoneController } from './controllers/lookup-contact-by-phone.controller';
 import type { ListLeadFollowUpsController } from './controllers/list-lead-follow-ups.controller';
 import type { ListLeadVehicleMatchesController } from './controllers/list-lead-vehicle-matches.controller';
 import type { ListLeadStatusHistoryController } from './controllers/list-lead-status-history.controller';
@@ -25,6 +26,7 @@ export interface LeadsRouterDeps {
   readonly createLeadController: CreateLeadController;
   readonly listLeadsController: ListLeadsController;
   readonly getLeadController: GetLeadController;
+  readonly lookupContactByPhoneController: LookupContactByPhoneController;
   readonly associateLeadVehicleController: AssociateLeadVehicleController;
   readonly assignLeadController: AssignLeadController;
   readonly changeLeadStatusController: ChangeLeadStatusController;
@@ -52,6 +54,8 @@ export function createLeadsRouter(deps: LeadsRouterDeps): Router {
   router.get('/', deps.listLeadsController.handle());
   // Before '/:id' so these static segments are not read as a lead id.
   router.post('/vehicle-suggestions', deps.suggestVehiclesController.handle());
+  // Before '/:id', or 'contact-lookup' would be read as a lead id.
+  router.get('/contact-lookup', deps.lookupContactByPhoneController.handle());
   router.get('/vehicle-matches/:vehicleId', deps.listVehicleLeadMatchesController.handle());
   router.get('/:id', deps.getLeadController.handle());
   router.patch('/:id', deps.updateLeadController.handle());
