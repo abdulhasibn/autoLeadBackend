@@ -14,6 +14,15 @@ const BUCKETS: Record<VehicleStorageKind, string> = {
   documents: 'vehicle-documents',
 };
 
+const HEAD_READ_TIMEOUT_MS = 5000;
+
+/** The members of fetch's Response that readHead uses. */
+interface HeadReadResponse {
+  readonly status: number;
+  readonly ok: boolean;
+  arrayBuffer(): Promise<ArrayBuffer>;
+}
+
 export class SupabaseObjectStorage implements ObjectStoragePort {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
@@ -49,6 +58,37 @@ export class SupabaseObjectStorage implements ObjectStoragePort {
     }
 
     return (data ?? []).some((item) => item.name === name);
+  }
+
+  async readHead(
+    kind: VehicleStorageKind,
+    storagePath: string,
+    length: number,
+  ): Promise<Uint8Array | null> {
+    const { url } = await this.createSignedReadUrl({ kind, storagePath, expiresInSeconds: 60 });
+    // Only these members are used. Typed locally because the global `Response`
+    // type depends on the build's lib/@types resolution (it came out empty on
+    // Vercel's build while local tsc passed).
+    // fetch's declared return type is that same empty interface there, hence the cast;
+    // at runtime Node's fetch Response has all three members.
+    let response: HeadReadResponse;
+    try {
+      response = (await fetch(url, {
+        headers: { Range: `bytes=0-${length - 1}` },
+        signal: AbortSignal.timeout(HEAD_READ_TIMEOUT_MS),
+      })) as unknown as HeadReadResponse;
+    } catch (cause) {
+      throw new DatabaseUnavailableError('Failed to read stored object', { cause });
+    }
+    if (response.status === 404 || response.status === 400) {
+      return null;
+    }
+    // 200 (range ignored) or 206; either way only the leading bytes are kept.
+    if (!response.ok) {
+      throw new DatabaseUnavailableError(`Failed to read stored object: ${response.status}`);
+    }
+    const body = new Uint8Array(await response.arrayBuffer());
+    return body.slice(0, length);
   }
 
   async createSignedReadUrl(input: {

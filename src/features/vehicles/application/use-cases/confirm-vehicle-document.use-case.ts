@@ -1,3 +1,4 @@
+import { BusinessRuleViolationError } from '../../../../domain/errors/business-rule-violation.error';
 import { NotFoundError } from '../../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { toVehicleId } from '../../../../domain/shared/vehicle-id';
@@ -9,6 +10,7 @@ import type { VehicleManagementPolicy } from '../policies/vehicle-management.pol
 import { DocumentFileName } from '../../domain/document-file-name.value-object';
 import { toDocumentId } from '../../domain/document-id';
 import { DocumentType } from '../../domain/document-type.value-object';
+import { DOCUMENT_SIGNATURES, SIGNATURE_BYTES, sniffFileType } from '../../domain/file-signature';
 import { SIGNED_READ_TTL_SECONDS, type ObjectStoragePort } from '../../domain/object-storage.port';
 import { VehicleDocument } from '../../domain/vehicle-document.entity';
 import type { IVehicleDocumentRepository } from '../../domain/vehicle-document.repository';
@@ -40,6 +42,20 @@ export class ConfirmVehicleDocumentUseCase {
     const storagePath = VehicleObjectPath.create(vehicleId, command.storagePath);
     if (!(await this.storage.exists('documents', storagePath.value))) {
       throw new NotFoundError(`Stored object not found for path ${storagePath.value}`);
+    }
+
+    // The bytes went straight to storage, so check what was really uploaded.
+    const head = await this.storage.readHead('documents', storagePath.value, SIGNATURE_BYTES);
+    if (head === null) {
+      throw new NotFoundError(`Stored object not found for path ${storagePath.value}`);
+    }
+    const sniffed = sniffFileType(head);
+    if (sniffed === null || !DOCUMENT_SIGNATURES.includes(sniffed)) {
+      await this.storage.remove('documents', storagePath.value);
+      throw new BusinessRuleViolationError(
+        'INVALID_FILE_CONTENT',
+        'This file is not a PDF, JPEG or PNG. Upload a supported document.',
+      );
     }
 
     const now = this.clock.now();

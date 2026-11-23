@@ -1,3 +1,4 @@
+import { BusinessRuleViolationError } from '../../../../domain/errors/business-rule-violation.error';
 import { NotFoundError } from '../../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { toVehicleId } from '../../../../domain/shared/vehicle-id';
@@ -8,6 +9,7 @@ import type { VehicleMediaDto } from '../dtos/vehicle-media.dto';
 import type { VehicleManagementPolicy } from '../policies/vehicle-management.policy';
 import { MediaCategory } from '../../domain/media-category.value-object';
 import { toMediaId } from '../../domain/media-id';
+import { MEDIA_SIGNATURES, SIGNATURE_BYTES, sniffFileType } from '../../domain/file-signature';
 import { SIGNED_READ_TTL_SECONDS, type ObjectStoragePort } from '../../domain/object-storage.port';
 import { VehicleMedia } from '../../domain/vehicle-media.entity';
 import type { IVehicleMediaRepository } from '../../domain/vehicle-media.repository';
@@ -39,6 +41,20 @@ export class ConfirmVehicleMediaUseCase {
     const storagePath = VehicleObjectPath.create(vehicleId, command.storagePath);
     if (!(await this.storage.exists('media', storagePath.value))) {
       throw new NotFoundError(`Stored object not found for path ${storagePath.value}`);
+    }
+
+    // The bytes went straight to storage, so check what was really uploaded.
+    const head = await this.storage.readHead('media', storagePath.value, SIGNATURE_BYTES);
+    if (head === null) {
+      throw new NotFoundError(`Stored object not found for path ${storagePath.value}`);
+    }
+    const sniffed = sniffFileType(head);
+    if (sniffed === null || !MEDIA_SIGNATURES.includes(sniffed)) {
+      await this.storage.remove('media', storagePath.value);
+      throw new BusinessRuleViolationError(
+        'INVALID_FILE_CONTENT',
+        'This file is not an image. Upload a JPEG, PNG or WebP photo.',
+      );
     }
 
     const now = this.clock.now();

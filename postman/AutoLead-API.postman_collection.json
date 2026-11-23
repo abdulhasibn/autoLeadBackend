@@ -1373,7 +1373,7 @@
               }
             },
             "url": "{{baseUrl}}/vehicles/{{vehicleId}}/media",
-            "description": "POST /vehicles/:id/media — object must already exist in storage."
+            "description": "POST /vehicles/:id/media — object must already exist in storage and be a real JPEG, PNG or WebP (else 422 INVALID_FILE_CONTENT and the object is removed)."
           }
         },
         {

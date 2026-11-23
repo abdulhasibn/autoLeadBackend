@@ -18,6 +18,17 @@ export interface ObjectStoragePort {
 
   exists(kind: VehicleStorageKind, storagePath: string): Promise<boolean>;
 
+  /**
+   * The first `length` bytes of a stored object, or null when it is missing.
+   * Throws when the object could not be read, so callers never accept a file
+   * they could not inspect.
+   */
+  readHead(
+    kind: VehicleStorageKind,
+    storagePath: string,
+    length: number,
+  ): Promise<Uint8Array | null>;
+
   createSignedReadUrl(input: {
     readonly kind: VehicleStorageKind;
     readonly storagePath: string;
