@@ -63,6 +63,17 @@ export interface LeadReadModel {
   readonly updatedAt: string;
 }
 
+/** `-` = descending. Newest created first is the default. */
+export const LEAD_SORTS = [
+  '-created',
+  'created',
+  '-updated',
+  'updated',
+  '-budget',
+  'budget',
+] as const;
+export type LeadSort = (typeof LEAD_SORTS)[number];
+
 export interface LeadListCriteria {
   readonly status?: LeadStatusValue;
   readonly vehicleId?: VehicleId;
@@ -84,6 +95,7 @@ export interface LeadListCriteria {
   readonly financeRequired?: boolean;
   readonly createdFrom?: Date;
   readonly createdTo?: Date;
+  readonly sort?: LeadSort;
 }
 
 export interface LeadMatchCandidateCriteria {

@@ -640,7 +640,7 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 | Method | Path | Success |
 |--------|------|---------|
 | `POST` | `/leads` | `201` lead (`nextFollowUp`, `linkedVehicle` and the `preferred…Name` fields are `null` until you GET) |
-| `GET` | `/leads` | `200` page |
+| `GET` | `/leads` | `200` page. `?sort=` one of `-created` (default, newest first), `created`, `-updated`, `updated`, `-budget`, `budget` (a leading `-` is descending; leads without a budget come last). Ties break by id. Other values answer `422 VALIDATION_ERROR` |
 | `GET` | `/leads/:id` | `200` lead (includes `nextFollowUp` if scheduled) |
 | `PATCH` | `/leads/:id` | `200` lead (edit CRM fields; embeds and names are `null` until you GET) |
 | `PATCH` | `/leads/:id/vehicle` | `200` `{ "vehicleId" }` |

@@ -15,6 +15,7 @@ import type {
   LeadMatchCandidateCriteria,
   LeadMatchCandidates,
   LeadReadModel,
+  LeadSort,
 } from '../domain/lead.queries';
 import { toLeadReadModel, type LeadListRow } from './lead.mapper';
 
@@ -55,6 +56,15 @@ const LINKED_VEHICLE_EMBED =
 const LINKED_VEHICLE_FILTER_EMBED =
   'linked_vehicle:vehicles!vehicle_id!inner ( id, year, registration_number, deleted_at, variant_id, variants!inner ( name, model_id, models!inner ( name, make_id, makes ( name ) ) ) )';
 
+const SORT_COLUMNS: Record<LeadSort, { column: string; ascending: boolean }> = {
+  '-created': { column: 'created_at', ascending: false },
+  created: { column: 'created_at', ascending: true },
+  '-updated': { column: 'updated_at', ascending: false },
+  updated: { column: 'updated_at', ascending: true },
+  '-budget': { column: 'budget', ascending: false },
+  budget: { column: 'budget', ascending: true },
+};
+
 export class SupabaseLeadQueries implements ILeadQueries {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
@@ -71,11 +81,10 @@ export class SupabaseLeadQueries implements ILeadQueries {
     if (byLinkedCatalog) {
       columns = columns.replace(LINKED_VEHICLE_EMBED, LINKED_VEHICLE_FILTER_EMBED);
     }
-    let query = this.db
-      .from('leads')
-      .select(columns, { count: 'exact' })
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
+    let query = this.db.from('leads').select(columns, { count: 'exact' }).is('deleted_at', null);
+    const { column, ascending } = SORT_COLUMNS[criteria.sort ?? '-created'];
+    // `id` breaks ties so pages never repeat or skip rows; no budget sorts last.
+    query = query.order(column, { ascending, nullsFirst: false }).order('id', { ascending: false });
 
     if (criteria.status !== undefined) {
       query = query.eq('status', criteria.status);

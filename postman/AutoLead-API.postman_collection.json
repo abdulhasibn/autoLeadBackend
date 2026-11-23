@@ -1539,6 +1539,12 @@
               "path": ["leads"],
               "query": [
                 {
+                  "key": "sort",
+                  "value": "-budget",
+                  "description": "-created (default), created, -updated, updated, -budget, budget",
+                  "disabled": true
+                },
+                {
                   "key": "limit",
                   "value": "20"
                 },

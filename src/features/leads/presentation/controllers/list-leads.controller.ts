@@ -32,6 +32,7 @@ export class ListLeadsController {
             financeRequired: query.financeRequired,
             createdFrom: query.createdFrom,
             createdTo: query.createdTo,
+            sort: query.sort,
             page: { limit: query.limit, offset: query.offset },
           },
           ctx,

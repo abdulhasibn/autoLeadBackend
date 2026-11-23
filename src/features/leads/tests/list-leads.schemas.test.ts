@@ -27,6 +27,18 @@ describe('listLeadsQuerySchema', () => {
     });
   });
 
+  it('accepts the whitelisted sorts and defaults to none', () => {
+    expect(listLeadsQuerySchema.parse({}).sort).toBeUndefined();
+    for (const sort of ['-created', 'created', '-updated', 'updated', '-budget', 'budget']) {
+      expect(listLeadsQuerySchema.parse({ sort }).sort).toBe(sort);
+    }
+  });
+
+  it('rejects an unknown sort column', () => {
+    expect(listLeadsQuerySchema.safeParse({ sort: 'contactFullName' }).success).toBe(false);
+    expect(listLeadsQuerySchema.safeParse({ sort: '-id' }).success).toBe(false);
+  });
+
   it('treats a blank search as no search', () => {
     expect(listLeadsQuerySchema.parse({ search: '   ' }).search).toBeUndefined();
   });
