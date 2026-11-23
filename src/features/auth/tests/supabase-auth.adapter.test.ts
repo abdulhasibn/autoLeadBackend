@@ -1,9 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
 
+import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
+
 import { toUserId } from '../../../domain/shared/user-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
 import { SupabaseAuthAdapter } from '../infrastructure/supabase-auth.adapter';
+import { AuthRateLimitedError } from '../infrastructure/supabase-auth-errors';
 
 const adapter = new SupabaseAuthAdapter({} as SupabaseClient<Database>);
 
@@ -26,5 +29,63 @@ describe('SupabaseAuthAdapter.claimedSubject', () => {
     ['a non-object payload', jwtWith('just a string')],
   ])('returns null for %s', (_label, token) => {
     expect(adapter.claimedSubject(token)).toBeNull();
+  });
+});
+
+interface GetUserResult {
+  readonly data: { readonly user: { readonly id: string } | null };
+  readonly error: {
+    readonly message: string;
+    readonly status?: number;
+    readonly code?: string;
+  } | null;
+}
+
+function adapterWithGetUser(result: GetUserResult): SupabaseAuthAdapter {
+  const client = { auth: { getUser: async () => result } };
+  return new SupabaseAuthAdapter(client as unknown as SupabaseClient<Database>);
+}
+
+describe('SupabaseAuthAdapter.verify', () => {
+  it('returns the user id for a valid token', async () => {
+    const verifier = adapterWithGetUser({ data: { user: { id: 'user-1' } }, error: null });
+    await expect(verifier.verify('t')).resolves.toBe(toUserId('user-1'));
+  });
+
+  it.each([
+    [
+      'a revoked session (403 session_not_found)',
+      { message: 'gone', status: 403, code: 'session_not_found' },
+    ],
+    ['an invalid JWT (401 bad_jwt)', { message: 'bad', status: 401, code: 'bad_jwt' }],
+    ['a missing session (400)', { message: 'Auth session missing!', status: 400 }],
+  ])('returns null for %s', async (_label, error) => {
+    const verifier = adapterWithGetUser({ data: { user: null }, error });
+    await expect(verifier.verify('t')).resolves.toBeNull();
+  });
+
+  it('returns null when Auth answers without a user', async () => {
+    const verifier = adapterWithGetUser({ data: { user: null }, error: null });
+    await expect(verifier.verify('t')).resolves.toBeNull();
+  });
+
+  it.each([
+    ['a network failure (no status)', { message: 'fetch failed' }],
+    ['a network failure (status 0)', { message: 'fetch failed', status: 0 }],
+    ['a provider 5xx', { message: 'upstream', status: 502 }],
+  ])('throws DatabaseUnavailableError (503) for %s', async (_label, error) => {
+    const verifier = adapterWithGetUser({ data: { user: null }, error });
+    await expect(verifier.verify('t')).rejects.toBeInstanceOf(DatabaseUnavailableError);
+  });
+
+  it.each([
+    ['429', { message: 'slow down', status: 429 }],
+    [
+      'an over_request_rate_limit code',
+      { message: 'slow down', status: 400, code: 'over_request_rate_limit' },
+    ],
+  ])('throws AuthRateLimitedError (429) for %s', async (_label, error) => {
+    const verifier = adapterWithGetUser({ data: { user: null }, error });
+    await expect(verifier.verify('t')).rejects.toBeInstanceOf(AuthRateLimitedError);
   });
 });
