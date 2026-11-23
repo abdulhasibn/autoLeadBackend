@@ -160,7 +160,11 @@ export function composeLeads(
     queries,
     deps.matchableVehicles,
   );
-  const suggestVehiclesUseCase = new SuggestVehiclesUseCase(policy, deps.matchableVehicles);
+  const suggestVehiclesUseCase = new SuggestVehiclesUseCase(
+    policy,
+    deps.matchableVehicles,
+    deps.catalogLineage,
+  );
   const listLeadStatusHistoryUseCase = new ListLeadStatusHistoryUseCase(
     policy,
     queries,

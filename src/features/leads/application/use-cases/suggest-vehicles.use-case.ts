@@ -4,6 +4,8 @@ import type { SuggestVehiclesDto, SuggestVehiclesQuery } from '../dtos/suggest-v
 import type { VehicleMatchDto } from '../dtos/lead-vehicle-matches.dto';
 import type { LeadManagementPolicy } from '../policies/lead-management.policy';
 import { hasMatchCriteria } from '../services/lead-match-preference';
+import { resolvePreferredCatalog } from '../services/resolve-preferred-catalog';
+import type { ICatalogLineageLookup } from '../../domain/catalog-lineage.port';
 import type { MatchPreference } from '../../domain/lead-vehicle-match';
 import { isSuggestibleMatch, scoreLeadAgainstVehicle } from '../../domain/lead-vehicle-match';
 import type { IMatchableVehicleLookup } from '../../domain/matchable-vehicle.port';
@@ -13,6 +15,7 @@ export class SuggestVehiclesUseCase {
   constructor(
     private readonly policy: LeadManagementPolicy,
     private readonly vehicles: IMatchableVehicleLookup,
+    private readonly catalog: ICatalogLineageLookup,
   ) {}
 
   async execute(
@@ -23,10 +26,19 @@ export class SuggestVehiclesUseCase {
 
     const showroomId = resolveShowroomId(ctx, query.showroomId);
 
-    const preference: MatchPreference = {
+    // The wizard sends only the narrowest pick (e.g. a model without its
+    // make). Fill in the chain the way lead creation does, so a suggestion
+    // scores the same as the saved lead will.
+    const catalog = await resolvePreferredCatalog(this.catalog, {
       makeId: query.preferredMakeId,
       modelId: query.preferredModelId,
       variantId: query.preferredVariantId,
+    });
+
+    const preference: MatchPreference = {
+      makeId: catalog.makeId,
+      modelId: catalog.modelId,
+      variantId: catalog.variantId,
       budget: query.budget,
       colours: query.preferredColours,
       fuelTypes: query.preferredFuelTypes,
