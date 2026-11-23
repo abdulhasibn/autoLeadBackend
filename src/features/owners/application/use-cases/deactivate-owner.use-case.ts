@@ -23,11 +23,11 @@ export class DeactivateOwnerUseCase {
       throw new NotFoundError(`Owner not found for id ${ownerIdRaw}`);
     }
 
-    const unsoldVehicleCount = await this.vehicles.countUnsold(owner.id);
+    const unsoldVehicleCount = await this.vehicles.countOpenOrLinked(owner.id);
     if (unsoldVehicleCount > 0) {
       throw new BusinessRuleViolationError(
         'OWNER_HAS_UNSOLD_VEHICLES',
-        `This owner has ${unsoldVehicleCount} unsold car(s). Sell or drop them before deactivating the owner`,
+        `This owner has ${unsoldVehicleCount} unsold car(s) still open or linked to a lead. Sell or drop them before deactivating the owner`,
         { unsoldVehicleCount },
       );
     }

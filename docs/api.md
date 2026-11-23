@@ -168,7 +168,7 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | 422 | `VEHICLE_SOLD` | `PATCH /vehicles/:id` changing `acquisitionType` on a sold car |
 | 422 | `SALE_NOT_RECORDED` | A payment from the buyer (income with purpose `sale`) on a car that isn't sold and has no booking-confirmed lead: `POST /finance/entries`, or `PATCH` that links the entry to such a car or changes its purpose to `sale`. Confirm a booking or record the sale first, or use purpose `other` |
 | 422 | `SALE_PRICE_BELOW_RECEIVED` | `POST /finance/vehicles/:id/sale` with a price below what the buyer has paid; `error.details` has `receivedFromBuyer` and `finalisedPrice` (rupees). Reduce the payments or resend with `keepOverpayment: true` |
-| 422 | `OWNER_HAS_UNSOLD_VEHICLES` | `DELETE /owners/:id` while the owner has live cars that aren't sold; `error.details.unsoldVehicleCount` says how many |
+| 422 | `OWNER_HAS_UNSOLD_VEHICLES` | `DELETE /owners/:id` while the owner has cars that are `open` or `linked` (dropped and sold cars don't block); `error.details.unsoldVehicleCount` says how many |
 | 422 | `LEAD_REQUIRES_VEHICLE` | Moving a lead with no vehicle to `booking_confirmed` or `converted`, or removing the vehicle of a `booking_confirmed` lead |
 | 422 | `LEAD_STATUS_SYSTEM_MANAGED` | Setting `vehicle_unavailable` by hand |
 | 422 | `ASSIGNEE_NOT_ELIGIBLE` | `assignedTo` is not an active admin or salesperson |
@@ -398,7 +398,7 @@ Phone is the unique live key.
 | `GET` | `/owners` | `200` page |
 | `GET` | `/owners/:id` | `200` owner |
 | `PATCH` | `/owners/:id` | `200` owner |
-| `DELETE` | `/owners/:id` | `204` (Admin). Refused with `422 OWNER_HAS_UNSOLD_VEHICLES` while any of their cars is `open`, `linked` or `dropped` |
+| `DELETE` | `/owners/:id` | `204` (Admin). Refused with `422 OWNER_HAS_UNSOLD_VEHICLES` while any of their cars is `open` or `linked` (dropped and sold cars don't block) |
 
 **Create / update body**
 

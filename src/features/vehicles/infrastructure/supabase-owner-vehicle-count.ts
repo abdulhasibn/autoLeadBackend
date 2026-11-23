@@ -4,16 +4,16 @@ import { DatabaseUnavailableError } from '../../../domain/errors/database-unavai
 import type { OwnerId } from '../../../domain/shared/owner-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
 
-/** Counts an owner's live cars that aren't sold, for the owners feature. */
+/** Counts an owner's cars still open or linked to a lead (dropped and sold ones don't count). */
 export class SupabaseOwnerVehicleCount {
   constructor(private readonly db: SupabaseClient<Database>) {}
 
-  async countUnsold(ownerId: OwnerId): Promise<number> {
+  async countOpenOrLinked(ownerId: OwnerId): Promise<number> {
     const { count, error } = await this.db
       .from('vehicles')
       .select('id', { count: 'exact', head: true })
       .eq('owner_id', ownerId)
-      .neq('status', 'sold')
+      .in('status', ['open', 'linked'])
       .is('deleted_at', null);
     if (error !== null) {
       throw new DatabaseUnavailableError(`Failed to count owner vehicles: ${error.message}`);

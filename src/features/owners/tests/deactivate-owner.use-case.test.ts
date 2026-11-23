@@ -49,7 +49,7 @@ describe('DeactivateOwnerUseCase', () => {
     useCase = new DeactivateOwnerUseCase(
       new OwnerManagementPolicy(),
       repo,
-      { countUnsold: async () => unsold },
+      { countOpenOrLinked: async () => unsold },
       new FakeClock(new Date('2026-09-14T12:00:00.000Z')),
     );
   });
@@ -71,6 +71,7 @@ describe('DeactivateOwnerUseCase', () => {
     await expect(useCase.execute(OWNER_ID, ADMIN)).rejects.toMatchObject({
       code: 'OWNER_HAS_UNSOLD_VEHICLES',
       details: { unsoldVehicleCount: 2 },
+      message: expect.stringMatching(/2 unsold car\(s\) still open or linked/),
     });
     expect(repo.store.get(OWNER_ID)?.isDeactivated).toBe(false);
   });

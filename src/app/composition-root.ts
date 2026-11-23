@@ -61,7 +61,7 @@ export function composeApp(config: AppConfig): AppDependencies {
     clock,
     // Vehicles is composed later (it depends on owners); resolve it per call.
     ownerVehicleCount: {
-      countUnsold: (ownerId) => vehicles.ownerVehicleCount.countUnsold(ownerId),
+      countOpenOrLinked: (ownerId) => vehicles.ownerVehicleCount.countOpenOrLinked(ownerId),
     },
   });
   // Vehicles and leads depend on each other at runtime (ADR-0011). Vehicles is
