@@ -651,6 +651,7 @@ A salesperson only sees and works leads where `assignedTo` is their id; any othe
 | `PUT` | `/leads/:id/preference` | `200` the whole preference (`preferredMakeId` … `preferredMaxOwners`) |
 | `GET` | `/leads/vehicle-matches/:vehicleId` | `200` `{ vehicle, linked, suggested, truncated }`: match % per lead |
 | `GET` | `/leads/:id/vehicle-matches` | `200` `{ linked, suggested, truncated }`: match % per car |
+| `POST` | `/leads/vehicle-suggestions` | `200` `{ suggestions, truncated }`: match % per car for an unsaved budget and preference (new-lead wizard). A model or variant alone is scored with its make, as the saved lead would be; an unknown catalog id is `404` |
 | `GET` | `/leads/:id/follow-ups` | `200` page of follow-ups (`?status=open\|closed\|all`) |
 | `POST` | `/leads/:id/follow-ups` | `201` follow-up |
 | `POST` | `/leads/:id/follow-ups/:followUpId/complete` | `200` `{ "followUp", "next" }` |
