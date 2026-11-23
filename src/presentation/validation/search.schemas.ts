@@ -2,7 +2,10 @@ import { z } from 'zod';
 
 import { SearchTerm } from '../../domain/shared/search-term.value-object';
 
-/** Optional `search` query param; blank means no search. */
+/**
+ * Optional `search` query param. Blank, or only ignored characters like `%` or
+ * `(`, means no search.
+ */
 export const optionalSearchSchema = z
   .string()
   .optional()
@@ -11,7 +14,7 @@ export const optionalSearchSchema = z
       return;
     }
     try {
-      SearchTerm.create(val);
+      SearchTerm.tryCreate(val);
     } catch (err) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -23,7 +26,7 @@ export const optionalSearchSchema = z
     if (val === undefined || val.trim().length === 0) {
       return undefined;
     }
-    return SearchTerm.create(val).value;
+    return SearchTerm.tryCreate(val)?.value;
   });
 
 /**
