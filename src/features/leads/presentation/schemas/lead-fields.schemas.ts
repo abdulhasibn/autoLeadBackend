@@ -26,8 +26,8 @@ function refineVo(create: (value: string) => unknown) {
 
 export const phoneSchema = z
   .string({ error: 'phone is required' })
-  .superRefine(refineVo((val) => Phone.create(val)))
-  .transform((val) => Phone.create(val).value);
+  .superRefine(refineVo((val) => Phone.createIndianMobile(val)))
+  .transform((val) => Phone.createIndianMobile(val).value);
 
 export const optionalEmailSchema = z
   .string()

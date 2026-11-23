@@ -39,7 +39,7 @@ export class UpdateLeadUseCase {
     this.policy.requireCanWork(ctx, lead);
 
     const now = this.clock.now();
-    const phone = Phone.create(command.phone);
+    const phone = Phone.createIndianMobile(command.phone);
     const email = command.email === null ? null : Email.create(command.email);
     let contact = await this.resolveContact(lead.contactId, phone);
     if (contact === null) {

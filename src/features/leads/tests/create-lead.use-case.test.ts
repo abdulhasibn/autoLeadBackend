@@ -76,6 +76,16 @@ describe('CreateLeadUseCase', () => {
     );
   });
 
+  it('rejects a phone that is not an Indian mobile and normalises a plain one', async () => {
+    await expect(useCase.execute({ ...COMMAND, phone: '+911234567890' }, ADMIN)).rejects.toThrow(
+      '10-digit mobile',
+    );
+
+    const result = await useCase.execute({ ...COMMAND, phone: '98111 22233' }, ADMIN);
+
+    expect(result.contactPhone).toBe('+919811122233');
+  });
+
   it('creates a walk-in lead and a new contact', async () => {
     const result = await useCase.execute(COMMAND, ADMIN);
     expect(result.status).toBe('new');

@@ -1,5 +1,5 @@
 import { InvalidMobileError } from '../../domain/errors/invalid-mobile.error';
-import { IndianMobile } from '../../domain/indian-mobile.value-object';
+import { IndianMobile } from '../../../../domain/shared/indian-mobile.value-object';
 import type { IPreferenceIntake } from '../../domain/preference-intake.port';
 import type { AttributedTouch, ShowroomLocation } from '../../domain/test-drive-intake.port';
 import type { ITouchClassifier, VisitorTouch } from '../../domain/touch-classifier.port';
