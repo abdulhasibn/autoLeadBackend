@@ -6,7 +6,7 @@ import { parsePreferredContactMethod } from '../../domain/owner.entity';
 
 export const phoneSchema = z.string({ error: 'phone is required' }).superRefine((val, ctx) => {
   try {
-    Phone.create(val);
+    Phone.createIndianMobile(val);
   } catch (err) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -24,7 +24,7 @@ export const optionalPhoneSchema = z
       return;
     }
     try {
-      Phone.create(val);
+      Phone.createIndianMobile(val);
     } catch (err) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -36,7 +36,7 @@ export const optionalPhoneSchema = z
     if (val === null || val === undefined || val.trim().length === 0) {
       return null;
     }
-    return Phone.create(val).value;
+    return Phone.createIndianMobile(val).value;
   });
 
 export const optionalEmailSchema = z

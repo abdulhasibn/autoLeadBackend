@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { IndianMobile } from '../domain/indian-mobile.value-object';
+import { IndianMobile } from './indian-mobile.value-object';
 
 describe('IndianMobile', () => {
   it.each([

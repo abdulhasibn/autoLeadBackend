@@ -7,7 +7,7 @@ import { StaffRole } from '../../domain/staff-role.value-object';
 
 export const phoneSchema = z.string({ error: 'phone is required' }).superRefine((val, ctx) => {
   try {
-    Phone.create(val);
+    Phone.createIndianMobile(val);
   } catch (err) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

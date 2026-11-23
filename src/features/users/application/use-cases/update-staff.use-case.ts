@@ -26,7 +26,7 @@ export class UpdateStaffUseCase {
       throw new NotFoundError(`Staff user not found for id ${command.userId}`);
     }
 
-    const phone = Phone.create(command.phone);
+    const phone = Phone.createIndianMobile(command.phone);
     const email = Email.create(command.email);
     const emailChanged = staff.email === null || !Email.create(staff.email).equals(email);
 

@@ -61,9 +61,9 @@ describe('CreateStaffUseCase', () => {
     expect(provisioner.provisioned).toHaveLength(0);
   });
 
-  it('throws when the phone is not E.164', async () => {
-    await expect(useCase.execute({ ...COMMAND, phone: '9876543210' }, ADMIN)).rejects.toThrow(
-      'E.164',
+  it('throws when the phone is not an Indian mobile', async () => {
+    await expect(useCase.execute({ ...COMMAND, phone: '+911234567890' }, ADMIN)).rejects.toThrow(
+      '10-digit mobile',
     );
     expect(provisioner.provisioned).toHaveLength(0);
   });

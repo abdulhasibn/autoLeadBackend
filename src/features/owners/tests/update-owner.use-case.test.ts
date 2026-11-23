@@ -50,6 +50,29 @@ describe('UpdateOwnerUseCase', () => {
     );
   });
 
+  it('rejects an edited phone that is not an Indian mobile, leaving the owner unchanged', async () => {
+    repo.seed(seedOwner());
+
+    await expect(
+      useCase.execute(
+        {
+          ownerId: OWNER_ID,
+          fullName: 'Priya S.',
+          phone: '+14155550123',
+          email: null,
+          address: null,
+          city: null,
+          preferredContactMethod: 'phone',
+          altPhone: null,
+          idInfo: null,
+          notes: null,
+        },
+        ADMIN,
+      ),
+    ).rejects.toThrow('10-digit mobile');
+    expect(repo.store.get(OWNER_ID)?.phone.value).toBe('+919876543210');
+  });
+
   it('updates the owner profile', async () => {
     repo.seed(seedOwner());
 

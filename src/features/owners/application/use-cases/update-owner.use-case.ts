@@ -28,7 +28,7 @@ export class UpdateOwnerUseCase {
 
     owner.updateProfile({
       fullName: command.fullName,
-      phone: Phone.create(command.phone),
+      phone: Phone.createIndianMobile(command.phone),
       email: parseOptionalEmail(command.email),
       address: command.address,
       city: command.city,
@@ -55,5 +55,5 @@ function parseOptionalPhone(input: string | null): Phone | null {
   if (input === null) {
     return null;
   }
-  return Phone.create(input);
+  return Phone.createIndianMobile(input);
 }

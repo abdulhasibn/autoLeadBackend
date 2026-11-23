@@ -75,10 +75,21 @@ describe('CreateOwnerUseCase', () => {
     expect(repo.store.size).toBe(0);
   });
 
-  it('throws when the phone is not E.164', async () => {
-    await expect(useCase.execute({ ...COMMAND, phone: '9876543210' }, ADMIN)).rejects.toThrow(
-      'E.164',
+  it('throws when the phone is not an Indian mobile', async () => {
+    for (const phone of ['12345', '+911234567890', '+14155550123', '+919876']) {
+      await expect(useCase.execute({ ...COMMAND, phone }, ADMIN)).rejects.toThrow(
+        '10-digit mobile',
+      );
+    }
+    await expect(useCase.execute({ ...COMMAND, altPhone: '+911234567890' }, ADMIN)).rejects.toThrow(
+      '10-digit mobile',
     );
+  });
+
+  it('normalises a plain 10-digit mobile to +91', async () => {
+    const dto = await useCase.execute({ ...COMMAND, phone: '98765 43210' }, ADMIN);
+
+    expect(dto.phone).toBe('+919876543210');
   });
 
   it('throws when the email is invalid', async () => {

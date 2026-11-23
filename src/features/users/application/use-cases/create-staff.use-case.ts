@@ -23,7 +23,7 @@ export class CreateStaffUseCase {
   async execute(command: CreateStaffCommand, ctx: AuthenticatedContext): Promise<StaffMemberDto> {
     this.policy.requireAdmin(ctx);
 
-    const phone = Phone.create(command.phone);
+    const phone = Phone.createIndianMobile(command.phone);
     const email = Email.create(command.email);
     const password = Password.create(command.password);
     const roles = command.roles.map((role) => StaffRole.create(role));

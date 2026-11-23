@@ -44,7 +44,7 @@ export class CreateLeadUseCase {
     const preference = await buildLeadPreference(this.catalog, command);
 
     const now = this.clock.now();
-    const phone = Phone.create(command.phone);
+    const phone = Phone.createIndianMobile(command.phone);
     const email = command.email === null ? null : Email.create(command.email);
 
     let contact = await this.repo.findLiveContactByPhone(phone);

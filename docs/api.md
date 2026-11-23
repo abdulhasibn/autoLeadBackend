@@ -121,7 +121,7 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | Multi-value filters | Comma-separated, e.g. `?fuelType=petrol,diesel` |
 | IDs | UUID strings |
 | Dates | ISO-8601 UTC (`2026-10-10T10:00:00.000Z`) except insurance date (`YYYY-MM-DD`) |
-| Phone | E.164, e.g. `+919876543210` |
+| Phone | Staff-entered phones (leads, owners incl. `altPhone`, staff) must be an Indian mobile: 10 digits starting 6-9, optionally `+91`/`0`/spaces; stored as E.164 (`+919876543210`). Wrong shape: `422 VALIDATION_ERROR`. Applies to new and edited records only; existing numbers are left as they are |
 | Email | trimmed, lowercased, `local@domain.tld` |
 | Password | at least 8 characters |
 | Soft delete | Deactivate endpoints return `204`. Deactivated rows do not appear in lists. |

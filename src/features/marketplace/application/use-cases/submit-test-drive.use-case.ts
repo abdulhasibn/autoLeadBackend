@@ -1,5 +1,5 @@
 import { InvalidMobileError } from '../../domain/errors/invalid-mobile.error';
-import { IndianMobile } from '../../domain/indian-mobile.value-object';
+import { IndianMobile } from '../../../../domain/shared/indian-mobile.value-object';
 import {
   WEBSITE_SYSTEM_USER_ID,
   type AttributedTouch,
