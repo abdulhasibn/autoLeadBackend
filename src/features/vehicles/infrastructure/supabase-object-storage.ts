@@ -59,7 +59,10 @@ export class SupabaseObjectStorage implements ObjectStoragePort {
     length: number,
   ): Promise<Uint8Array | null> {
     const { url } = await this.createSignedReadUrl({ kind, storagePath, expiresInSeconds: 60 });
-    let response: Response;
+    // Only these members are used. Typed locally because the global `Response`
+    // type depends on the build's lib/@types resolution (it came out empty on
+    // Vercel's build while local tsc passed).
+    let response: { status: number; ok: boolean; arrayBuffer(): Promise<ArrayBuffer> };
     try {
       response = await fetch(url, {
         headers: { Range: `bytes=0-${length - 1}` },
