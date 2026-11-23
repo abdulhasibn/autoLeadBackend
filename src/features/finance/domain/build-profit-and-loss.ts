@@ -37,11 +37,16 @@ export interface SaleInfo {
 
 /** Paise. */
 export interface ProfitAndLossLine {
-  /** Finalised prices of sold purchase cars whose purchase rate is known. */
+  /** Finalised prices of sold purchase cars whose purchase rate is known. "Sales" means these, everywhere. */
   readonly sales: number;
   readonly costOfSales: number;
   /** Commission earned on commission cars sold (ADR-0017). */
   readonly commissions: number;
+  /**
+   * Finalised prices of sold commission cars (the owners' cars). Information
+   * only: not in sales, cost of sales or profit; we earn `commissions` on it.
+   */
+  readonly commissionSalesValue: number;
   /** sales − cost of sales + commissions. */
   readonly grossProfit: number;
   readonly laterCarCosts: number;
@@ -64,6 +69,7 @@ interface MutableLine {
   sales: number;
   costOfSales: number;
   commissions: number;
+  commissionSalesValue: number;
   laterCarCosts: number;
   otherIncome: number;
   businessExpenses: number;
@@ -85,7 +91,9 @@ interface MutableLine {
  * - a sold car without its purchase rate or commission % has unknown profit:
  *   it is counted (`carsSold`, `carsMissingPurchaseRate`) but left out of
  *   sales, cost of sales and profit, with its later costs; its price shows as
- *   `uncountedSales`.
+ *   `uncountedSales`;
+ * - "sales" is purchased cars only (ADR-0017); a commission car's full price
+ *   shows apart as `commissionSalesValue` and never counts as sales.
  * Items dated outside the buckets are ignored, so callers may pass more.
  *
  * @param soldCars cars with a recorded sale (any date)
@@ -133,6 +141,7 @@ export class ProfitAndLossTally {
     }
     if (car.saleModel === 'commission') {
       line.commissions += commissionOn(car.finalisedPrice, car.terms?.commissionBasisPoints ?? 0);
+      line.commissionSalesValue += car.finalisedPrice.paise;
       return;
     }
     line.sales += car.finalisedPrice.paise;
@@ -173,6 +182,7 @@ function emptyLine(): MutableLine {
     sales: 0,
     costOfSales: 0,
     commissions: 0,
+    commissionSalesValue: 0,
     laterCarCosts: 0,
     otherIncome: 0,
     businessExpenses: 0,
@@ -187,6 +197,7 @@ function addLines(a: MutableLine, b: MutableLine): MutableLine {
     sales: a.sales + b.sales,
     costOfSales: a.costOfSales + b.costOfSales,
     commissions: a.commissions + b.commissions,
+    commissionSalesValue: a.commissionSalesValue + b.commissionSalesValue,
     laterCarCosts: a.laterCarCosts + b.laterCarCosts,
     otherIncome: a.otherIncome + b.otherIncome,
     businessExpenses: a.businessExpenses + b.businessExpenses,

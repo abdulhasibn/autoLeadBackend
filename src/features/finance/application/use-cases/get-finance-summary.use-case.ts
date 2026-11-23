@@ -112,6 +112,8 @@ class SummaryWindow {
       from: this.from.value,
       to: this.to.value,
       sales: pnl.sales / 100,
+      commissions: pnl.commissions / 100,
+      commissionSalesValue: pnl.commissionSalesValue / 100,
       netProfit: pnl.netProfit / 100,
       businessExpenses: pnl.businessExpenses / 100,
       cashIn: cash.in / 100,

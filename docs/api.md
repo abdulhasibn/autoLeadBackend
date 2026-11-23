@@ -1295,19 +1295,19 @@ All amounts are rupees; profits can be negative. Every request needs `X-Finance-
 - `from` / `to`: `YYYY-MM-DD`, inclusive, required for the first three. `period`: `day`, `week` (Monday start), `month` (default) or `year`. `day`/`week` reports cover at most 366 days; `month`/`year` at most 5 years (`422 DATE_RANGE_TOO_LONG`).
 - `pnl` and `cash-flow` return `{ period, from, to, buckets, totals, truncated }`. Every period in the range has a bucket (`start`, `end`, `label`), even when empty, so a chart has every bar. Labels: `2026-10-25` (day, or the Monday of a week), `2026-10` (month), `2026` (year).
 
-**Profit & loss** (per bucket: `sales, costOfSales, commissions, grossProfit, laterCarCosts, otherIncome, businessExpenses, netProfit, carsSold, carsMissingPurchaseRate, uncountedSales`):
+**Profit & loss** (per bucket: `sales, costOfSales, commissions, commissionSalesValue, grossProfit, laterCarCosts, otherIncome, businessExpenses, netProfit, carsSold, carsMissingPurchaseRate, uncountedSales`):
 
-- A car counts in the period of its **sale date**: its finalised price is `sales`; its purchase rate plus the cost entries dated on or before the sale date are `costOfSales`.
+- **"Sales" means purchased cars on every finance screen** (P&L, summary and profit per car use the same number). A car counts in the period of its **sale date**: its finalised price is `sales`; its purchase rate plus the cost entries dated on or before the sale date are `costOfSales`.
 - Cost entries dated **after** the sale count in their own period as `laterCarCosts`.
 - `otherIncome` = car income with purpose `other` + income with no car. `businessExpenses` = expenses with no car.
 - `netProfit` = gross profit − later car costs + other income − business expenses.
 - Payments to sellers and from buyers are not in profit & loss (they settle prices already counted), and costs of unsold cars aren't either (they're in stock).
-- **A sold commission car adds its commission** (`commissions`, part of `grossProfit`) on its sale date. Its costs are recovered from the owner, so they never appear in P&L.
+- **A sold commission car adds its commission** (`commissions`, part of `grossProfit`) on its sale date. Its costs are recovered from the owner, so they never appear in P&L. Its full price is not `sales`: it is returned apart as `commissionSalesValue` (information only, outside cost of sales and profit).
 - **A sold car without a purchase rate (or commission %) has unknown profit.** It counts in `carsSold` and `carsMissingPurchaseRate`, but stays out of `sales`, `costOfSales`, gross and net profit, and so do its later costs. Its finalised price is in `uncountedSales`; show e.g. "₹X of sales not counted until a purchase rate is entered". It joins the numbers as soon as the purchase rate is set.
 
 **Cash flow** (per bucket: `in, out, net, cumulative, inFromBuyers, inOther, outToSellers, outCarCosts, outBusiness`): every entry on its own date, including payments to sellers and from buyers. `cumulative` is the running net from the first bucket.
 
-**Profit per car**: cars sold in the range, `{ vehicle, soldOn, saleModel, purchaseRate, commissionPercent, commission, costs, landingCost, finalisedPrice, profit }`. A commission car's profit is its commission; `totals.commissions` sums them. `sort`: `profit` (biggest first, default), `-profit`, `date` (newest first), `-date`. Car profit includes every cost on the car, also ones paid after the sale. Cars without a purchase rate are listed with `profit: null`; `totals` (`sales`, `landingCost`, `profit`) cover only cars with a purchase rate, and `totals.carsMissingPurchaseRate` / `totals.uncountedSales` show what was left out. `totals.cars` counts every row.
+**Profit per car**: cars sold in the range, `{ vehicle, soldOn, saleModel, purchaseRate, commissionPercent, commission, costs, landingCost, finalisedPrice, profit }`. A commission car's profit is its commission; `totals.commissions` sums them. `totals.sales` sums purchase cars only (same as P&L); `totals.commissionSalesValue` is the sale value of commission cars, shown apart. `sort`: `profit` (biggest first, default), `-profit`, `date` (newest first), `-date`. Car profit includes every cost on the car, also ones paid after the sale. Cars without a purchase rate are listed with `profit: null`; `totals` (`sales`, `landingCost`, `profit`) cover only cars with a purchase rate, and `totals.carsMissingPurchaseRate` / `totals.uncountedSales` show what was left out. `totals.cars` counts every row.
 
 **Dues**: cars where something is still owed, `{ vehicle, saleModel, purchaseRate, commissionPercent, commission, costs, paidToSeller, owedToSeller, finalisedPrice, receivedFromBuyer, owedByBuyer }`, largest first. Negative means overpaid. `totals` add up only what is still owed.
 
@@ -1317,14 +1317,14 @@ All amounts are rupees; profits can be negative. Every request needs `X-Finance-
 
 ```json
 {
-  "thisMonth": { "from": "2026-11-01", "to": "2026-11-03", "sales": 0, "netProfit": -87000, "businessExpenses": 85000, "cashIn": 0, "cashOut": 87000 },
+  "thisMonth": { "from": "2026-11-01", "to": "2026-11-03", "sales": 0, "commissions": 0, "commissionSalesValue": 0, "netProfit": -87000, "businessExpenses": 85000, "cashIn": 0, "cashOut": 87000 },
   "lastMonth": { "from": "2026-10-01", "to": "2026-10-03", … },
   "moneyInStock": 408000, "owedToSellers": 200000, "owedByBuyers": 0, "awaitingSalePrice": 0,
   "truncated": false
 }
 ```
 
-Each window also has `carsMissingPurchaseRate` and `uncountedSales` (same rule as profit & loss). `thisMonth` is month to date ("today" in the business timezone); `lastMonth` is the same span of the previous month, so the comparison is fair early in the month. Since finance is locked without the key, the regular `GET /dashboard` carries no money figures; show these tiles when finance is unlocked.
+`sales` is purchased cars only; `commissions` is what we earned on commission cars sold in the window and `commissionSalesValue` their sale value (information only). Each window also has `carsMissingPurchaseRate` and `uncountedSales` (same rule as profit & loss). `thisMonth` is month to date ("today" in the business timezone); `lastMonth` is the same span of the previous month, so the comparison is fair early in the month. Since finance is locked without the key, the regular `GET /dashboard` carries no money figures; show these tiles when finance is unlocked.
 
 ---
 

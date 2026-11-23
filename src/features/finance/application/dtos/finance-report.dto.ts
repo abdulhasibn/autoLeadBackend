@@ -54,7 +54,10 @@ export interface VehicleProfitReportDto {
   /** `cars` counts every row; the money totals cover only cars whose terms are known. */
   readonly totals: {
     readonly cars: number;
+    /** Finalised prices of purchased cars only, as in P&L. */
     readonly sales: number;
+    /** Finalised prices of commission cars (owners' cars), shown apart; not in `sales`. */
+    readonly commissionSalesValue: number;
     readonly landingCost: number;
     /** Commission earned on commission cars (part of `profit`). */
     readonly commissions: number;
@@ -115,7 +118,12 @@ export interface StockReportDto {
 export interface SummaryWindowDto {
   readonly from: string;
   readonly to: string;
+  /** Purchased cars only, as in P&L. */
   readonly sales: number;
+  /** Commission earned on commission cars sold in the window. */
+  readonly commissions: number;
+  /** Sale value of those commission cars (owners' cars); not in `sales`. */
+  readonly commissionSalesValue: number;
   readonly netProfit: number;
   readonly businessExpenses: number;
   readonly cashIn: number;

@@ -62,7 +62,11 @@ export class GetVehicleProfitReportUseCase {
       items,
       totals: {
         cars: items.length,
-        sales: sum(counted.map((i) => i.finalisedPrice)),
+        // Same meaning as P&L sales: purchased cars only (ADR-0017).
+        sales: sum(counted.filter((i) => i.saleModel === 'purchase').map((i) => i.finalisedPrice)),
+        commissionSalesValue: sum(
+          counted.filter((i) => i.saleModel === 'commission').map((i) => i.finalisedPrice),
+        ),
         landingCost: sum(counted.map((i) => i.landingCost)),
         commissions: sum(counted.map((i) => i.commission ?? 0)),
         profit: sum(counted.map((i) => i.profit ?? 0)),
