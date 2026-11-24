@@ -24,9 +24,14 @@ export function isRateLimited(error: AuthErrorLike): boolean {
   return error.status === 429 || (error.code?.startsWith('over_') ?? false);
 }
 
+/** No HTTP status: the request never got an answer (connection or DNS failure). */
+export function isNetworkFailure(error: AuthErrorLike): boolean {
+  return error.status === undefined || error.status === 0;
+}
+
 /** 5xx or no status at all (network failure): the provider, not the caller, failed. */
 export function isProviderFailure(error: AuthErrorLike): boolean {
-  return error.status === undefined || error.status === 0 || error.status >= 500;
+  return isNetworkFailure(error) || (error.status !== undefined && error.status >= 500);
 }
 
 /** Rate limits become 429; anything else becomes 503. */
