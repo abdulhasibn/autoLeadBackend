@@ -1,14 +1,14 @@
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { toShowroomId } from '../../../../domain/shared/showroom-id';
 import type { VehicleId } from '../../../../domain/shared/vehicle-id';
-import { isInStock } from '../../domain/vehicle-report-rows';
+import { cashPaidOnCar, isInStock } from '../../domain/vehicle-report-rows';
 import type { StockReportDto, StockRowDto } from '../dtos/finance-report.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
 import type { FinanceReportData } from '../services/finance-report-data';
 import { commissionPercentOf } from '../dtos/vehicle-finance.dto';
 import type { FinanceSessionService } from '../services/finance-session.service';
 
-/** Money tied up in cars not yet sold, biggest first. */
+/** Cash actually paid out on cars not yet sold (seller payments + costs), biggest first. */
 export class GetStockReportUseCase {
   constructor(
     private readonly policy: FinancePolicy,
@@ -41,16 +41,18 @@ export class GetStockReportUseCase {
         commissionPercent: commissionPercentOf(deal),
         costs: money.costs / 100,
         landingCost: money.landingCost / 100,
+        paidToSeller: money.paidToSeller / 100,
+        moneyInStock: cashPaidOnCar(money) / 100,
         currentQuote: quotes.get(vehicle.id)?.amount.rupees ?? null,
         listedPrice: deal?.listedPrice?.rupees ?? null,
       }))
-      .sort((a, b) => b.landingCost - a.landingCost);
+      .sort((a, b) => b.moneyInStock - a.moneyInStock);
 
     return {
       items,
       totals: {
         cars: items.length,
-        moneyInStock: Math.round(items.reduce((t, i) => t + i.landingCost, 0) * 100) / 100,
+        moneyInStock: Math.round(items.reduce((t, i) => t + i.moneyInStock, 0) * 100) / 100,
       },
       truncated: false,
     };

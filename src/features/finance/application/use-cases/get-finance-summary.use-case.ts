@@ -6,7 +6,7 @@ import type { Clock } from '../../../../shared/clock/clock';
 import { CashFlowTally } from '../../domain/build-cash-flow';
 import { ProfitAndLossTally } from '../../domain/build-profit-and-loss';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
-import { hasDues, isInStock } from '../../domain/vehicle-report-rows';
+import { cashPaidOnCar, hasDues, isInStock } from '../../domain/vehicle-report-rows';
 import type { FinanceSummaryDto, SummaryWindowDto } from '../dtos/finance-report.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
 import type { FinanceReportData } from '../services/finance-report-data';
@@ -78,7 +78,7 @@ export class GetFinanceSummaryUseCase {
       moneyInStock:
         cars
           .filter((car) => isInStock(car.deal, car.vehicle.status, car.money))
-          .reduce((t, car) => t + car.money.landingCost, 0) / 100,
+          .reduce((t, car) => t + cashPaidOnCar(car.money), 0) / 100,
       owedToSellers: positiveSum(
         cars.filter((c) => hasDues(c.money)).map((c) => toRupees(c.money.owedToSeller)),
       ),

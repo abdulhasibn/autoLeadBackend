@@ -103,7 +103,12 @@ export interface StockRowDto {
   readonly purchaseRate: number | null;
   readonly commissionPercent: number | null;
   readonly costs: number;
+  /** Agreed purchase rate + costs (commission cars: costs). Not cash; kept for older clients. */
   readonly landingCost: number;
+  /** Payments to the seller (advances, for a commission car). */
+  readonly paidToSeller: number;
+  /** Cash actually paid out: `paidToSeller` + `costs`. What the report totals. */
+  readonly moneyInStock: number;
   readonly currentQuote: number | null;
   readonly listedPrice: number | null;
 }
@@ -139,6 +144,7 @@ export interface FinanceSummaryDto {
   readonly thisMonth: SummaryWindowDto;
   /** The same span of last month (1st to the same day, or month end). */
   readonly lastMonth: SummaryWindowDto;
+  /** Cash paid out on unsold cars (seller payments + costs). */
   readonly moneyInStock: number;
   readonly owedToSellers: number;
   readonly owedByBuyers: number;

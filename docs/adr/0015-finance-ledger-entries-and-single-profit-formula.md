@@ -42,3 +42,7 @@ Entry payloads are read forward-compatibly so a release can be rolled back after
 - **Read-only on this build:** an entry read through that fallback can't be edited or deleted; both answer 422 `ENTRY_FROM_NEWER_VERSION`, so the stored purpose is never overwritten with the fallback.
 - **Unknown extra keys** (e.g. `leadId`) are ignored on read and written back unchanged whenever the entry is saved.
 - A corrupt payload (bad JSON, not an object, missing or invalid amount, wrong types) still fails as a data-integrity error.
+
+## Amendment (2026-11-24, BE-78): stock is cash paid, not landing cost
+
+The Stock report and the finance summary's stock figure showed landing cost (agreed purchase rate + costs). The owner asked for the cash that has actually left their pocket (QA 2026-11-24, CR-1). For an unsold car, **money in stock = Σ `purchase` expenses (payments to the seller) + Σ `cost` expenses**, in the pure domain function `cashPaidOnCar`. The agreed rate is not part of it: a car with a rate and no payments shows 0. Landing cost and profit are unchanged; stock rows still carry `purchaseRate` and `landingCost` as separate fields, and add `paidToSeller` and a per-row `moneyInStock`. `totals.moneyInStock` (report) and `moneyInStock` (summary) are the sum of the rows. A car is listed when it has a landing cost or any seller payment; the seller-payment condition is new (a commission car with only an advance has no landing cost). Rejected: showing max(rate, paid) or both figures in one total (the total would no longer match what was paid out).
