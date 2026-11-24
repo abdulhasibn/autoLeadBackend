@@ -40,6 +40,42 @@ Added 2026-11-12, from abdulhasibn/autoLeadBackend#19 and abdulhasibn/autolead-f
 - [ ] **Sync Postman** for the new `POST /leads/:id/reopen` (undo a sale) and the new
       `leadId` / `bookedLeads` fields on finance car money (from #17).
 
+Added 2026-11-24, from abdulhasibn/autoLeadBackend#74 and abdulhasibn/autolead-frontend#103
+(new lead status `in_progress`).
+
+- [ ] **Check prod's migration history has its idempotency-key constraint** before applying
+      anything. Dev lost `schema_migrations_idempotency_key_key` in the 2026-11-22 restore and
+      `apply_migration` failed until it was re-added (Data operations log, 2026-11-24).
+      db-inspector, read-only:
+
+  ```sql
+  select count(*) from pg_constraint
+   where conrelid = 'supabase_migrations.schema_migrations'::regclass
+     and conname = 'schema_migrations_idempotency_key_key';
+  ```
+
+  `1` means fine. `0` means re-add it on prod (user's go-ahead) before the migrations below.
+
+- [ ] **Apply the three `lead_status_in_progress*` migrations to prod, in order, before the
+      backend merge:** `20261124120000_lead_status_in_progress`,
+      `20261124120100_lead_status_in_progress_validate`,
+      `20261124120200_lead_status_in_progress_functions`. Already on dev (`20261124010957`,
+      `20261124011008`, `20261124011100`). All backward-compatible. If the backend ships first,
+      completing a follow-up as "Reached" on a New lead returns an error after the follow-up is
+      saved (the status rule rejects `in_progress`).
+
+  After applying, check on prod that the rule is valid and the dashboard has the new count:
+
+  ```sql
+  select convalidated from pg_constraint where conname = 'leads_status_check';
+  select private.dashboard_summary(null, null, now() - interval '30 days', now(),
+    now() - interval '60 days', now() - interval '30 days', now() + interval '1 day',
+    now() - interval '45 days', 1) -> 'pipeline' ? 'in_progress';
+  ```
+
+- [ ] **Deploy order:** prod migrations → backend → CRM. The CRM shows In progress as 0 on an
+      older backend, but its status menu would offer a status the old backend rejects.
+
 ## Done
 
 _Nothing yet._
