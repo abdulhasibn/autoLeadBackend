@@ -110,6 +110,7 @@ export function composeApp(config: AppConfig): AppDependencies {
     clock,
     timeZone: config.businessTimeZone,
     leadConversion: leads.bookedLeadConversion,
+    logger,
   });
   const insights = composeInsights(supabaseClient, {
     bearerMiddleware: auth.bearerMiddleware,

@@ -6,6 +6,8 @@ import { ENTRY_PURPOSES, type EntryPurposeValue } from '../../domain/entry-purpo
 import { toFinanceTagId } from '../../domain/finance-tag-id';
 import { Money } from '../../domain/money.value-object';
 import type { SealedFinanceEntry } from '../../domain/sealed-finance-records';
+import type { Logger } from '../../../../shared/logging/logger.port';
+import type { EntryKindValue } from '../../domain/entry-kind.value-object';
 
 interface EntryPayload {
   readonly amount: number;
@@ -18,8 +20,14 @@ interface EntryPayload {
 /**
  * Seals a ledger entry's private fields (amount, purpose, tags, party, note)
  * into one payload bound to `finance_entries:<id>`, and opens it again.
+ *
+ * Opening is tolerant of newer builds' data (so a rollback is safe): an unknown
+ * purpose reads as the kind's default (expense -> cost, income -> other) and is
+ * logged; unknown extra keys are ignored. A corrupt payload still throws.
  */
 export class EntrySealer {
+  constructor(private readonly logger?: Logger) {}
+
   seal(entry: FinanceEntry, cipher: FinanceCipher): SealedFinanceEntry {
     const payload: EntryPayload = {
       amount: entry.amount.paise,
@@ -44,7 +52,12 @@ export class EntrySealer {
   }
 
   open(record: SealedFinanceEntry, cipher: FinanceCipher): FinanceEntry {
-    const payload = parsePayload(cipher.open(record.payload, aad(record.id)), record.id);
+    const payload = parsePayload(
+      cipher.open(record.payload, aad(record.id)),
+      record.id,
+      record.kind,
+      this.logger,
+    );
     return FinanceEntry.reconstitute({
       id: record.id,
       kind: record.kind,
@@ -68,7 +81,17 @@ function aad(id: string): string {
   return `finance_entries:${id}`;
 }
 
-function parsePayload(json: string, id: string): EntryPayload {
+const FALLBACK_PURPOSE: Readonly<Record<EntryKindValue, EntryPurposeValue>> = {
+  expense: 'cost',
+  income: 'other',
+};
+
+function parsePayload(
+  json: string,
+  id: string,
+  kind: EntryKindValue,
+  logger: Logger | undefined,
+): EntryPayload {
   let value: unknown;
   try {
     value = JSON.parse(json);
@@ -83,7 +106,6 @@ function parsePayload(json: string, id: string): EntryPayload {
     Number.isSafeInteger(p.amount) &&
     p.amount > 0 &&
     typeof p.purpose === 'string' &&
-    (ENTRY_PURPOSES as readonly string[]).includes(p.purpose) &&
     Array.isArray(p.tagIds) &&
     p.tagIds.every((t) => typeof t === 'string') &&
     (p.party === null || typeof p.party === 'string') &&
@@ -91,5 +113,14 @@ function parsePayload(json: string, id: string): EntryPayload {
   if (!valid) {
     throw new DataIntegrityError(`Finance entry ${id} has an invalid payload`);
   }
-  return value as EntryPayload;
+  const payload = value as EntryPayload;
+  if ((ENTRY_PURPOSES as readonly string[]).includes(payload.purpose)) {
+    return payload;
+  }
+  // Written by a newer build (e.g. `refund`). Never log the value's payload or amounts.
+  logger?.warn(
+    { entryId: id, kind, fallback: FALLBACK_PURPOSE[kind] },
+    'Finance entry has an unknown purpose; reading it as the default for its kind',
+  );
+  return { ...payload, purpose: FALLBACK_PURPOSE[kind] };
 }

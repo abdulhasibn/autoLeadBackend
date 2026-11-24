@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../infrastructure/supabase/database.types';
 import type { ErrorMapper } from '../../presentation/http/errors/error-mapping';
 import type { Clock } from '../../shared/clock/clock';
+import type { Logger } from '../../shared/logging/logger.port';
 import { UuidIdGenerator } from '../../shared/ids/id-generator';
 import { FinanceAlreadyInitializedError } from './application/errors/finance-already-initialized.error';
 import { FinanceLockedError } from './application/errors/finance-locked.error';
@@ -118,6 +119,8 @@ export interface FinanceCompositionDeps {
   readonly timeZone: string;
   /** Converts the buyer's booked lead when a sale is recorded (the leads feature). */
   readonly leadConversion: IFinanceLeadConversion;
+  /** Warns when a sealed entry holds a purpose this build doesn't know. */
+  readonly logger?: Logger;
   /** Overridable so tests can use a cheap key derivation. */
   readonly kdf?: KdfParams;
 }
@@ -148,7 +151,7 @@ export function composeFinance(
   const vehicles = new SupabaseFinanceVehicleLookup(infraClient);
   const leads = new SupabaseFinanceLeadLookup(infraClient);
   const saleIncome = new SaleIncomeGuard(leads);
-  const entrySealer = new EntrySealer();
+  const entrySealer = new EntrySealer(deps.logger);
   const tagSealer = new TagSealer();
   const tagSeeder = new DefaultTagSeeder(tags, tagSealer, deps.clock, ids);
 

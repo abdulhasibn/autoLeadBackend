@@ -33,3 +33,7 @@ The client (requirements of 2026-10-26 and 2026-11-02) only buys cars outright a
 ## Amendment (2026-11): payments to the seller need the deal
 
 A `purchase` expense on a car whose purchase rate (commission car: commission %) isn't recorded left "owed to seller", landing cost and profit unknown while the money had already gone out. Such a payment is now refused (`DEAL_TERMS_REQUIRED`) unless the request carries the terms (`deal`), which are saved with it; the entry is written first and removed if the deal save fails. The seller's paid status is derived from the `purchase` entries (`sellerPaymentStatus`), never stored, so editing or deleting an entry can't leave it stale. A change that pays the seller beyond the rate, or beyond an existing overpayment, is refused (`SELLER_PAID_ABOVE_RATE`) unless `keepOverpayment` is sent. The check reads the sealed entries rather than summing under a lock, so two simultaneous saves can still overpay; the money tab then shows it.
+
+## Amendment (2026-11): tolerant reading of entry payloads
+
+Entry payloads are read forward-compatibly so a release can be rolled back after a newer build has written new data: an unknown `purpose` is read as the kind's default (expense `cost`, income `other`) and logged as a warning, and unknown extra keys are ignored. A payload that is corrupt (bad or missing amount, wrong types, not an object) still fails as a data-integrity error.
