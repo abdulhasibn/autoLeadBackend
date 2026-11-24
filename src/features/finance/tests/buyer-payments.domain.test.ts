@@ -143,6 +143,17 @@ describe('EntrySealer leadId', () => {
     expect(sealer.open(at({ leadId: A }), cipher).leadId).toBeNull();
   });
 
+  it('stores the car the lead was validated against, and reads the lead only on that car', () => {
+    const sealed = sealer.seal(entry('income', 'sale', 5, A), cipher);
+    const raw = JSON.parse(cipher.open(sealed.payload, `finance_entries:${sealed.id}`));
+    expect(raw).toMatchObject({ leadId: A, leadCarId: SWIFT });
+
+    // An older build moved the entry (vehicle_id changed) and carried both keys along.
+    const moved = { ...sealed, vehicleId: CRETA };
+    expect(sealer.open(moved, cipher).leadId).toBeNull();
+    expect(sealer.open(sealed, cipher).leadId).toBe(A);
+  });
+
   it('still carries unknown keys through a save', () => {
     const sealed = sealer.seal(entry('income', 'sale', 5, A), cipher);
     const raw = JSON.parse(cipher.open(sealed.payload, `finance_entries:${sealed.id}`));
@@ -158,6 +169,7 @@ describe('EntrySealer leadId', () => {
 
     expect(JSON.parse(cipher.open(again.payload, `finance_entries:${sealed.id}`))).toMatchObject({
       leadId: A,
+      leadCarId: SWIFT,
       futureKey: 1,
     });
   });
@@ -208,32 +220,6 @@ describe('VehicleMoneyTally buyers', () => {
     const noLead = finish(tally, currentBuyersOf({ status: 'sold', soldLeadId: null }, []));
     expect(noLead.receivedFromBuyer).toBe(10_000);
     expect(noLead.refundsOwed).toMatchObject([{ leadId: B }]);
-  });
-
-  it('reads a lead with no claim to the car as unassigned (stale after a rollback)', () => {
-    const tally = new VehicleMoneyTally();
-    tally.add(entry('income', 'sale', 50, A));
-    tally.add(entry('income', 'sale', 20, B));
-    const onCar = new Set<string>([B]);
-
-    const money = finish(tally, currentBuyersOf({ status: 'open', soldLeadId: null }, [], onCar));
-
-    expect(money.refundsOwed).toEqual([
-      { leadId: B, paid: 2_000, refunded: 0, owed: 2_000 },
-      { leadId: null, paid: 5_000, refunded: 0, owed: 5_000 },
-    ]);
-  });
-
-  it('a sold lead keeps its claim even when its lead sits elsewhere', () => {
-    const tally = new VehicleMoneyTally();
-    tally.add(entry('income', 'sale', 50, A));
-
-    const money = finish(
-      tally,
-      currentBuyersOf({ status: 'sold', soldLeadId: A }, [], new Set<string>()),
-    );
-
-    expect(money.buyers).toMatchObject([{ leadId: A, net: 5_000 }]);
   });
 });
 

@@ -42,13 +42,6 @@ export interface CurrentBuyers {
   readonly carSold: boolean;
   readonly soldLeadId: LeadId | null;
   readonly bookedLeadIds: readonly LeadId[];
-  /**
-   * Leads that have a claim to this car (their lead is on it, or sold it).
-   * Money carrying any other lead id is read as unassigned: after a rollback an
-   * entry may have been moved to another car on an older build and kept a stale
-   * `leadId`. Omitted = trust every lead id (callers that don't show buyers).
-   */
-  readonly leadsOnCar?: ReadonlySet<string>;
 }
 
 /** For callers that never read buyer figures (seller-payment guard, P&L). */
@@ -62,13 +55,11 @@ export const NO_CURRENT_BUYERS: CurrentBuyers = {
 export function currentBuyersOf(
   vehicle: { readonly status: string; readonly soldLeadId: LeadId | null },
   bookedLeadIds: readonly LeadId[],
-  leadsOnCar?: ReadonlySet<string>,
 ): CurrentBuyers {
   const carSold = vehicle.status === 'sold';
-  const base = carSold
+  return carSold
     ? { carSold, soldLeadId: vehicle.soldLeadId, bookedLeadIds: [] }
     : { carSold, soldLeadId: null, bookedLeadIds };
-  return leadsOnCar === undefined ? base : { ...base, leadsOnCar };
 }
 
 /** All amounts in paise. Signed where a value can go below zero. */
@@ -201,7 +192,7 @@ export class VehicleMoneyTally {
    * money elsewhere is under the key ''.
    */
   netByLead(current: CurrentBuyers): Map<string, number> {
-    const { paid, refunded } = this.readAs(current);
+    const { paid, refunded } = this;
     const net = new Map<string, number>();
     for (const [id, paise] of paid) bump(net, id, paise);
     for (const [id, paise] of refunded) bump(net, id, -paise);
@@ -272,26 +263,6 @@ export class VehicleMoneyTally {
       owedToSeller: purchaseRate === null ? null : purchaseRate - paidToSeller,
     };
   }
-  /** The per-lead maps, with ids that have no claim to the car folded into unassigned. */
-  private readAs(current: CurrentBuyers): {
-    paid: Map<string, number>;
-    refunded: Map<string, number>;
-  } {
-    const onCar = current.leadsOnCar;
-    if (onCar === undefined) return { paid: this.paid, refunded: this.refunded };
-    const keep = (id: string): boolean =>
-      id === UNASSIGNED ||
-      onCar.has(id) ||
-      id === current.soldLeadId ||
-      current.bookedLeadIds.includes(id as LeadId);
-    const fold = (source: Map<string, number>): Map<string, number> => {
-      const out = new Map<string, number>();
-      for (const [id, paise] of source) bump(out, keep(id) ? id : UNASSIGNED, paise);
-      return out;
-    };
-    return { paid: fold(this.paid), refunded: fold(this.refunded) };
-  }
-
   /**
    * Splits the buyer money by lead (BE-77 §3-4.5). On a sold car, entries with
    * no lead count as the sold lead's (a sold car with no sold lead keeps them as
@@ -303,7 +274,8 @@ export class VehicleMoneyTally {
     receivedFromBuyer: number;
     saleNet: number;
   } {
-    const { paid: paidBy, refunded: refundedBy } = this.readAs(current);
+    const paidBy = this.paid;
+    const refundedBy = this.refunded;
     const unassignedPaid = paidBy.get(UNASSIGNED) ?? 0;
     const unassignedRefunded = refundedBy.get(UNASSIGNED) ?? 0;
     const currentIds = current.carSold

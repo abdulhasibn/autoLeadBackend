@@ -704,24 +704,39 @@ describe('buyer payments belong to the lead who paid them (BE-77)', () => {
     expect(m.receivedFromBuyer).toBe(50_000);
   });
 
-  describe('stale lead after a rollback', () => {
-    it('reads a lead whose lead is on another car as unassigned', async () => {
-      // The entry was moved to SWIFT on an older build and kept its leadId.
+  describe('a lead who is no longer on the car', () => {
+    it('shows a lead moved to another car as a refund owed on the old car (§4.10)', async () => {
       await payment({ leadId: A });
       k.leads.booked.set(SWIFT, []);
-      k.leads.addLead(A, 'Anil Kumar', CRETA);
+      k.leads.addLead(A, 'Anil Kumar', CRETA); // A's lead now sits on another car
+
+      const m = await carMoney();
+
+      expect(m.receivedFromBuyer).toBe(0);
+      expect(m.refundsOwed).toMatchObject([{ lead: { id: A }, owed: 50_000 }]);
+    });
+
+    it('reads an entry moved by an older build (leadCarId differs from its car) as unassigned', async () => {
+      const saved = await payment({ leadId: A });
+      k.leads.booked.set(SWIFT, []);
+      const row = k.entries.rows.get(saved.id);
+      if (row === undefined) throw new Error('entry not stored');
+      const { cipher } = await k.sessionService.open(ADMIN, token);
+      const stored = JSON.parse(cipher.open(row.payload, `finance_entries:${row.id}`));
+      expect(stored.leadCarId).toBe(SWIFT);
+      // The older build moved the entry to SWIFT from CRETA, keeping the unknown keys.
+      k.entries.rows.set(row.id, {
+        ...row,
+        payload: cipher.seal(
+          JSON.stringify({ ...stored, leadCarId: CRETA }),
+          `finance_entries:${row.id}`,
+        ),
+      });
 
       const m = await carMoney();
 
       expect(m.refundsOwed).toEqual([{ lead: null, paid: 50_000, refunded: 0, owed: 50_000 }]);
       expect(m.receivedFromBuyer).toBe(0);
-    });
-
-    it('keeps a lead who still has a claim: on the car, or the sold lead', async () => {
-      await payment({ leadId: A });
-      k.leads.booked.set(SWIFT, []); // A is Lost but still on SWIFT
-
-      expect((await carMoney()).refundsOwed).toMatchObject([{ lead: { id: A } }]);
     });
   });
 

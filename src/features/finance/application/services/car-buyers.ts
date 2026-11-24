@@ -1,5 +1,4 @@
 import type { LeadId } from '../../../../domain/shared/lead-id';
-import type { VehicleId } from '../../../../domain/shared/vehicle-id';
 import type { FinanceLeadFacts, IFinanceLeadLookup } from '../../domain/finance-lead-lookup.port';
 import type { FinanceVehicleFacts } from '../../domain/finance-vehicle-lookup.port';
 import {
@@ -19,9 +18,6 @@ export interface ResolvedBuyers {
  * Works out who each car's current buyers are (BE-77 §3) with two batched
  * lookups, so every report agrees with car money:
  * - sold car: its `sold_lead_id`; unsold car: its booking-confirmed leads;
- * - a lead id on the car's money that has no claim to the car (its lead sits on
- *   another car and isn't the sold lead) is read as unassigned, so a stale id
- *   left by a rolled-back build can't hide money under the wrong buyer.
  */
 export class CarBuyers {
   constructor(
@@ -46,17 +42,13 @@ export class CarBuyers {
     for (const list of booked.values()) for (const lead of list) facts.set(lead.id, lead);
 
     const buyers = new Map<string, CurrentBuyers>();
-    for (const { vehicle, tally } of cars) {
+    for (const { vehicle } of cars) {
       const bookedLeads: readonly FinanceLeadFacts[] = booked.get(vehicle.id) ?? [];
-      const onCar = new Set<string>(
-        tally.leadIds().filter((id) => facts.get(id)?.vehicleId === (vehicle.id as VehicleId)),
-      );
       buyers.set(
         vehicle.id,
         currentBuyersOf(
           vehicle,
           bookedLeads.map((l) => l.id),
-          onCar,
         ),
       );
     }

@@ -23,6 +23,12 @@ interface EntryPayload {
   readonly note: string | null;
   /** The buyer of a `sale` or `refund` entry; absent on older entries. */
   readonly leadId?: string | null;
+  /**
+   * The car `leadId` was validated against. Read only while it equals the
+   * entry's car: an older build can move the entry and carry both keys along,
+   * which would leave `leadId` pointing at a lead of the wrong car.
+   */
+  readonly leadCarId?: string | null;
 }
 
 /**
@@ -64,7 +70,9 @@ export class EntrySealer {
       tagIds: entry.tagIds,
       party: entry.party,
       note: entry.note,
-      ...(entry.leadId === null ? {} : { leadId: entry.leadId }),
+      ...(entry.leadId === null || entry.vehicleId === null
+        ? {}
+        : { leadId: entry.leadId, leadCarId: entry.vehicleId }),
     };
     return {
       id: entry.id,
@@ -96,7 +104,9 @@ export class EntrySealer {
       tagIds: payload.tagIds.map(toFinanceTagId),
       vehicleId: record.vehicleId,
       leadId:
-        carriesLead(payload.purpose) && typeof payload.leadId === 'string'
+        carriesLead(payload.purpose) &&
+        typeof payload.leadId === 'string' &&
+        payload.leadCarId === record.vehicleId
           ? toLeadId(payload.leadId)
           : null,
       showroomId: record.showroomId,
@@ -128,6 +138,7 @@ const KNOWN_KEYS: ReadonlySet<string> = new Set([
   'party',
   'note',
   'leadId',
+  'leadCarId',
 ]);
 
 interface ParsedPayload {
@@ -161,7 +172,8 @@ function parsePayload(
     p.tagIds.every((t) => typeof t === 'string') &&
     (p.party === null || typeof p.party === 'string') &&
     (p.note === null || typeof p.note === 'string') &&
-    (p.leadId === undefined || p.leadId === null || typeof p.leadId === 'string');
+    (p.leadId === undefined || p.leadId === null || typeof p.leadId === 'string') &&
+    (p.leadCarId === undefined || p.leadCarId === null || typeof p.leadCarId === 'string');
   if (!valid) {
     throw new DataIntegrityError(`Finance entry ${id} has an invalid payload`);
   }
