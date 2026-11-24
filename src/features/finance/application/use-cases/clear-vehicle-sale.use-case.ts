@@ -1,4 +1,5 @@
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
+import { NotFoundError } from '../../../../domain/errors/not-found.error';
 import { toVehicleId } from '../../../../domain/shared/vehicle-id';
 import type { Clock } from '../../../../shared/clock/clock';
 import type { FinanceEntry } from '../../domain/finance-entry.entity';
@@ -45,6 +46,10 @@ export class ClearVehicleSaleUseCase {
     const { cipher } = await this.sessions.open(ctx, command.sessionToken);
 
     const vehicleId = toVehicleId(command.vehicleId);
+    const [vehicle] = await this.vehicles.findMany([vehicleId]);
+    if (vehicle === undefined) {
+      throw new NotFoundError(`Vehicle not found for id ${command.vehicleId}`);
+    }
     const sealed = await this.deals.find(vehicleId);
     if (sealed === null) {
       return;
@@ -55,9 +60,8 @@ export class ClearVehicleSaleUseCase {
     }
 
     if (command.withBuyerPayments === true) {
-      const [vehicle] = await this.vehicles.findMany([vehicleId]);
-      const soldLeadId = vehicle?.soldLeadId ?? null;
-      const carSold = vehicle?.status === 'sold';
+      const soldLeadId = vehicle.soldLeadId;
+      const carSold = vehicle.status === 'sold';
       const now = this.clock.now();
       const doomed: FinanceEntry[] = [];
       for await (const page of this.entries.scan({ vehicleId })) {

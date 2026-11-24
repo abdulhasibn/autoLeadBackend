@@ -33,6 +33,7 @@ import {
   makeCreateEntry,
   makeSetDeal,
   makeUpdateEntry,
+  markCarSold,
   type FinanceTestKit,
 } from './fakes';
 import { CalendarDate } from '../../../domain/shared/calendar-date.value-object';
@@ -493,7 +494,14 @@ describe('buyer payments belong to the lead who paid them (BE-77)', () => {
   describe('moving the lead and the money', () => {
     it('assigns a payment to any existing lead, deleted ones too (lead-only PATCH)', async () => {
       const saved = await payment({ leadId: A });
-      k.leads.leads.set(C, { id: C, name: 'Gone', phone: null, deleted: true, vehicleId: null });
+      k.leads.leads.set(C, {
+        id: C,
+        name: 'Gone',
+        phone: null,
+        deleted: true,
+        status: 'new',
+        vehicleId: null,
+      });
 
       const moved = await update.execute(
         { sessionToken: token, entryId: saved.id, leadId: C },
@@ -691,6 +699,10 @@ describe('buyer payments belong to the lead who paid them (BE-77)', () => {
     expect(d.items[0]?.owedByBuyer).toBe(m.owedByBuyer);
     expect(d.items[0]?.receivedFromBuyer).toBe(m.receivedFromBuyer);
     expect(d.totals.owedByBuyers).toBe(400_000);
+    const sum = await summary.execute({ sessionToken: token, showroomId: null }, ADMIN);
+    expect(sum.owedByBuyers).toBe(d.totals.owedByBuyers);
+    expect(sum.owedBackToBuyers).toBe(d.totals.owedBackToBuyers);
+    expect(d.totals.owedBackToBuyers).toBe(50_000);
   });
 
   it('AC11: a former buyer booked again on the same car counts as current again', async () => {
@@ -737,6 +749,107 @@ describe('buyer payments belong to the lead who paid them (BE-77)', () => {
 
       expect(m.refundsOwed).toEqual([{ lead: null, paid: 50_000, refunded: 0, owed: 50_000 }]);
       expect(m.receivedFromBuyer).toBe(0);
+    });
+  });
+
+  describe('review fixes', () => {
+    it('refuses a named lead on a sold car with no sold lead (unknown or not)', async () => {
+      markCarSold(k, SWIFT);
+
+      await expect(payment({ leadId: A })).rejects.toMatchObject({
+        code: 'SALE_LEAD_NOT_ON_CAR',
+      });
+      await expect(
+        payment({ leadId: 'eeeeeeee-0000-4000-8000-0000000000ee' }),
+      ).rejects.toMatchObject({ code: 'SALE_LEAD_NOT_ON_CAR' });
+      // Without one the payment is stored unassigned and counts as the buyer's.
+      expect(await payment({})).toMatchObject({ lead: null });
+      expect((await carMoney()).receivedFromBuyer).toBe(50_000);
+    });
+
+    it.each([
+      ['lost', 'lost', false],
+      ['converted', 'converted', false],
+      ['vehicle_unavailable', 'vehicle_unavailable', false],
+      ['deleted', 'new', true],
+    ])(
+      'a move accepts only an active lead on the target car: %s is refused',
+      async (_n, status, deleted) => {
+        const saved = await payment({ leadId: A });
+        k.leads.addLead(B, 'Bala', CRETA, false, status);
+        const lead = k.leads.leads.get(B);
+        if (lead === undefined) throw new Error('lead missing');
+        k.leads.leads.set(B, { ...lead, deleted });
+
+        await expect(
+          update.execute(
+            { sessionToken: token, entryId: saved.id, vehicleId: CRETA, leadId: B },
+            ADMIN,
+          ),
+        ).rejects.toMatchObject({ code: 'SALE_LEAD_NOT_ON_CAR', details: { leadId: B } });
+      },
+    );
+
+    it('linking a previously unlinked entry does not get the move leniency', async () => {
+      const loose = await payment({
+        vehicleId: null,
+        purpose: null,
+        kind: 'income',
+        showroomId: SHOWROOM_A,
+      });
+      k.leads.addLead(B, 'Bala', SWIFT); // on the car, active, not booked
+
+      await expect(
+        update.execute(
+          { sessionToken: token, entryId: loose.id, vehicleId: SWIFT, purpose: 'sale', leadId: B },
+          ADMIN,
+        ),
+      ).rejects.toMatchObject({ code: 'SALE_LEAD_NOT_ON_CAR' });
+    });
+
+    it('REFUND_ABOVE_PAID details use the same attribution as net (legacy money on a sold car)', async () => {
+      bBooks();
+      await sell(B, 600_000);
+      await saveLegacy(rs(100_000));
+
+      await expect(refund({ leadId: B, amountPaise: rs(150_000) })).rejects.toMatchObject({
+        code: 'REFUND_ABOVE_PAID',
+        details: { paid: 100_000, refunded: 0, requested: 150_000, refundable: 100_000 },
+      });
+    });
+
+    it('"adjust" still refuses a buyerPayment larger than the price', async () => {
+      bBooks();
+      await payment({ leadId: A, amountPaise: rs(70_000) });
+
+      await expect(sell(A, 100_000, 150_000, { buyerPayments: 'adjust' })).rejects.toMatchObject({
+        code: 'SALE_PRICE_BELOW_RECEIVED',
+      });
+      expect((await carMoney()).receivedFromBuyer).toBe(70_000);
+    });
+
+    it('lowering a refund is allowed after its payment was deleted; raising it is not', async () => {
+      const paid = await payment({ leadId: A });
+      const r = await refund({ leadId: A, amountPaise: rs(50_000) });
+      await deleteEntry.execute({ sessionToken: token, entryId: paid.id }, ADMIN);
+
+      const lowered = await update.execute(
+        { sessionToken: token, entryId: r.id, amountPaise: rs(40_000) },
+        ADMIN,
+      );
+      expect(lowered.amount).toBe(40_000);
+      await expect(
+        update.execute({ sessionToken: token, entryId: r.id, amountPaise: rs(60_000) }, ADMIN),
+      ).rejects.toMatchObject({ code: 'REFUND_ABOVE_PAID' });
+    });
+
+    it('removing a sale on an unknown car is a 404', async () => {
+      await expect(
+        clearSale.execute(
+          { sessionToken: token, vehicleId: 'dddddddd-0000-4000-8000-0000000000ff' },
+          ADMIN,
+        ),
+      ).rejects.toMatchObject({ name: 'NotFoundError' });
     });
   });
 

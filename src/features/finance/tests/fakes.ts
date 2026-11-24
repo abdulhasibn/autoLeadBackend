@@ -292,6 +292,7 @@ export class FakeFinanceLeadLookup implements IFinanceLeadLookup {
         name: 'Anil Kumar',
         phone: '+919876500001',
         deleted: false,
+        status: 'new',
         vehicleId: null,
       },
     ],
@@ -302,6 +303,7 @@ export class FakeFinanceLeadLookup implements IFinanceLeadLookup {
         name: 'Old Lead',
         phone: '+919876500002',
         deleted: true,
+        status: 'new',
         vehicleId: null,
       },
     ],
@@ -324,8 +326,14 @@ export class FakeFinanceLeadLookup implements IFinanceLeadLookup {
   }
 
   /** Adds a lead on `vehicleId`; `booked` also confirms its booking on that car. */
-  addLead(id: LeadId, name: string, vehicleId: VehicleId | null, booked = false): LeadId {
-    this.leads.set(id, { id, name, phone: null, deleted: false, vehicleId });
+  addLead(
+    id: LeadId,
+    name: string,
+    vehicleId: VehicleId | null,
+    booked = false,
+    status = booked ? 'booking_confirmed' : 'new',
+  ): LeadId {
+    this.leads.set(id, { id, name, phone: null, deleted: false, status, vehicleId });
     if (booked && vehicleId !== null) {
       this.booked.set(vehicleId, [...(this.booked.get(vehicleId) ?? []), id]);
     }

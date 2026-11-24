@@ -79,7 +79,11 @@ export class UpdateFinanceEntryUseCase {
     this.entrySealer.assertWritable(entry);
     const paidSellerOf = isSellerPayment(entry) ? entry.vehicleId : null;
     const now = this.clock.now();
-    const before = { vehicleId: entry.vehicleId, purpose: entry.purpose };
+    const before = {
+      vehicleId: entry.vehicleId,
+      purpose: entry.purpose,
+      amountPaise: entry.amount.paise,
+    };
 
     if (command.amountPaise !== undefined) {
       entry.changeAmount(Money.ofPaise(command.amountPaise), now);
@@ -181,7 +185,11 @@ export class UpdateFinanceEntryUseCase {
   private async attributeLead(
     entry: FinanceEntry,
     vehicle: FinanceVehicleFacts | null,
-    before: { readonly vehicleId: string | null; readonly purpose: string },
+    before: {
+      readonly vehicleId: string | null;
+      readonly purpose: string;
+      readonly amountPaise: number;
+    },
     command: UpdateFinanceEntryCommand,
     cipher: FinanceCipher,
     now: Date,
@@ -202,7 +210,10 @@ export class UpdateFinanceEntryUseCase {
         await this.saleIncome.attribute(
           entry,
           vehicle,
-          { leadId: requested, accepts: moved ? 'on-car' : 'current-buyers' },
+          {
+            leadId: requested,
+            accepts: moved && before.vehicleId !== null ? 'on-car' : 'current-buyers',
+          },
           now,
         );
       } else if (command.leadId !== undefined) {
@@ -211,7 +222,8 @@ export class UpdateFinanceEntryUseCase {
       }
       return;
     }
-    if (created || command.leadId !== undefined || command.amountPaise !== undefined) {
+    const raised = entry.amount.paise > before.amountPaise;
+    if (created || command.leadId !== undefined || raised) {
       if (!created && command.leadId !== undefined && requested !== null) {
         await this.saleIncome.assertLeadExists(requested);
       }

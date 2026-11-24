@@ -101,12 +101,15 @@ export class RecordVehicleSaleUseCase {
     if (mine.net + incoming > finalisedPrice.paise) {
       if (command.buyerPayments === 'adjust') {
         trimmed = planTrim(mine.sale, mine.net + incoming - finalisedPrice.paise);
-      } else if (!command.keepOverpayment) {
+      }
+      const cut = trimmed.reduce((t, p) => t + (p.entry.amount.paise - p.keepPaise), 0);
+      const left = mine.net + incoming - cut;
+      if (left > finalisedPrice.paise && !command.keepOverpayment) {
         throw new BusinessRuleViolationError(
           'SALE_PRICE_BELOW_RECEIVED',
           'The buyer has already paid more than this price: reduce their payments first, or keep the overpayment',
           {
-            receivedFromBuyer: (mine.net + incoming) / 100,
+            receivedFromBuyer: left / 100,
             finalisedPrice: finalisedPrice.paise / 100,
           },
         );

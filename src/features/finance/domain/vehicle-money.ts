@@ -181,27 +181,37 @@ export class VehicleMoneyTally {
     }
   }
 
-  /** Paise of `sale` entries added so far that carry this lead. */
-  paidBy(leadId: LeadId): number {
-    return this.paid.get(leadId) ?? 0;
+  /**
+   * Paid and refunded per lead as the car's buyers see it: on a sold car with a
+   * sold lead, unassigned money counts as theirs (§4.4). Unassigned money
+   * elsewhere is under the key ''.
+   */
+  figuresByLead(current: CurrentBuyers): Map<string, { paid: number; refunded: number }> {
+    const out = new Map<string, { paid: number; refunded: number }>();
+    const at = (id: string) => {
+      const row = out.get(id) ?? { paid: 0, refunded: 0 };
+      out.set(id, row);
+      return row;
+    };
+    for (const [id, paise] of this.paid) at(id).paid += paise;
+    for (const [id, paise] of this.refunded) at(id).refunded += paise;
+    if (current.carSold && current.soldLeadId !== null) {
+      const loose = out.get(UNASSIGNED);
+      if (loose !== undefined) {
+        out.delete(UNASSIGNED);
+        const mine = at(current.soldLeadId);
+        mine.paid += loose.paid;
+        mine.refunded += loose.refunded;
+      }
+    }
+    return out;
   }
 
-  /**
-   * Net (paid − refunded) per lead as the car's buyers see it: on a sold car
-   * with a sold lead, unassigned money counts as theirs (§4.4). Unassigned
-   * money elsewhere is under the key ''.
-   */
+  /** Net (paid − refunded) per lead; see {@link figuresByLead}. */
   netByLead(current: CurrentBuyers): Map<string, number> {
-    const { paid, refunded } = this;
-    const net = new Map<string, number>();
-    for (const [id, paise] of paid) bump(net, id, paise);
-    for (const [id, paise] of refunded) bump(net, id, -paise);
-    if (current.carSold && current.soldLeadId !== null) {
-      const loose = net.get(UNASSIGNED) ?? 0;
-      net.delete(UNASSIGNED);
-      bump(net, current.soldLeadId, loose);
-    }
-    return net;
+    return new Map(
+      [...this.figuresByLead(current)].map(([id, f]) => [id, f.paid - f.refunded] as const),
+    );
   }
 
   /** Every lead id that has buyer money on the car so far. */

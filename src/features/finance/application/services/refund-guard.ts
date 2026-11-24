@@ -45,7 +45,11 @@ export class RefundGuard {
     }
     const { buyers } = await this.buyers.resolve([{ vehicle, tally }]);
     const current = buyers.get(vehicle.id);
-    const net = current === undefined ? new Map<string, number>() : tally.netByLead(current);
+    const figures =
+      current === undefined
+        ? new Map<string, { paid: number; refunded: number }>()
+        : tally.figuresByLead(current);
+    const net = new Map([...figures].map(([id, f]) => [id, f.paid - f.refunded] as const));
 
     let leadId = requested;
     if (leadId === null) {
@@ -63,13 +67,13 @@ export class RefundGuard {
     }
     const refundable = net.get(leadId) ?? 0;
     if (entry.amount.paise > refundable) {
-      const paid = tallyPaid(tally, leadId);
+      const paid = figures.get(leadId)?.paid ?? 0;
       throw new BusinessRuleViolationError(
         'REFUND_ABOVE_PAID',
         'This refunds more than that buyer has paid on this car',
         {
           paid: paid / 100,
-          refunded: (paid - refundable) / 100,
+          refunded: (figures.get(leadId)?.refunded ?? 0) / 100,
           requested: entry.amount.paise / 100,
           refundable: Math.max(refundable, 0) / 100,
         },
@@ -77,9 +81,4 @@ export class RefundGuard {
     }
     entry.assignLead(leadId, now);
   }
-}
-
-/** What the lead has paid in total (net + refunded so far), read back from the tally. */
-function tallyPaid(tally: VehicleMoneyTally, leadId: LeadId): number {
-  return tally.paidBy(leadId);
 }

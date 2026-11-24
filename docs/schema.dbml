@@ -460,7 +460,7 @@ Table finance_entries {
   kind text [not null, note: 'income | expense']
   vehicle_id uuid [ref: > vehicles.id, note: 'null = business-level entry']
   entry_date date [not null]
-  payload text [not null, note: 'AES-256-GCM: { amount (paise), purpose (purchase|cost|refund|sale|other|general), tagIds, party, note, leadId? (buyer, sale and refund only; absent on older entries; BE-77) }']
+  payload text [not null, note: 'AES-256-GCM: { amount (paise), purpose (purchase|cost|refund|sale|other|general), tagIds, party, note, leadId? (buyer, sale and refund only; absent on older entries; BE-77), leadCarId? (internal: the car leadId was validated against) }']
   key_version integer [not null]
   recorded_by uuid [not null, ref: > users.id]
   created_at timestamptz [not null, default: `now()`]

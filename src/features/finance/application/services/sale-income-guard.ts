@@ -1,7 +1,10 @@
 import { BusinessRuleViolationError } from '../../../../domain/errors/business-rule-violation.error';
 import type { LeadId } from '../../../../domain/shared/lead-id';
 import type { FinanceEntry } from '../../domain/finance-entry.entity';
-import type { IFinanceLeadLookup } from '../../domain/finance-lead-lookup.port';
+import {
+  ACTIVE_LEAD_STATUSES,
+  type IFinanceLeadLookup,
+} from '../../domain/finance-lead-lookup.port';
 import type { FinanceVehicleFacts } from '../../domain/finance-vehicle-lookup.port';
 
 export interface SaleLeadRequest {
@@ -47,7 +50,9 @@ export class SaleIncomeGuard {
     const requested = request.leadId ?? null;
     if (vehicle.status === 'sold') {
       if (vehicle.soldLeadId === null) {
-        return requested;
+        // Nobody to attribute to: the money stays unassigned, so a named lead is refused.
+        if (requested !== null) throw notOnCar(requested);
+        return null;
       }
       if (requested !== null && requested !== vehicle.soldLeadId) {
         await this.assertAccepted(requested, vehicle, request);
@@ -83,7 +88,14 @@ export class SaleIncomeGuard {
   ): Promise<void> {
     if (request.accepts === 'on-car') {
       const [lead] = await this.leads.findMany([leadId]);
-      if (lead !== undefined && lead.vehicleId === vehicle.id) return;
+      if (
+        lead !== undefined &&
+        !lead.deleted &&
+        ACTIVE_LEAD_STATUSES.includes(lead.status) &&
+        lead.vehicleId === vehicle.id
+      ) {
+        return;
+      }
     }
     throw notOnCar(leadId);
   }

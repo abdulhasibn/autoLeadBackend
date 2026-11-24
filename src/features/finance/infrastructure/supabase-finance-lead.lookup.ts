@@ -10,7 +10,7 @@ import { inBatches } from './in-batches';
 // A lead has either a walk-in contact or a registered buyer (leads.user_id).
 // The users hint is needed: leads also reference users as assignee and creator.
 const COLUMNS =
-  'id, deleted_at, vehicle_id, contacts ( full_name, phone ), buyer:users!user_id ( full_name, phone )';
+  'id, deleted_at, status, vehicle_id, contacts ( full_name, phone ), buyer:users!user_id ( full_name, phone )';
 
 interface Person {
   readonly full_name: string | null;
@@ -20,6 +20,7 @@ interface Person {
 interface LeadRow {
   readonly id: string;
   readonly deleted_at: string | null;
+  readonly status: string;
   readonly vehicle_id: string | null;
   readonly contacts: Person | Person[] | null;
   readonly buyer: Person | Person[] | null;
@@ -90,6 +91,7 @@ function toFacts(row: LeadRow): FinanceLeadFacts {
     name: person?.full_name ?? null,
     phone: person?.phone ?? null,
     deleted: row.deleted_at !== null,
+    status: row.status,
     vehicleId: row.vehicle_id === null ? null : toVehicleId(row.vehicle_id),
   };
 }

@@ -8,6 +8,8 @@ export interface FinanceLeadFacts {
   readonly name: string | null;
   readonly phone: string | null;
   readonly deleted: boolean;
+  /** The lead's CRM status (`new`, `in_progress`, `not_now`, `booking_confirmed`, `converted`, `lost`, `vehicle_unavailable`). */
+  readonly status: string;
   /** The car the lead is on now (`leads.vehicle_id`); null when none. */
   readonly vehicleId: VehicleId | null;
 }
@@ -25,3 +27,11 @@ export interface IFinanceLeadLookup {
     vehicleIds: readonly VehicleId[],
   ): Promise<ReadonlyMap<string, readonly FinanceLeadFacts[]>>;
 }
+
+/** Statuses of a lead still being worked (a finance-side copy of the leads feature's list, ADR-0006). */
+export const ACTIVE_LEAD_STATUSES: readonly string[] = [
+  'new',
+  'in_progress',
+  'not_now',
+  'booking_confirmed',
+];

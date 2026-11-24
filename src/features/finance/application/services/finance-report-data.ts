@@ -87,13 +87,6 @@ export class FinanceReportData {
         },
       );
     }
-    const { buyers } = await this.carBuyers.resolve(
-      kept.flatMap((deal) => {
-        const vehicle = facts.get(deal.vehicleId);
-        const tally = tallies.get(deal.vehicleId);
-        return vehicle === undefined || tally === undefined ? [] : [{ vehicle, tally }];
-      }),
-    );
     return kept.flatMap((deal): SoldCarRow[] => {
       const vehicle = facts.get(deal.vehicleId);
       const tally = tallies.get(deal.vehicleId);
@@ -111,7 +104,8 @@ export class FinanceReportData {
             saleModel: vehicle.saleModel,
             terms: deal.terms,
             finalisedPrice: sale.finalisedPrice,
-            buyers: buyers.get(deal.vehicleId) ?? NO_CURRENT_BUYERS,
+            // P&L, profit per car and the summary's sold rows never read buyer figures.
+            buyers: NO_CURRENT_BUYERS,
           }),
           vehicle,
           deal,
