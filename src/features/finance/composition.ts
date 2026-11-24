@@ -120,7 +120,7 @@ export interface FinanceCompositionDeps {
   /** Converts the buyer's booked lead when a sale is recorded (the leads feature). */
   readonly leadConversion: IFinanceLeadConversion;
   /** Warns when a sealed entry holds a purpose this build doesn't know. */
-  readonly logger?: Logger;
+  readonly logger: Logger;
   /** Overridable so tests can use a cheap key derivation. */
   readonly kdf?: KdfParams;
 }

@@ -70,6 +70,7 @@ export class UpdateFinanceEntryUseCase {
       throw new NotFoundError(`Finance entry not found for id ${command.entryId}`);
     }
     const entry = this.entrySealer.open(sealed, cipher);
+    this.entrySealer.assertWritable(entry);
     const paidSellerOf = isSellerPayment(entry) ? entry.vehicleId : null;
     const now = this.clock.now();
 

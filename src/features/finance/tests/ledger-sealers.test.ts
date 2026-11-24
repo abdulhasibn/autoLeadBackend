@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { Logger } from '../../../shared/logging/logger.port';
 
+import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import { DataIntegrityError } from '../../../domain/errors/data-integrity.error';
 import { CalendarDate } from '../../../domain/shared/calendar-date.value-object';
 import { toUserId } from '../../../domain/shared/user-id';
@@ -83,12 +84,18 @@ describe('EntrySealer tolerant parsing', () => {
     return { warn, log: { warn } as unknown as Logger };
   }
 
-  function sealed(kind: 'expense' | 'income', payload: unknown, raw?: string) {
+  function sealed(
+    kind: 'expense' | 'income',
+    payload: unknown,
+    raw?: string,
+    vehicleId: string | null = SWIFT,
+  ) {
     const template = new EntrySealer().seal(mediatorPayment(), cipher);
     return {
       ...template,
       id: ID,
       kind,
+      vehicleId: vehicleId as typeof SWIFT | null,
       payload: cipher.seal(raw ?? JSON.stringify(payload), `finance_entries:${ID}`),
     };
   }
@@ -102,8 +109,58 @@ describe('EntrySealer tolerant parsing', () => {
 
     expect(opened.purpose).toBe('cost');
     expect(opened.amount.paise).toBe(500000);
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(JSON.stringify(warn.mock.calls)).not.toContain('500000');
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      {
+        event: 'finance.entry.unknown_purpose',
+        entryId: ID,
+        kind: 'expense',
+        fallback: 'cost',
+      },
+      expect.any(String),
+    );
+  });
+
+  it('reads an unknown purpose on an entry with no car as general', () => {
+    const opened = new EntrySealer().open(
+      sealed('expense', { ...base, purpose: 'refund' }, undefined, null),
+      cipher,
+    );
+    expect(opened.purpose).toBe('general');
+  });
+
+  it('refuses to save an entry opened with the fallback purpose', () => {
+    const s = new EntrySealer();
+    const opened = s.open(sealed('expense', { ...base, purpose: 'refund' }), cipher);
+
+    expect(() => s.seal(opened, cipher)).toThrow(BusinessRuleViolationError);
+    expect(() => s.assertWritable(opened)).toThrow(
+      expect.objectContaining({ code: 'ENTRY_FROM_NEWER_VERSION' }),
+    );
+  });
+
+  it('lets an entry with a known purpose be saved', () => {
+    const s = new EntrySealer();
+    const opened = s.open(sealed('income', { ...base, purpose: 'sale' }), cipher);
+    expect(() => s.seal(opened, cipher)).not.toThrow();
+  });
+
+  it('writes unknown keys back unchanged when an entry is saved', () => {
+    const s = new EntrySealer();
+    const leadId = '33333333-3333-4333-8333-000000000001';
+    const opened = s.open(
+      sealed('income', { ...base, purpose: 'sale', leadId, extra: { a: [1] } }),
+      cipher,
+    );
+    opened.changeNote('edited', NOW);
+
+    const resealed = s.seal(opened, cipher);
+    const raw = JSON.parse(cipher.open(resealed.payload, `finance_entries:${ID}`)) as Record<
+      string,
+      unknown
+    >;
+
+    expect(raw).toMatchObject({ leadId, extra: { a: [1] }, note: 'edited', purpose: 'sale' });
+    expect(s.open(resealed, cipher).note).toBe('edited');
   });
 
   it('reads an unknown income purpose as other', () => {
@@ -162,6 +219,7 @@ describe('EntrySealer tolerant parsing', () => {
     ['non-string purpose', { ...base, purpose: 7 }],
     ['bad tagIds', { ...base, tagIds: [1], purpose: 'cost' }],
     ['bad note', { ...base, note: 5, purpose: 'cost' }],
+    ['bad party', { ...base, party: 5, purpose: 'cost' }],
     ['non-object', 42],
     ['null', null],
   ])('still throws for a corrupt payload: %s', (_name, payload) => {

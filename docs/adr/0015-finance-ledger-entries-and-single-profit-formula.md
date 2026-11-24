@@ -36,4 +36,9 @@ A `purchase` expense on a car whose purchase rate (commission car: commission %)
 
 ## Amendment (2026-11): tolerant reading of entry payloads
 
-Entry payloads are read forward-compatibly so a release can be rolled back after a newer build has written new data: an unknown `purpose` is read as the kind's default (expense `cost`, income `other`) and logged as a warning, and unknown extra keys are ignored. A payload that is corrupt (bad or missing amount, wrong types, not an object) still fails as a data-integrity error.
+Entry payloads are read forward-compatibly so a release can be rolled back after a newer build has written new data (e.g. the `refund` purpose).
+
+- **Unknown purpose:** read as `cost` (car-linked expense), `other` (car-linked income) or `general` (no car), never `sale` or `purchase`, so it can't settle a buyer or seller balance. This is not the kind's default for new entries (`sale` for income). It is logged as a warning (`finance.entry.unknown_purpose`, entry id, kind and fallback only).
+- **Read-only on this build:** an entry read through that fallback can't be edited or deleted; both answer 422 `ENTRY_FROM_NEWER_VERSION`, so the stored purpose is never overwritten with the fallback.
+- **Unknown extra keys** (e.g. `leadId`) are ignored on read and written back unchanged whenever the entry is saved.
+- A corrupt payload (bad JSON, not an object, missing or invalid amount, wrong types) still fails as a data-integrity error.
