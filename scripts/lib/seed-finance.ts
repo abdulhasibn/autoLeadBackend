@@ -544,6 +544,8 @@ export async function buildFinanceSeed(input: FinanceSeedInput): Promise<Finance
   if (clientCar !== null) {
     const clientDeal = openedDeals.get(clientCar.id);
     const money = calculateVehicleMoney({
+      // Seeded sale payments carry no lead: count them as the buyer's, as before BE-77.
+      buyers: { carSold: true, soldLeadId: null, bookedLeadIds: [] },
       // Seeded deals are all purchase terms.
       saleModel: 'purchase',
       terms: clientDeal?.terms ?? null,
@@ -560,7 +562,7 @@ export async function buildFinanceSeed(input: FinanceSeedInput): Promise<Finance
   // --- Summary.
   const liveEntries = opened.filter((e) => !e.isDeleted);
   const count = (pred: (e: FinanceEntry) => boolean): number => liveEntries.filter(pred).length;
-  const byPurpose = ['purchase', 'cost', 'sale', 'other', 'general']
+  const byPurpose = ['purchase', 'cost', 'refund', 'sale', 'other', 'general']
     .map((p) => `${p}=${count((e) => e.purpose === p)}`)
     .join(' ');
   let owedToSellers = 0;
@@ -569,6 +571,8 @@ export async function buildFinanceSeed(input: FinanceSeedInput): Promise<Finance
   for (const car of live) {
     const deal = openedDeals.get(car.id);
     const money = calculateVehicleMoney({
+      // Seeded sale payments carry no lead: count them as the buyer's, as before BE-77.
+      buyers: { carSold: true, soldLeadId: null, bookedLeadIds: [] },
       saleModel: 'purchase',
       terms: deal?.terms ?? null,
       finalisedPrice: deal?.sale?.finalisedPrice ?? null,

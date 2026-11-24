@@ -29,6 +29,7 @@ import {
   SHOWROOM_B,
   SWIFT,
   TEST_KDF,
+  carBuyers,
   createFinanceTestKit,
   markCarSold,
   type FinanceTestKit,
@@ -86,6 +87,7 @@ describe('finance reports', () => {
       k.dealSealer,
       k.entrySealer,
       k.quoteSealer,
+      carBuyers(k),
     );
     pnl = new GetProfitAndLossUseCase(k.policy, k.sessionService, data);
     cashFlow = new GetCashFlowUseCase(k.policy, k.sessionService, data);
@@ -437,7 +439,7 @@ describe('finance reports', () => {
         owedByBuyer: null,
       }),
     ]);
-    expect(report.totals).toEqual({ owedToSellers: 200000, owedByBuyers: 0 });
+    expect(report.totals).toEqual({ owedToSellers: 200000, owedByBuyers: 0, owedBackToBuyers: 0 });
   });
 
   it('stock: the unsold Creta; dropped cars stay, sold and deleted cars do not', async () => {
@@ -671,7 +673,11 @@ describe('finance reports', () => {
           owedToSeller: 200000,
         }),
       ]);
-      expect(duesReport.totals).toEqual({ owedToSellers: 200000, owedByBuyers: 0 });
+      expect(duesReport.totals).toEqual({
+        owedToSellers: 200000,
+        owedByBuyers: 0,
+        owedBackToBuyers: 0,
+      });
       expect(duesReport.truncated).toBe(false);
 
       const s = await summary.execute({ sessionToken: token, showroomId: null }, ADMIN);

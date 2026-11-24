@@ -13,7 +13,7 @@ import { FinanceEntry } from '../domain/finance-entry.entity';
 import { Money } from '../domain/money.value-object';
 import { ReportPeriod } from '../domain/report-period.value-object';
 import { calculateVehicleMoney } from '../domain/vehicle-money';
-import { bought, CRETA, onCommission, SHOWROOM_A, SWIFT } from './fakes';
+import { bought, CRETA, onCommission, SHOWROOM_A, SOLD_NO_LEAD, SWIFT } from './fakes';
 
 const d = (value: string): CalendarDate => CalendarDate.create(value);
 
@@ -182,6 +182,7 @@ describe('buildProfitAndLoss', () => {
       sales: new Map([[SWIFT as string, { soldOn: '2026-10-25', countsLaterCosts: true }]]),
     });
     const carProfit = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       saleModel: car.sold.saleModel,
       terms: car.sold.terms,
       finalisedPrice: car.sold.finalisedPrice,
