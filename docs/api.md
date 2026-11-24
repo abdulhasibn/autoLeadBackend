@@ -1301,7 +1301,7 @@ All amounts are rupees; profits can be negative. Every request needs `X-Finance-
 | GET | `/finance/reports/cash-flow` | `from`, `to`, `period` | Money in and out |
 | GET | `/finance/reports/vehicle-profit` | `from`, `to`, `sort` | Which cars made or lost money |
 | GET | `/finance/reports/dues` | — | Who still owes whom |
-| GET | `/finance/reports/stock` | — | Money tied up in unsold cars |
+| GET | `/finance/reports/stock` | — | Cash paid out on unsold cars |
 | GET | `/finance/summary` | — | Dashboard money tiles |
 
 - `from` / `to`: `YYYY-MM-DD`, inclusive, required for the first three. `period`: `day`, `week` (Monday start), `month` (default) or `year`. `day`/`week` reports cover at most 366 days; `month`/`year` at most 5 years (`422 DATE_RANGE_TOO_LONG`).
@@ -1323,7 +1323,12 @@ All amounts are rupees; profits can be negative. Every request needs `X-Finance-
 
 **Dues**: cars where something is still owed, `{ vehicle, saleModel, purchaseRate, commissionPercent, commission, costs, paidToSeller, owedToSeller, finalisedPrice, receivedFromBuyer, owedByBuyer }`, largest first. Negative means overpaid. `totals` add up only what is still owed.
 
-**Stock**: cars with money in them, no recorded sale and status other than `sold`, `{ vehicle, status, saleModel, purchaseRate, commissionPercent, costs, landingCost, currentQuote, listedPrice }`. Dropped cars stay listed (with `status: "dropped"`) until dealt with. `totals.moneyInStock` is the sum of landing costs.
+**Stock**: cars with money in them, no recorded sale and status other than `sold`, `{ vehicle, status, saleModel, purchaseRate, commissionPercent, costs, landingCost, paidToSeller, moneyInStock, currentQuote, listedPrice }`, biggest `moneyInStock` first. Dropped cars stay listed (with `status: "dropped"`) until dealt with.
+
+- **`moneyInStock` is cash actually paid out** (BE-78, ADR-0015/0017 amendment): `paidToSeller` (every `purchase` entry on the car: payments to the seller, or advances to a commission car's owner) + `costs` (every `cost` entry). Same formula for purchase and commission cars. `totals.moneyInStock` is the sum of the rows, and `GET /finance/summary` returns the same figure.
+- **Changed meaning:** `totals.moneyInStock` and the summary's `moneyInStock` used to be the sum of landing costs (agreed rate + costs). Existing **row** fields (`purchaseRate`, `costs`, `landingCost`, ...) keep their old values; the per-row `moneyInStock` and `paidToSeller` are new. Only the two totals (`totals.moneyInStock`, summary `moneyInStock`) changed meaning.
+- `purchaseRate` and `landingCost` are the agreed figures (landing cost = rate + costs; a commission car's = costs), not cash, and are **not** part of `moneyInStock`. A car with an agreed rate and nothing paid is still listed, with `moneyInStock: 0`. A commission car appears once an advance or a cost is recorded.
+- Example: rate 8,80,000, 3,00,000 paid, 20,000 painting → `paidToSeller: 300000`, `costs: 20000`, `landingCost: 900000`, `moneyInStock: 320000`.
 
 **Summary** (`GET /finance/summary`):
 
@@ -1331,12 +1336,12 @@ All amounts are rupees; profits can be negative. Every request needs `X-Finance-
 {
   "thisMonth": { "from": "2026-11-01", "to": "2026-11-03", "sales": 0, "commissions": 0, "commissionSalesValue": 0, "netProfit": -87000, "businessExpenses": 85000, "cashIn": 0, "cashOut": 87000 },
   "lastMonth": { "from": "2026-10-01", "to": "2026-10-03", … },
-  "moneyInStock": 408000, "owedToSellers": 200000, "owedByBuyers": 0, "awaitingSalePrice": 0,
+  "moneyInStock": 208000, "owedToSellers": 200000, "owedByBuyers": 0, "awaitingSalePrice": 0,
   "truncated": false
 }
 ```
 
-`sales` is purchased cars only; `commissions` is what we earned on commission cars sold in the window and `commissionSalesValue` their sale value (information only). Each window also has `carsMissingPurchaseRate` and `uncountedSales` (same rule as profit & loss). `thisMonth` is month to date ("today" in the business timezone); `lastMonth` is the same span of the previous month, so the comparison is fair early in the month. Since finance is locked without the key, the regular `GET /dashboard` carries no money figures; show these tiles when finance is unlocked.
+`moneyInStock` is the Stock report's total: cash paid out on unsold cars (seller payments + costs, not the agreed rate). `sales` is purchased cars only; `commissions` is what we earned on commission cars sold in the window and `commissionSalesValue` their sale value (information only). Each window also has `carsMissingPurchaseRate` and `uncountedSales` (same rule as profit & loss). `thisMonth` is month to date ("today" in the business timezone); `lastMonth` is the same span of the previous month, so the comparison is fair early in the month. Since finance is locked without the key, the regular `GET /dashboard` carries no money figures; show these tiles when finance is unlocked.
 
 ---
 

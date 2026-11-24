@@ -5853,7 +5853,7 @@
                     }
                   ]
                 },
-                "description": "**Story:** The owner sees how much money is tied up in cars that haven't sold yet.\n\nGET /finance/reports/stock — cars with money in them, no recorded sale, status other than sold.\n\n**Auth:** Bearer, Admin only.\n\n- `showroomId` optional.\n- `items`: `{ vehicle, status, purchaseRate, costs, landingCost, currentQuote, listedPrice }`, biggest first. Dropped cars stay listed until dealt with.\n- `totals`: `{ cars, moneyInStock }`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. Totals cover every entry; `truncated` is always false (kept for older clients).\n- See docs/api.md#finance--reports."
+                "description": "**Story:** The owner sees the cash they have actually paid out on cars that haven't sold yet.\n\nGET /finance/reports/stock — cars with money in them, no recorded sale, status other than sold.\n\n**Auth:** Bearer, Admin only.\n\n- `showroomId` optional.\n- `items`: `{ vehicle, status, saleModel, purchaseRate, commissionPercent, costs, landingCost, paidToSeller, moneyInStock, currentQuote, listedPrice }`, biggest `moneyInStock` first. Dropped cars stay listed until dealt with.\n- `moneyInStock` = cash actually paid: `paidToSeller` (purchase entries, incl. a commission car's advance) + `costs`. The agreed `purchaseRate` and `landingCost` are shown apart and are not part of it. A car with an agreed rate and nothing paid is listed with 0.\n- `totals`: `{ cars, moneyInStock }`; `moneyInStock` is the sum of the rows and equals `/finance/summary`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. Totals cover every entry; `truncated` is always false (kept for older clients).\n- See docs/api.md#finance--reports."
               },
               "response": [
                 {
@@ -5890,7 +5890,7 @@
                       "value": "application/json"
                     }
                   ],
-                  "body": "{\n  \"items\": [\n    {\n      \"vehicle\": {\n        \"id\": \"1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\n        \"label\": \"Hyundai Creta \\u00b7 KA05CD5678\"\n      },\n      \"status\": \"open\",\n      \"purchaseRate\": 400000,\n      \"costs\": 8000,\n      \"landingCost\": 408000,\n      \"currentQuote\": null,\n      \"listedPrice\": 430000\n    }\n  ],\n  \"totals\": {\n    \"cars\": 1,\n    \"moneyInStock\": 408000\n  },\n  \"truncated\": false\n}"
+                  "body": "{\n  \"items\": [\n    {\n      \"vehicle\": {\n        \"id\": \"1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d\",\n        \"label\": \"Hyundai Creta \\u00b7 KA05CD5678\"\n      },\n      \"status\": \"open\",\n      \"purchaseRate\": 400000,\n      \"costs\": 8000,\n      \"landingCost\": 408000,\n      \"paidToSeller\": 200000,\n      \"moneyInStock\": 208000,\n      \"currentQuote\": null,\n      \"listedPrice\": 430000\n    }\n  ],\n  \"totals\": {\n    \"cars\": 1,\n    \"moneyInStock\": 208000\n  },\n  \"truncated\": false\n}"
                 },
                 {
                   "id": "a4731b5a-ecfb-4ff7-b3aa-2b6f07356e0c",
@@ -5965,7 +5965,7 @@
                     }
                   ]
                 },
-                "description": "**Story:** When finance is unlocked, the dashboard shows this month's money at a glance.\n\nGET /finance/summary — dashboard money tiles.\n\n**Auth:** Bearer, Admin only.\n\n- `showroomId` optional.\n- `thisMonth` (month to date, today in the business timezone) and `lastMonth` (same span of the previous month): `{ from, to, sales, netProfit, businessExpenses, cashIn, cashOut, carsMissingPurchaseRate, uncountedSales }`.\n- Plus `moneyInStock`, `owedToSellers`, `owedByBuyers`, `awaitingSalePrice` (sold cars without a recorded price).\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. Totals cover every entry; `truncated` is always false (kept for older clients).\n- See docs/api.md#finance--reports."
+                "description": "**Story:** When finance is unlocked, the dashboard shows this month's money at a glance.\n\nGET /finance/summary — dashboard money tiles.\n\n**Auth:** Bearer, Admin only.\n\n- `showroomId` optional.\n- `thisMonth` (month to date, today in the business timezone) and `lastMonth` (same span of the previous month): `{ from, to, sales, netProfit, businessExpenses, cashIn, cashOut, carsMissingPurchaseRate, uncountedSales }`.\n- Plus `moneyInStock` (cash paid out on unsold cars: seller payments + costs, same as the Stock report total), `owedToSellers`, `owedByBuyers`, `awaitingSalePrice` (sold cars without a recorded price).\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees; profits can be negative. Totals cover every entry; `truncated` is always false (kept for older clients).\n- See docs/api.md#finance--reports."
               },
               "response": [
                 {
@@ -6002,7 +6002,7 @@
                       "value": "application/json"
                     }
                   ],
-                  "body": "{\n  \"thisMonth\": {\n    \"from\": \"2026-11-01\",\n    \"to\": \"2026-11-03\",\n    \"sales\": 0,\n    \"netProfit\": -87000,\n    \"businessExpenses\": 85000,\n    \"cashIn\": 0,\n    \"cashOut\": 87000,\n    \"carsMissingPurchaseRate\": 0,\n    \"uncountedSales\": 0\n  },\n  \"lastMonth\": {\n    \"from\": \"2026-10-01\",\n    \"to\": \"2026-10-03\",\n    \"sales\": 0,\n    \"netProfit\": -85000,\n    \"businessExpenses\": 85000,\n    \"cashIn\": 0,\n    \"cashOut\": 85000,\n    \"carsMissingPurchaseRate\": 0,\n    \"uncountedSales\": 0\n  },\n  \"moneyInStock\": 408000,\n  \"owedToSellers\": 200000,\n  \"owedByBuyers\": 0,\n  \"awaitingSalePrice\": 0,\n  \"truncated\": false\n}"
+                  "body": "{\n  \"thisMonth\": {\n    \"from\": \"2026-11-01\",\n    \"to\": \"2026-11-03\",\n    \"sales\": 0,\n    \"netProfit\": -87000,\n    \"businessExpenses\": 85000,\n    \"cashIn\": 0,\n    \"cashOut\": 87000,\n    \"carsMissingPurchaseRate\": 0,\n    \"uncountedSales\": 0\n  },\n  \"lastMonth\": {\n    \"from\": \"2026-10-01\",\n    \"to\": \"2026-10-03\",\n    \"sales\": 0,\n    \"netProfit\": -85000,\n    \"businessExpenses\": 85000,\n    \"cashIn\": 0,\n    \"cashOut\": 85000,\n    \"carsMissingPurchaseRate\": 0,\n    \"uncountedSales\": 0\n  },\n  \"moneyInStock\": 208000,\n  \"owedToSellers\": 200000,\n  \"owedByBuyers\": 0,\n  \"awaitingSalePrice\": 0,\n  \"truncated\": false\n}"
                 },
                 {
                   "id": "a5e33b76-5be8-40bf-969f-c0b696d48f2f",
