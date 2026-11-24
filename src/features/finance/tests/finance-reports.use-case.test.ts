@@ -457,11 +457,117 @@ describe('finance reports', () => {
         commissionPercent: null,
         costs: 8000,
         landingCost: 408000,
+        paidToSeller: 200000,
+        moneyInStock: 208000,
         currentQuote: null,
         listedPrice: null,
       },
     ]);
-    expect(report.totals).toEqual({ cars: 1, moneyInStock: 408000 });
+    expect(report.totals).toEqual({ cars: 1, moneyInStock: 208000 });
+  });
+
+  describe('stock is cash actually paid (BE-78)', () => {
+    const entryFor = (vehicleId: string, rupees: number, purpose: 'purchase' | 'cost') =>
+      makeCreateEntry(kit).execute(
+        {
+          sessionToken: token,
+          kind: 'expense',
+          amountPaise: rupees * 100,
+          entryDate: '2026-10-20',
+          purpose,
+          tagIds: [],
+          vehicleId,
+          showroomId: null,
+          party: null,
+          note: null,
+        },
+        ADMIN_IN_A,
+      );
+
+    it('AC1: an agreed rate with nothing paid shows Rs 0 (car still listed)', async () => {
+      // Baleno: rate 8,80,000, nothing paid.
+      await makeSetDeal(kit).execute(
+        {
+          sessionToken: token,
+          vehicleId: BALENO,
+          purchaseRatePaise: 88_000_000,
+          commissionBasisPoints: null,
+          purchasedOn: null,
+          ownerExpectedPricePaise: null,
+          minimumSellingPricePaise: null,
+          note: null,
+        },
+        ADMIN,
+      );
+      const report = await stock.execute({ sessionToken: token, showroomId: null }, ADMIN);
+      const row = report.items.find((i) => i.vehicle.id === BALENO);
+      expect(row).toMatchObject({
+        purchaseRate: 880000,
+        landingCost: 880000,
+        paidToSeller: 0,
+        moneyInStock: 0,
+      });
+    });
+
+    it('AC2/AC6/AC4: paid plus a cost; rate stays separate; report = summary = sum of rows', async () => {
+      await makeSetDeal(kit).execute(
+        {
+          sessionToken: token,
+          vehicleId: BALENO,
+          purchaseRatePaise: 88_000_000,
+          commissionBasisPoints: null,
+          purchasedOn: null,
+          ownerExpectedPricePaise: null,
+          minimumSellingPricePaise: null,
+          note: null,
+        },
+        ADMIN,
+      );
+      await entryFor(BALENO, 300_000, 'purchase');
+      await entryFor(BALENO, 20_000, 'cost');
+      const report = await stock.execute({ sessionToken: token, showroomId: null }, ADMIN);
+      const row = report.items.find((i) => i.vehicle.id === BALENO);
+      expect(row).toMatchObject({ moneyInStock: 320000, purchaseRate: 880000 });
+      const sum = report.items.reduce((t, i) => t + i.moneyInStock, 0);
+      expect(report.totals.moneyInStock).toBe(sum);
+      expect(report.totals.moneyInStock).toBe(208000 + 320000);
+      const s = await summary.execute({ sessionToken: token, showroomId: null }, ADMIN);
+      expect(s.moneyInStock).toBe(report.totals.moneyInStock);
+    });
+
+    it('AC3: a commission car with an advance and no costs shows the advance', async () => {
+      const baleno = kit.vehicles.cars.get(BALENO);
+      if (baleno !== undefined) baleno.saleModel = 'commission';
+      await makeSetDeal(kit).execute(
+        {
+          sessionToken: token,
+          vehicleId: BALENO,
+          purchaseRatePaise: null,
+          commissionBasisPoints: 500,
+          purchasedOn: null,
+          ownerExpectedPricePaise: null,
+          minimumSellingPricePaise: null,
+          note: null,
+        },
+        ADMIN,
+      );
+      await entryFor(BALENO, 50_000, 'purchase');
+      const report = await stock.execute({ sessionToken: token, showroomId: null }, ADMIN);
+      expect(report.items.find((i) => i.vehicle.id === BALENO)).toMatchObject({
+        saleModel: 'commission',
+        paidToSeller: 50000,
+        costs: 0,
+        landingCost: 0,
+        moneyInStock: 50000,
+      });
+      const s = await summary.execute({ sessionToken: token, showroomId: null }, ADMIN);
+      expect(s.moneyInStock).toBe(208000 + 50000);
+    });
+
+    it('AC5: a sold car is not listed', async () => {
+      const report = await stock.execute({ sessionToken: token, showroomId: null }, ADMIN);
+      expect(report.items.map((i) => i.vehicle.id)).not.toContain(SWIFT);
+    });
   });
 
   it('summary: month to date in India against the same span of October', async () => {
@@ -486,7 +592,7 @@ describe('finance reports', () => {
       businessExpenses: 85000,
     });
     expect(s).toMatchObject({
-      moneyInStock: 408000,
+      moneyInStock: 208000,
       owedToSellers: 200000,
       owedByBuyers: 0,
       awaitingSalePrice: 0,
@@ -534,9 +640,10 @@ describe('finance reports', () => {
           vehicle: { id: CRETA, label: 'Hyundai Creta · KA05CD5678' },
           costs: 8000,
           landingCost: 408000,
+          moneyInStock: 208000,
         }),
       ]);
-      expect(stockReport.totals).toEqual({ cars: 1, moneyInStock: 408000 });
+      expect(stockReport.totals).toEqual({ cars: 1, moneyInStock: 208000 });
       expect(stockReport.truncated).toBe(false);
 
       const duesReport = await dues.execute({ sessionToken: token, showroomId: null }, ADMIN);
@@ -551,7 +658,7 @@ describe('finance reports', () => {
 
       const s = await summary.execute({ sessionToken: token, showroomId: null }, ADMIN);
       expect(s).toMatchObject({
-        moneyInStock: 408000,
+        moneyInStock: 208000,
         owedToSellers: 200000,
         owedByBuyers: 0,
         truncated: false,

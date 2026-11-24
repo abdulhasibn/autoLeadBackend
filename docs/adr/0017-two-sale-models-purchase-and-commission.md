@@ -30,3 +30,7 @@ How the money moves on a commission sale (client's answers):
 - **Commission as a ledger entry the admin types in.** Rejected: the % is agreed up front, so the app can work it out, and a typed amount could disagree with it.
 - **Costs reduce our commission.** Rejected by the client: costs come out of the owner's payout.
 - **Keep `intermediary_sale` as a third model.** Rejected: the client never does it, and its profit rule was never defined (ADR-0009).
+
+## Amendment (2026-11-24, BE-78): commission cars in Stock
+
+Stock now uses the same cash-paid rule for both models (see the ADR-0015 amendment): money in stock = Σ `purchase` entries + Σ `cost` entries. A commission car's advance to its owner (a `purchase` entry) therefore counts, and the car appears in the Stock report even with no costs (CR-2). A commission car's `landingCost` stays "costs only", as defined above.
