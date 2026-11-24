@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-import { optionalCsvSchema } from '../../../../presentation/validation/search.schemas';
+import {
+  optionalBooleanQuerySchema,
+  optionalCsvSchema,
+} from '../../../../presentation/validation/search.schemas';
 import { MAX_PAGE_SIZE } from '../../../../shared/pagination/pagination';
 import {
   amountSchema,
@@ -10,6 +13,11 @@ import {
 } from './finance-fields.schemas';
 
 export const vehicleIdParamSchema = z.object({ vehicleId: uuidSchema('vehicleId') });
+
+export const clearVehicleSaleQuerySchema = z.object({
+  /** Also delete the sold lead's buyer payments (and unassigned ones on the car). */
+  withBuyerPayments: optionalBooleanQuerySchema,
+});
 
 export const vehicleQuoteParamSchema = z.object({
   vehicleId: uuidSchema('vehicleId'),
@@ -54,6 +62,11 @@ export const recordVehicleSaleBodySchema = z.object({
     .transform((v) => v ?? null),
   /** Save a price below what the buyer has paid, keeping the overpayment. */
   keepOverpayment: z.boolean().optional().default(false),
+  /** `adjust`: cut the sale lead's earlier payments down to fit the price. */
+  buyerPayments: z
+    .literal('adjust')
+    .nullish()
+    .transform((v) => v ?? null),
   /** Money the buyer paid at the sale, saved with it as a `sale` income entry. */
   buyerPayment: z
     .object({ amount: amountSchema, paidOn: calendarDateSchema })

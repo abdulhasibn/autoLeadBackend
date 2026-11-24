@@ -3,12 +3,14 @@ import type { AuthenticatedContext } from '../../../../domain/shared/auth-contex
 import { toShowroomId } from '../../../../domain/shared/showroom-id';
 import { toVehicleId, type VehicleId } from '../../../../domain/shared/vehicle-id';
 import type { IFinanceEntryQueries } from '../../domain/finance-entry.queries';
+import type { IFinanceLeadLookup } from '../../domain/finance-lead-lookup.port';
 import type { IFinanceTagQueries } from '../../domain/finance-tag.queries';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
 import { MAX_LEDGER_RANGE_DAYS, MAX_LEDGER_ROWS } from '../../domain/finance.constants';
 import { toFinanceEntryDto, type FinanceEntryListDto } from '../dtos/finance-entry.dto';
 import type { ListFinanceEntriesQuery } from '../dtos/list-finance-entries-query';
 import type { FinancePolicy } from '../policies/finance.policy';
+import { leadsOfEntries } from '../services/entry-leads';
 import type { EntrySealer } from '../services/entry.sealer';
 import { filterEntries, sortEntries, totalEntries } from '../services/entry-list';
 import type { FinanceSessionService } from '../services/finance-session.service';
@@ -30,6 +32,7 @@ export class ListFinanceEntriesUseCase {
     private readonly vehicles: IFinanceVehicleLookup,
     private readonly entrySealer: EntrySealer,
     private readonly tagSealer: TagSealer,
+    private readonly leads: Pick<IFinanceLeadLookup, 'findMany'>,
   ) {}
 
   async execute(
@@ -62,8 +65,10 @@ export class ListFinanceEntriesUseCase {
     const vehicles = vehicleIds.length === 0 ? [] : await this.vehicles.findMany(vehicleIds);
     const vehiclesById = new Map(vehicles.map((v) => [v.id as string, v]));
 
+    const leadsById = await leadsOfEntries(this.leads, items);
+
     return {
-      items: items.map((entry) => toFinanceEntryDto(entry, tagsById, vehiclesById)),
+      items: items.map((entry) => toFinanceEntryDto(entry, tagsById, vehiclesById, leadsById)),
       total: matching.length,
       limit: query.limit,
       offset: query.offset,

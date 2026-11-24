@@ -3,7 +3,10 @@ import type { RequestHandler } from 'express';
 import { requireAuth } from '../../../../presentation/http/middleware/require-auth';
 import type { ClearVehicleSaleUseCase } from '../../application/use-cases/clear-vehicle-sale.use-case';
 import { readFinanceSessionToken } from '../finance-session-token';
-import { vehicleIdParamSchema } from '../schemas/vehicle-money.schemas';
+import {
+  clearVehicleSaleQuerySchema,
+  vehicleIdParamSchema,
+} from '../schemas/vehicle-money.schemas';
 
 export class ClearVehicleSaleController {
   constructor(private readonly clearVehicleSale: ClearVehicleSaleUseCase) {}
@@ -13,8 +16,13 @@ export class ClearVehicleSaleController {
       try {
         const ctx = requireAuth(req);
         const params = vehicleIdParamSchema.parse(req.params);
+        const query = clearVehicleSaleQuerySchema.parse(req.query);
         await this.clearVehicleSale.execute(
-          { sessionToken: readFinanceSessionToken(req), vehicleId: params.vehicleId },
+          {
+            sessionToken: readFinanceSessionToken(req),
+            vehicleId: params.vehicleId,
+            withBuyerPayments: query.withBuyerPayments ?? false,
+          },
           ctx,
         );
         res.status(204).end();

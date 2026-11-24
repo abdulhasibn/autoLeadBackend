@@ -41,7 +41,12 @@ export interface VehicleFinanceDto extends VehicleDealStateDto {
   readonly costs: number;
   readonly costBreakdown: readonly CostGroupDto[];
   readonly paidToSeller: number;
+  /** Net (paid − refunded) over the current buyers. */
   readonly receivedFromBuyer: number;
+  /** One row per current buyer: booked leads before the sale, the sold lead after. */
+  readonly buyers: readonly BuyerDto[];
+  /** Former buyers' money still owed back, plus one `lead: null` row for unassigned money. */
+  readonly refundsOwed: readonly RefundOwedDto[];
   /** Commission cars: our cut of the finalised price; null otherwise or until sold. */
   readonly commission: number | null;
   /** Purchase: finalised − landing cost (negative = loss). Commission: the commission. */
@@ -51,7 +56,7 @@ export interface VehicleFinanceDto extends VehicleDealStateDto {
    * commission − costs − paid, null until sold. Negative = overpaid.
    */
   readonly owedToSeller: number | null;
-  /** Null until the sale is recorded. */
+  /** finalised − the sale lead's net; null until the sale is recorded. */
   readonly owedByBuyer: number | null;
   /**
    * How far the payments to the seller (owner) have got: `no_terms` while
@@ -66,6 +71,62 @@ export interface VehicleFinanceDto extends VehicleDealStateDto {
     readonly purchaseRateMissing: boolean;
     readonly saleRecorded: boolean;
     readonly paidWithoutTerms: boolean;
+  };
+}
+
+/** A lead as the money screens show them. */
+export interface BuyerLeadDto {
+  readonly id: string;
+  readonly name: string | null;
+  readonly phone: string | null;
+}
+
+export interface BuyerDto {
+  readonly lead: BuyerLeadDto;
+  readonly paid: number;
+  readonly refunded: number;
+  /** paid − refunded. */
+  readonly net: number;
+}
+
+export interface RefundOwedDto {
+  /** null = unassigned buyer money (older entries with no lead). */
+  readonly lead: BuyerLeadDto | null;
+  readonly paid: number;
+  readonly refunded: number;
+  /** paid − refunded; negative = refunded more than paid. */
+  readonly owed: number;
+}
+
+export function toBuyerLeadDto(
+  id: string,
+  leadsById: ReadonlyMap<string, FinanceLeadFacts>,
+): BuyerLeadDto {
+  const lead = leadsById.get(id);
+  return {
+    id,
+    name: lead?.name ?? (lead?.deleted === true ? 'Deleted lead' : null),
+    phone: lead?.phone ?? null,
+  };
+}
+
+export function toBuyerDtos(
+  money: VehicleMoney,
+  leadsById: ReadonlyMap<string, FinanceLeadFacts>,
+): { buyers: BuyerDto[]; refundsOwed: RefundOwedDto[] } {
+  return {
+    buyers: money.buyers.map((b) => ({
+      lead: toBuyerLeadDto(b.leadId, leadsById),
+      paid: rupees(b.paid),
+      refunded: rupees(b.refunded),
+      net: rupees(b.net),
+    })),
+    refundsOwed: money.refundsOwed.map((r) => ({
+      lead: r.leadId === null ? null : toBuyerLeadDto(r.leadId, leadsById),
+      paid: rupees(r.paid),
+      refunded: rupees(r.refunded),
+      owed: rupees(r.owed),
+    })),
   };
 }
 
@@ -110,6 +171,8 @@ export function toVehicleFinanceDto(input: {
   readonly quotes: readonly VehicleQuote[];
   readonly leadsById: ReadonlyMap<string, FinanceLeadFacts>;
   readonly bookedLeads: readonly FinanceLeadFacts[];
+  /** Every lead named in `money.buyers` / `money.refundsOwed`. */
+  readonly buyerLeads: ReadonlyMap<string, FinanceLeadFacts>;
   readonly tagsById: ReadonlyMap<string, FinanceTag>;
 }): VehicleFinanceDto {
   const { deal, money } = input;
@@ -143,6 +206,7 @@ export function toVehicleFinanceDto(input: {
     }),
     paidToSeller: rupees(money.paidToSeller),
     receivedFromBuyer: rupees(money.receivedFromBuyer),
+    ...toBuyerDtos(money, input.buyerLeads),
     commission: maybeRupees(money.commission),
     profit: maybeRupees(money.profit),
     owedToSeller: maybeRupees(money.owedToSeller),

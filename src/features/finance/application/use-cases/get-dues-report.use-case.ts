@@ -1,13 +1,17 @@
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { toShowroomId } from '../../../../domain/shared/showroom-id';
 import { hasDues } from '../../domain/vehicle-report-rows';
-import type { DuesReportDto, DuesRowDto } from '../dtos/finance-report.dto';
+import type { DuesRefundRowDto, DuesReportDto, DuesRowDto } from '../dtos/finance-report.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
 import type { FinanceReportData } from '../services/finance-report-data';
-import { commissionPercentOf } from '../dtos/vehicle-finance.dto';
+import { commissionPercentOf, toBuyerLeadDto } from '../dtos/vehicle-finance.dto';
 import type { FinanceSessionService } from '../services/finance-session.service';
 
-/** Cars where money is still owed to the seller or by the buyer (either sign). */
+/**
+ * Cars where money is still owed to the seller or by the buyer (either sign),
+ * plus refunds owed to buyers who backed out, listed whether or not the car has
+ * other dues.
+ */
 export class GetDuesReportUseCase {
   constructor(
     private readonly policy: FinancePolicy,
@@ -43,11 +47,25 @@ export class GetDuesReportUseCase {
       }))
       .sort((a, b) => outstanding(b) - outstanding(a));
 
+    const refundsOwed: DuesRefundRowDto[] = cars
+      .flatMap(({ vehicle, money, leads }) =>
+        money.refundsOwed.map((refund) => ({
+          vehicle: { id: vehicle.id, label: vehicle.label },
+          lead: refund.leadId === null ? null : toBuyerLeadDto(refund.leadId, leads),
+          paid: refund.paid / 100,
+          refunded: refund.refunded / 100,
+          owed: refund.owed / 100,
+        })),
+      )
+      .sort((a, b) => b.owed - a.owed);
+
     return {
       items,
+      refundsOwed,
       totals: {
         owedToSellers: positiveSum(items.map((i) => i.owedToSeller)),
         owedByBuyers: positiveSum(items.map((i) => i.owedByBuyer)),
+        owedBackToBuyers: positiveSum(refundsOwed.map((r) => r.owed)),
       },
       truncated: false,
     };

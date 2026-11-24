@@ -12,6 +12,8 @@ export interface ListFinanceEntriesQuery {
   readonly to?: string;
   readonly kind?: EntryKindValue;
   readonly vehicleId?: string;
+  /** Only entries of this buyer; needs `vehicleId`. */
+  readonly leadId?: string;
   readonly unlinked?: boolean;
   readonly showroomId?: string;
   readonly tagIds?: readonly string[];

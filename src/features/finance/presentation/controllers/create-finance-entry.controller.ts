@@ -22,6 +22,7 @@ export class CreateFinanceEntryController {
             tagIds: body.tagIds,
             vehicleId: body.vehicleId,
             purpose: body.purpose,
+            leadId: body.leadId,
             party: body.party,
             note: body.note,
             showroomId: body.showroomId,

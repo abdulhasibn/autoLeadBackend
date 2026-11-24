@@ -27,6 +27,10 @@ import { toFinanceEntryDto, type FinanceEntryDto } from '../dtos/finance-entry.d
 import type { FinancePolicy } from '../policies/finance.policy';
 import type { EntrySealer } from '../services/entry.sealer';
 import type { FinanceSessionService } from '../services/finance-session.service';
+import { toLeadId } from '../../../../domain/shared/lead-id';
+import type { IFinanceLeadLookup } from '../../domain/finance-lead-lookup.port';
+import { leadsOfEntries } from '../services/entry-leads';
+import type { RefundGuard } from '../services/refund-guard';
 import type { SaleIncomeGuard } from '../services/sale-income-guard';
 import { dealTermsFor } from '../services/deal-terms-input';
 import type { SellerPaymentGuard } from '../services/seller-payment-guard';
@@ -36,7 +40,9 @@ import type { VehicleDealSealer } from '../services/vehicle-deal.sealer';
 /**
  * Records money in or out. With a car it lands in the car's showroom with the
  * car's default purpose; without one it's a business entry. Money from a
- * buyer on a car with no buyer is refused (`SALE_NOT_RECORDED`).
+ * buyer on a car with no buyer is refused (`SALE_NOT_RECORDED`). A `sale` or
+ * `refund` is put on the lead who paid or is paid back (BE-77 §4.2, §4.12). A `sale` or
+ * `refund` is put on the lead who paid / is paid back (BE-77 §4.2, §4.12).
  *
  * A payment to the seller needs the car's deal terms: sent as `deal` when
  * the car has none, they're saved with it (`DEAL_TERMS_REQUIRED` otherwise).
@@ -59,6 +65,8 @@ export class CreateFinanceEntryUseCase {
     private readonly sellerPayments: SellerPaymentGuard,
     private readonly deals: Pick<IVehicleDealRepository, 'save'>,
     private readonly dealSealer: VehicleDealSealer,
+    private readonly refunds: RefundGuard,
+    private readonly leads: Pick<IFinanceLeadLookup, 'findMany'>,
   ) {}
 
   async execute(
@@ -105,7 +113,9 @@ export class CreateFinanceEntryUseCase {
       recordedBy: ctx.userId,
       now: this.clock.now(),
     });
-    await this.saleIncome.assertAllowed(entry, vehicle);
+    const requestedLead = command.leadId == null ? null : toLeadId(command.leadId);
+    await this.saleIncome.attribute(entry, vehicle, { leadId: requestedLead }, this.clock.now());
+    await this.refunds.attribute(entry, vehicle, requestedLead, cipher, this.clock.now());
     const newDeal =
       vehicle !== null && isSellerPayment(entry)
         ? await this.checkSellerPayment(entry, vehicle, command, cipher)
@@ -123,7 +133,12 @@ export class CreateFinanceEntryUseCase {
     }
 
     const vehiclesById = new Map(vehicle === null ? [] : [[vehicle.id as string, vehicle]]);
-    return toFinanceEntryDto(entry, tagsById, vehiclesById);
+    return toFinanceEntryDto(
+      entry,
+      tagsById,
+      vehiclesById,
+      await leadsOfEntries(this.leads, [entry]),
+    );
   }
 
   /** Returns the deal to save with the entry when `deal` supplies missing terms. */

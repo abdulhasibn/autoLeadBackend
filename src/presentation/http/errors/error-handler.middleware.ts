@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from 'express';
+import type { ErrorDetailValue } from '../../../domain/errors/business-rule-violation.error';
 import { ZodError } from 'zod';
 
 import { AuthenticationRequiredError } from '../../../domain/errors/authentication-required.error';
@@ -17,7 +18,7 @@ interface ErrorResponseBody {
   readonly error: {
     readonly code: string;
     readonly message: string;
-    readonly details?: Readonly<Record<string, string | number>>;
+    readonly details?: Readonly<Record<string, ErrorDetailValue>>;
   };
 }
 

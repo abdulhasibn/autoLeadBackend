@@ -5,7 +5,7 @@ import type { EntrySort, ListFinanceEntriesQuery } from '../dtos/list-finance-en
 
 type InMemoryFilters = Pick<
   ListFinanceEntriesQuery,
-  'tagIds' | 'purposes' | 'minAmountPaise' | 'maxAmountPaise' | 'search'
+  'tagIds' | 'leadId' | 'purposes' | 'minAmountPaise' | 'maxAmountPaise' | 'search'
 >;
 
 /**
@@ -23,6 +23,9 @@ export function filterEntries(
       if (!entry.tagIds.some((id) => filters.tagIds?.includes(id))) {
         return false;
       }
+    }
+    if (filters.leadId !== undefined && entry.leadId !== filters.leadId) {
+      return false;
     }
     if (filters.purposes !== undefined && filters.purposes.length > 0) {
       if (!filters.purposes.includes(entry.purpose)) {

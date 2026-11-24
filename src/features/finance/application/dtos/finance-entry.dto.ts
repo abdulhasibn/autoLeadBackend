@@ -2,6 +2,7 @@ import type { EntryKindValue } from '../../domain/entry-kind.value-object';
 import type { EntryPurposeValue } from '../../domain/entry-purpose.value-object';
 import type { FinanceEntry } from '../../domain/finance-entry.entity';
 import type { FinanceTag } from '../../domain/finance-tag.entity';
+import type { FinanceLeadFacts } from '../../domain/finance-lead-lookup.port';
 import type { FinanceVehicleFacts } from '../../domain/finance-vehicle-lookup.port';
 import type { Page } from '../../../../shared/pagination/pagination';
 import { toFinanceTagDto, type FinanceTagDto } from './finance-tag.dto';
@@ -16,6 +17,8 @@ export interface FinanceEntryDto {
   readonly purpose: EntryPurposeValue;
   readonly tags: readonly FinanceTagDto[];
   readonly vehicle: { readonly id: string; readonly label: string } | null;
+  /** The buyer a `sale` / `refund` entry belongs to; null when none or not found. */
+  readonly lead: { readonly id: string; readonly name: string | null } | null;
   readonly party: string | null;
   readonly note: string | null;
   readonly showroomId: string;
@@ -42,8 +45,10 @@ export function toFinanceEntryDto(
   entry: FinanceEntry,
   tagsById: ReadonlyMap<string, FinanceTag>,
   vehiclesById: ReadonlyMap<string, FinanceVehicleFacts>,
+  leadsById: ReadonlyMap<string, FinanceLeadFacts> = new Map(),
 ): FinanceEntryDto {
   const vehicle = entry.vehicleId === null ? undefined : vehiclesById.get(entry.vehicleId);
+  const lead = entry.leadId === null ? undefined : leadsById.get(entry.leadId);
   return {
     id: entry.id,
     kind: entry.kind,
@@ -58,6 +63,10 @@ export function toFinanceEntryDto(
       entry.vehicleId === null
         ? null
         : { id: entry.vehicleId, label: vehicle?.label ?? 'Unknown vehicle' },
+    lead:
+      lead === undefined
+        ? null
+        : { id: lead.id, name: lead.name ?? (lead.deleted ? 'Deleted lead' : null) },
     party: entry.party,
     note: entry.note,
     showroomId: entry.showroomId,

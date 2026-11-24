@@ -12,6 +12,8 @@ export interface CreateFinanceEntryCommand {
   readonly tagIds: readonly string[];
   readonly vehicleId: string | null;
   readonly purpose: EntryPurposeValue | null;
+  /** The buyer a `sale` / `refund` entry belongs to (BE-77 §4.2); ignored on other purposes. */
+  readonly leadId?: string | null;
   readonly party: string | null;
   readonly note: string | null;
   readonly showroomId: string | null;

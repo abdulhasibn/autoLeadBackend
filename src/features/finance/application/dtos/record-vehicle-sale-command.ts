@@ -14,5 +14,11 @@ export interface RecordVehicleSaleCommand {
    * Money the buyer paid at the sale. Saved in the same request as a `sale`
    * income entry, so the sale and its payment land together or not at all.
    */
+  /**
+   * `adjust`: the sale lead's earlier payments were entered wrong, so cut them
+   * down (newest first) until they and `buyerPayment` fit the price. Touches
+   * only that lead's `sale` entries (plus unassigned ones on a sold car).
+   */
+  readonly buyerPayments?: 'adjust' | null;
   readonly buyerPayment?: { readonly amountPaise: number; readonly paidOn: string } | null;
 }

@@ -1,18 +1,19 @@
 import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import type { EntryKindValue } from './entry-kind.value-object';
 
-export const ENTRY_PURPOSES = ['purchase', 'cost', 'sale', 'other', 'general'] as const;
+export const ENTRY_PURPOSES = ['purchase', 'cost', 'refund', 'sale', 'other', 'general'] as const;
 
 export type EntryPurposeValue = (typeof ENTRY_PURPOSES)[number];
 
 const ALLOWED: Readonly<Record<EntryKindValue, readonly EntryPurposeValue[]>> = {
-  expense: ['purchase', 'cost'],
+  expense: ['purchase', 'cost', 'refund'],
   income: ['sale', 'other'],
 };
 
 /**
  * What a car-linked entry does to the car's numbers (ADR-0015):
  * - expense `purchase` settles the purchase rate; `cost` adds to landing cost
+ * - expense `refund` pays money back to a buyer (BE-77); it lowers that buyer's net
  * - income `sale` settles the finalised price; `other` is anything else
  * - an entry with no car is always `general`
  */
@@ -50,4 +51,9 @@ export class EntryPurpose {
     }
     return new EntryPurpose(value);
   }
+}
+
+/** Purposes that name the buyer the money belongs to (BE-77). */
+export function carriesLead(purpose: EntryPurposeValue): boolean {
+  return purpose === 'sale' || purpose === 'refund';
 }

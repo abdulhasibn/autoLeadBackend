@@ -10,6 +10,7 @@ import type { DealTerms, VehicleDeal } from '../../domain/vehicle-deal.entity';
 import type { IVehicleDealRepository } from '../../domain/vehicle-deal.repository';
 import {
   hasDealTerms,
+  NO_CURRENT_BUYERS,
   sellerOverpaymentPaise,
   VehicleMoneyTally,
 } from '../../domain/vehicle-money';
@@ -87,8 +88,18 @@ export class SellerPaymentGuard {
 
     const { finalisedPrice } = check;
     const saleModel = check.vehicle.saleModel;
-    const was = before.finish({ saleModel, terms: check.terms, finalisedPrice });
-    const next = after.finish({ saleModel, terms: check.nextTerms, finalisedPrice });
+    const was = before.finish({
+      saleModel,
+      terms: check.terms,
+      finalisedPrice,
+      buyers: NO_CURRENT_BUYERS,
+    });
+    const next = after.finish({
+      saleModel,
+      terms: check.nextTerms,
+      finalisedPrice,
+      buyers: NO_CURRENT_BUYERS,
+    });
     const overpaid = sellerOverpaymentPaise(next);
     if (overpaid <= sellerOverpaymentPaise(was)) return;
 

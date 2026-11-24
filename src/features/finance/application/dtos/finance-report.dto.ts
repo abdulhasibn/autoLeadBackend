@@ -2,6 +2,7 @@ import type { CashFlowLine } from '../../domain/build-cash-flow';
 import type { ProfitAndLossLine } from '../../domain/build-profit-and-loss';
 import type { ReportBucket, ReportPeriodValue } from '../../domain/report-period.value-object';
 import type { SaleModel } from '../../domain/sale-model';
+import type { BuyerLeadDto } from './vehicle-finance.dto';
 
 /** Every money field below is rupees; signed where a value can go negative. */
 export type ProfitAndLossLineDto = ProfitAndLossLine;
@@ -88,10 +89,27 @@ export interface DuesRowDto {
   readonly owedByBuyer: number | null;
 }
 
+/** Money a buyer who backed out (or unassigned money) is owed back. */
+export interface DuesRefundRowDto {
+  readonly vehicle: ReportVehicleDto;
+  /** null = unassigned buyer money (older entries with no lead). */
+  readonly lead: BuyerLeadDto | null;
+  readonly paid: number;
+  readonly refunded: number;
+  /** paid − refunded; negative = refunded more than paid. */
+  readonly owed: number;
+}
+
 export interface DuesReportDto {
   readonly items: readonly DuesRowDto[];
+  /** Refunds owed to former buyers, largest first. Independent of `items`. */
+  readonly refundsOwed: readonly DuesRefundRowDto[];
   /** Sums of what is still owed (positive amounts only). */
-  readonly totals: { readonly owedToSellers: number; readonly owedByBuyers: number };
+  readonly totals: {
+    readonly owedToSellers: number;
+    readonly owedByBuyers: number;
+    readonly owedBackToBuyers: number;
+  };
   /** Always false: reports fold every entry. Kept so older clients keep working. */
   readonly truncated: boolean;
 }
@@ -148,6 +166,8 @@ export interface FinanceSummaryDto {
   readonly moneyInStock: number;
   readonly owedToSellers: number;
   readonly owedByBuyers: number;
+  /** Refunds owed to buyers who backed out (positive amounts only). */
+  readonly owedBackToBuyers: number;
   readonly awaitingSalePrice: number;
   /** Always false: reports fold every entry. Kept so older clients keep working. */
   readonly truncated: boolean;

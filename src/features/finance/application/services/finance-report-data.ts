@@ -13,6 +13,9 @@ import type { IVehicleDealQueries } from '../../domain/vehicle-deal.queries';
 import { hasDealTerms, VehicleMoneyTally, type VehicleMoney } from '../../domain/vehicle-money';
 import { compareQuotesNewestFirst, type VehicleQuote } from '../../domain/vehicle-quote.entity';
 import type { IVehicleQuoteQueries } from '../../domain/vehicle-quote.queries';
+import type { FinanceLeadFacts } from '../../domain/finance-lead-lookup.port';
+import { NO_CURRENT_BUYERS } from '../../domain/vehicle-money';
+import type { CarBuyers } from './car-buyers';
 import type { EntrySealer } from './entry.sealer';
 import type { QuoteSealer } from './quote.sealer';
 import type { VehicleDealSealer } from './vehicle-deal.sealer';
@@ -29,6 +32,8 @@ export interface CarMoneyRow {
   readonly vehicle: FinanceVehicleFacts;
   readonly deal: VehicleDeal | null;
   readonly money: VehicleMoney;
+  /** Names for the leads in `money.refundsOwed`; shared by every row. */
+  readonly leads: ReadonlyMap<string, FinanceLeadFacts>;
 }
 
 /**
@@ -49,6 +54,7 @@ export class FinanceReportData {
     private readonly dealSealer: VehicleDealSealer,
     private readonly entrySealer: EntrySealer,
     private readonly quoteSealer: QuoteSealer,
+    private readonly carBuyers: CarBuyers,
   ) {}
 
   /** Cars whose sale is dated in the range, with numbers over all their entries (any date). */
@@ -81,6 +87,13 @@ export class FinanceReportData {
         },
       );
     }
+    const { buyers } = await this.carBuyers.resolve(
+      kept.flatMap((deal) => {
+        const vehicle = facts.get(deal.vehicleId);
+        const tally = tallies.get(deal.vehicleId);
+        return vehicle === undefined || tally === undefined ? [] : [{ vehicle, tally }];
+      }),
+    );
     return kept.flatMap((deal): SoldCarRow[] => {
       const vehicle = facts.get(deal.vehicleId);
       const tally = tallies.get(deal.vehicleId);
@@ -98,6 +111,7 @@ export class FinanceReportData {
             saleModel: vehicle.saleModel,
             terms: deal.terms,
             finalisedPrice: sale.finalisedPrice,
+            buyers: buyers.get(deal.vehicleId) ?? NO_CURRENT_BUYERS,
           }),
           vehicle,
           deal,
@@ -183,22 +197,27 @@ export class FinanceReportData {
     const ids = [...new Set([...deals.keys(), ...tallies.keys()])] as VehicleId[];
     const facts = await this.factsById(ids);
 
-    return ids.flatMap((id): CarMoneyRow[] => {
+    const live = ids.flatMap((id) => {
       const vehicle = facts.get(id);
       if (vehicle === undefined || vehicle.deleted) return [];
       if (showroomId !== null && vehicle.showroomId !== showroomId) return [];
-      const deal = deals.get(id) ?? null;
-      return [
-        {
-          vehicle,
-          deal,
-          money: (tallies.get(id) ?? new VehicleMoneyTally()).finish({
-            saleModel: vehicle.saleModel,
-            terms: deal?.terms ?? null,
-            finalisedPrice: deal?.sale?.finalisedPrice ?? null,
-          }),
-        },
-      ];
+      return [{ vehicle, tally: tallies.get(id) ?? new VehicleMoneyTally() }];
+    });
+    const { buyers, leads } = await this.carBuyers.resolve(live);
+
+    return live.map(({ vehicle, tally }): CarMoneyRow => {
+      const deal = deals.get(vehicle.id) ?? null;
+      return {
+        vehicle,
+        deal,
+        leads,
+        money: tally.finish({
+          saleModel: vehicle.saleModel,
+          terms: deal?.terms ?? null,
+          finalisedPrice: deal?.sale?.finalisedPrice ?? null,
+          buyers: buyers.get(vehicle.id) ?? NO_CURRENT_BUYERS,
+        }),
+      };
     });
   }
 
