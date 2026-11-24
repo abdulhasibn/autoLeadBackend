@@ -619,6 +619,58 @@ live('buyer payments by lead, real figures (needs API_TEST_FINANCE_KEY)', () => 
     const owedB = (money.refundsOwed as any[]).find((r) => r.lead?.id === b);
     expect(owedB).toMatchObject({ paid: 40000, owed: 40000 });
   });
+
+  it('AC8: removing the sale with buyer payments also deletes the sold lead’s refunds, not another lead’s', async () => {
+    const car = await newCar();
+    const a = await bookedLead(car, 'AC8r A');
+    const b = await bookedLead(car, 'AC8r B');
+    expect((await payment(car, a, 30000)).status).toBe(201);
+    expect((await payment(car, b, 40000)).status).toBe(201);
+    expect((await payment(car, a, 10000, 'refund')).status).toBe(201);
+    expect((await payment(car, b, 15000, 'refund')).status).toBe(201);
+    const sale = await fin('POST', `/finance/vehicles/${car}/sale`, {
+      finalisedPrice: 100000,
+      soldOn: DAY,
+      leadId: a,
+    });
+    expect(sale.status).toBe(200);
+
+    const removed = await fin('DELETE', `/finance/vehicles/${car}/sale?withBuyerPayments=true`);
+    expect(removed.status).toBe(204);
+
+    const entries = await fin('GET', `/finance/entries?vehicleId=${car}`);
+    expect(entries.status).toBe(200);
+    const items = entries.body.items as any[];
+    const money = items.filter((e) => e.purpose === 'sale' || e.purpose === 'refund');
+    expect(money.every((e) => e.lead?.id === b)).toBe(true);
+    expect(money.find((e) => e.purpose === 'sale')).toMatchObject({ amount: 40000 });
+    expect(money.find((e) => e.purpose === 'refund')).toMatchObject({ amount: 15000 });
+    expect(money).toHaveLength(2);
+
+    const owed = ((await carMoney(car)).refundsOwed as any[]).find((r) => r.lead?.id === b);
+    expect(owed).toMatchObject({ paid: 40000, refunded: 15000, owed: 25000 });
+  });
+
+  it('AC8: without withBuyerPayments the sold lead’s refunds stay', async () => {
+    const car = await newCar();
+    const a = await bookedLead(car, 'AC8k A');
+    expect((await payment(car, a, 30000)).status).toBe(201);
+    expect((await payment(car, a, 10000, 'refund')).status).toBe(201);
+    const sale = await fin('POST', `/finance/vehicles/${car}/sale`, {
+      finalisedPrice: 100000,
+      soldOn: DAY,
+      leadId: a,
+    });
+    expect(sale.status).toBe(200);
+
+    const removed = await fin('DELETE', `/finance/vehicles/${car}/sale?withBuyerPayments=false`);
+    expect(removed.status).toBe(204);
+
+    const entries = await fin('GET', `/finance/entries?vehicleId=${car}`);
+    const purposes = (entries.body.items as any[]).map((e) => e.purpose).sort();
+    expect(purposes.filter((p) => p === 'refund')).toHaveLength(1);
+    expect(purposes.filter((p) => p === 'sale')).toHaveLength(1);
+  });
 });
 
 async function financeFetch(
