@@ -27,16 +27,28 @@ export class CompleteFollowUpUseCase {
     const { lead, followUp } = await requireLeadFollowUp(this.repo, this.policy, command, ctx);
 
     const now = this.clock.now();
+    const outcome = FollowUpOutcome.create(command.outcome);
     followUp.complete({
       by: ctx.userId,
       at: now,
-      outcome: FollowUpOutcome.create(command.outcome),
+      outcome,
       notes: command.notes,
     });
     const next =
       command.next === null ? null : buildScheduledFollowUp(lead, command.next, ctx, now, this.ids);
 
     await this.repo.completeFollowUp(followUp, next);
+
+    // Reaching the customer starts the follow-up: `new` → `in_progress`.
+    // Saved after the follow-up, so a failure here never loses the completion;
+    // the status can still be changed by hand.
+    if (outcome.value === 'reached' && lead.markCustomerReached(now)) {
+      await this.repo.save(lead, {
+        actorId: ctx.userId,
+        statusNotes: 'Customer reached on a follow-up',
+      });
+    }
+
     return {
       followUp: toFollowUpDto(followUp),
       next: next === null ? null : toFollowUpDto(next),

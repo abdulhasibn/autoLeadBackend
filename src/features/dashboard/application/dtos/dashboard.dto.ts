@@ -71,6 +71,7 @@ export interface DashboardDto {
   readonly today: CardListDto<FollowUpCardDto>;
   readonly pipeline: {
     readonly new: number;
+    readonly in_progress: number;
     readonly not_now: number;
     readonly booking_confirmed: number;
   };
