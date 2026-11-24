@@ -20,6 +20,7 @@ export class ListFinanceEntriesController {
             ...(q.to === undefined ? {} : { to: q.to }),
             ...(q.kind === undefined ? {} : { kind: q.kind }),
             ...(q.vehicleId === undefined ? {} : { vehicleId: q.vehicleId }),
+            ...(q.leadId === undefined ? {} : { leadId: q.leadId }),
             ...(q.unlinked === undefined ? {} : { unlinked: q.unlinked }),
             ...(q.showroomId === undefined ? {} : { showroomId: q.showroomId }),
             ...(q.tagId === undefined ? {} : { tagIds: q.tagId }),

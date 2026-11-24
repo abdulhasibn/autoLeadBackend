@@ -2,10 +2,12 @@ import { NotFoundError } from '../../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { toFinanceEntryId } from '../../domain/finance-entry-id';
 import type { IFinanceEntryQueries } from '../../domain/finance-entry.queries';
+import type { IFinanceLeadLookup } from '../../domain/finance-lead-lookup.port';
 import type { IFinanceTagQueries } from '../../domain/finance-tag.queries';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
 import { toFinanceEntryDto, type FinanceEntryDto } from '../dtos/finance-entry.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
+import { leadsOfEntries } from '../services/entry-leads';
 import type { EntrySealer } from '../services/entry.sealer';
 import type { FinanceSessionService } from '../services/finance-session.service';
 import type { TagSealer } from '../services/tag.sealer';
@@ -19,6 +21,7 @@ export class GetFinanceEntryUseCase {
     private readonly vehicles: IFinanceVehicleLookup,
     private readonly entrySealer: EntrySealer,
     private readonly tagSealer: TagSealer,
+    private readonly leads: Pick<IFinanceLeadLookup, 'findMany'>,
   ) {}
 
   async execute(
@@ -40,6 +43,7 @@ export class GetFinanceEntryUseCase {
       entry,
       new Map(tags.map((tag) => [tag.id as string, tag])),
       new Map(vehicles.map((v) => [v.id as string, v])),
+      await leadsOfEntries(this.leads, [entry]),
     );
   }
 }

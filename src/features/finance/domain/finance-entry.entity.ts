@@ -1,10 +1,11 @@
 import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
+import type { LeadId } from '../../../domain/shared/lead-id';
 import type { CalendarDate } from '../../../domain/shared/calendar-date.value-object';
 import type { ShowroomId } from '../../../domain/shared/showroom-id';
 import type { UserId } from '../../../domain/shared/user-id';
 import type { VehicleId } from '../../../domain/shared/vehicle-id';
 import type { EntryKindValue } from './entry-kind.value-object';
-import { EntryPurpose, type EntryPurposeValue } from './entry-purpose.value-object';
+import { carriesLead, EntryPurpose, type EntryPurposeValue } from './entry-purpose.value-object';
 import type { FinanceEntryId } from './finance-entry-id';
 import type { FinanceTagId } from './finance-tag-id';
 import type { Money } from './money.value-object';
@@ -21,6 +22,8 @@ export interface FinanceEntryProps {
   readonly purpose: EntryPurposeValue;
   readonly tagIds: readonly FinanceTagId[];
   readonly vehicleId: VehicleId | null;
+  /** The buyer a `sale` or `refund` entry belongs to (BE-77); null on older entries and other purposes. */
+  readonly leadId: LeadId | null;
   readonly showroomId: ShowroomId;
   readonly party: string | null;
   readonly note: string | null;
@@ -46,6 +49,7 @@ export class FinanceEntry {
     purpose: EntryPurposeValue | null;
     tagIds: readonly FinanceTagId[];
     vehicleId: VehicleId | null;
+    leadId?: LeadId | null;
     showroomId: ShowroomId;
     party: string | null;
     note: string | null;
@@ -53,14 +57,16 @@ export class FinanceEntry {
     now: Date;
   }): FinanceEntry {
     const linked = input.vehicleId !== null;
+    const purpose = resolvePurpose(input.kind, linked, input.purpose);
     return new FinanceEntry({
       id: input.id,
       kind: input.kind,
       amount: requirePositive(input.amount),
       entryDate: input.entryDate,
-      purpose: resolvePurpose(input.kind, linked, input.purpose),
+      purpose,
       tagIds: normalizeTags(input.tagIds),
       vehicleId: input.vehicleId,
+      leadId: carriesLead(purpose) ? (input.leadId ?? null) : null,
       showroomId: input.showroomId,
       party: normalizeText(input.party, MAX_PARTY_LENGTH, 'party'),
       note: normalizeText(input.note, MAX_NOTE_LENGTH, 'note'),
@@ -95,6 +101,9 @@ export class FinanceEntry {
   }
   get vehicleId(): VehicleId | null {
     return this.props.vehicleId;
+  }
+  get leadId(): LeadId | null {
+    return this.props.leadId;
   }
   get showroomId(): ShowroomId {
     return this.props.showroomId;
@@ -143,34 +152,49 @@ export class FinanceEntry {
 
   /**
    * Links to a car (or moves to another), taking its showroom. The purpose
-   * resets to the default for a car-linked entry unless one is given.
+   * resets to the default for a car-linked entry unless one is given. The lead
+   * stays only on the same car, or when `leadId` is sent (BE-77 §4.3), and only
+   * while the purpose still carries one.
    */
   linkToVehicle(
     vehicleId: VehicleId,
     showroomId: ShowroomId,
     purpose: EntryPurposeValue | null,
     now: Date,
+    leadId?: LeadId | null,
   ): void {
     const changedCar = vehicleId !== this.props.vehicleId;
     const next =
       purpose ??
-      (changedCar ? EntryPurpose.defaultFor(this.props.kind, true).value : this.props.purpose);
+      (changedCar && leadId == null
+        ? EntryPurpose.defaultFor(this.props.kind, true).value
+        : this.props.purpose);
+    const resolved = resolvePurpose(this.props.kind, true, next);
+    const keptLead = leadId !== undefined ? leadId : changedCar ? null : this.props.leadId;
     this.update(
-      { vehicleId, showroomId, purpose: resolvePurpose(this.props.kind, true, next) },
+      {
+        vehicleId,
+        showroomId,
+        purpose: resolved,
+        leadId: carriesLead(resolved) ? keptLead : null,
+      },
       now,
     );
   }
 
   /** Removes the car link; the entry becomes a business entry in `showroomId`. */
   unlink(showroomId: ShowroomId, now: Date): void {
-    this.update({ vehicleId: null, showroomId, purpose: 'general' }, now);
+    this.update({ vehicleId: null, showroomId, purpose: 'general', leadId: null }, now);
   }
 
   changePurpose(purpose: EntryPurposeValue, now: Date): void {
-    this.update(
-      { purpose: resolvePurpose(this.props.kind, this.props.vehicleId !== null, purpose) },
-      now,
-    );
+    const next = resolvePurpose(this.props.kind, this.props.vehicleId !== null, purpose);
+    this.update({ purpose: next, leadId: carriesLead(next) ? this.props.leadId : null }, now);
+  }
+
+  /** Puts the entry on a buyer; ignored (cleared) unless the purpose carries one. */
+  assignLead(leadId: LeadId | null, now: Date): void {
+    this.update({ leadId: carriesLead(this.props.purpose) ? leadId : null }, now);
   }
 
   /** Only a business entry chooses its showroom; a car-linked one follows the car. */

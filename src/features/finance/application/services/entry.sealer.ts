@@ -3,7 +3,12 @@ import { DataIntegrityError } from '../../../../domain/errors/data-integrity.err
 import { CalendarDate } from '../../../../domain/shared/calendar-date.value-object';
 import type { FinanceCipher } from '../../domain/finance-cipher.port';
 import { FinanceEntry } from '../../domain/finance-entry.entity';
-import { ENTRY_PURPOSES, type EntryPurposeValue } from '../../domain/entry-purpose.value-object';
+import { toLeadId } from '../../../../domain/shared/lead-id';
+import {
+  carriesLead,
+  ENTRY_PURPOSES,
+  type EntryPurposeValue,
+} from '../../domain/entry-purpose.value-object';
 import { toFinanceTagId } from '../../domain/finance-tag-id';
 import { Money } from '../../domain/money.value-object';
 import type { SealedFinanceEntry } from '../../domain/sealed-finance-records';
@@ -16,6 +21,14 @@ interface EntryPayload {
   readonly tagIds: readonly string[];
   readonly party: string | null;
   readonly note: string | null;
+  /** The buyer of a `sale` or `refund` entry; absent on older entries. */
+  readonly leadId?: string | null;
+  /**
+   * The car `leadId` was validated against. Read only while it equals the
+   * entry's car: an older build can move the entry and carry both keys along,
+   * which would leave `leadId` pointing at a lead of the wrong car.
+   */
+  readonly leadCarId?: string | null;
 }
 
 /**
@@ -28,7 +41,7 @@ interface EntryPayload {
  *   can't settle a buyer or seller balance. Such an entry is read-only on this
  *   build: sealing it again throws ENTRY_FROM_NEWER_VERSION, so the real
  *   purpose is never overwritten. It is logged as a warning.
- * - unknown extra keys (e.g. `leadId`) are ignored on read and written back
+ * - unknown extra keys are ignored on read and written back
  *   unchanged on the next save.
  * A corrupt payload still throws DataIntegrityError.
  */
@@ -57,6 +70,9 @@ export class EntrySealer {
       tagIds: entry.tagIds,
       party: entry.party,
       note: entry.note,
+      ...(entry.leadId === null || entry.vehicleId === null
+        ? {}
+        : { leadId: entry.leadId, leadCarId: entry.vehicleId }),
     };
     return {
       id: entry.id,
@@ -87,6 +103,12 @@ export class EntrySealer {
       purpose: payload.purpose,
       tagIds: payload.tagIds.map(toFinanceTagId),
       vehicleId: record.vehicleId,
+      leadId:
+        carriesLead(payload.purpose) &&
+        typeof payload.leadId === 'string' &&
+        payload.leadCarId === record.vehicleId
+          ? toLeadId(payload.leadId)
+          : null,
       showroomId: record.showroomId,
       party: payload.party,
       note: payload.note,
@@ -109,7 +131,15 @@ function aad(id: string): string {
   return `finance_entries:${id}`;
 }
 
-const KNOWN_KEYS: ReadonlySet<string> = new Set(['amount', 'purpose', 'tagIds', 'party', 'note']);
+const KNOWN_KEYS: ReadonlySet<string> = new Set([
+  'amount',
+  'purpose',
+  'tagIds',
+  'party',
+  'note',
+  'leadId',
+  'leadCarId',
+]);
 
 interface ParsedPayload {
   readonly payload: EntryPayload;
@@ -141,7 +171,9 @@ function parsePayload(
     Array.isArray(p.tagIds) &&
     p.tagIds.every((t) => typeof t === 'string') &&
     (p.party === null || typeof p.party === 'string') &&
-    (p.note === null || typeof p.note === 'string');
+    (p.note === null || typeof p.note === 'string') &&
+    (p.leadId === undefined || p.leadId === null || typeof p.leadId === 'string') &&
+    (p.leadCarId === undefined || p.leadCarId === null || typeof p.leadCarId === 'string');
   if (!valid) {
     throw new DataIntegrityError(`Finance entry ${id} has an invalid payload`);
   }

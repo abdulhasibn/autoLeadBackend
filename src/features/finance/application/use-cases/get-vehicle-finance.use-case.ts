@@ -6,12 +6,14 @@ import type { IFinanceEntryQueries } from '../../domain/finance-entry.queries';
 import type { IFinanceLeadLookup } from '../../domain/finance-lead-lookup.port';
 import type { IFinanceTagQueries } from '../../domain/finance-tag.queries';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
+import { NO_CURRENT_BUYERS } from '../../domain/vehicle-money';
 import { VehicleDeal } from '../../domain/vehicle-deal.entity';
 import type { IVehicleDealQueries } from '../../domain/vehicle-deal.queries';
 import { compareQuotesNewestFirst } from '../../domain/vehicle-quote.entity';
 import type { IVehicleQuoteQueries } from '../../domain/vehicle-quote.queries';
 import { toVehicleFinanceDto, type VehicleFinanceDto } from '../dtos/vehicle-finance.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
+import type { CarBuyers } from '../services/car-buyers';
 import type { EntrySealer } from '../services/entry.sealer';
 import type { FinanceSessionService } from '../services/finance-session.service';
 import type { QuoteSealer } from '../services/quote.sealer';
@@ -36,6 +38,7 @@ export class GetVehicleFinanceUseCase {
     private readonly quoteSealer: QuoteSealer,
     private readonly tagSealer: TagSealer,
     private readonly clock: Clock,
+    private readonly carBuyers: CarBuyers,
   ) {}
 
   async execute(
@@ -57,6 +60,7 @@ export class GetVehicleFinanceUseCase {
         ? VehicleDeal.empty(vehicleId, null, this.clock.now())
         : this.dealSealer.open(sealedDeal, cipher);
     const tally = await tallyVehicleEntries(this.entries, this.entrySealer, cipher, vehicleId);
+    const { buyers, leads: buyerLeads } = await this.carBuyers.resolve([{ vehicle, tally }]);
     const quotes = (await this.quotes.listForVehicles([vehicleId]))
       .map((row) => this.quoteSealer.open(row, cipher))
       .sort(compareQuotesNewestFirst);
@@ -69,6 +73,7 @@ export class GetVehicleFinanceUseCase {
         saleModel: vehicle.saleModel,
         terms: deal.terms,
         finalisedPrice: deal.sale?.finalisedPrice ?? null,
+        buyers: buyers.get(vehicle.id) ?? NO_CURRENT_BUYERS,
       }),
       quotes,
       leadsById: await leadsOf(this.leads, quotes),
@@ -76,6 +81,7 @@ export class GetVehicleFinanceUseCase {
         vehicle.status === 'sold' || vehicle.deleted
           ? []
           : await this.leads.listBookedForVehicle(vehicleId),
+      buyerLeads,
       tagsById: new Map(tags.map((tag) => [tag.id as string, tag])),
     });
   }

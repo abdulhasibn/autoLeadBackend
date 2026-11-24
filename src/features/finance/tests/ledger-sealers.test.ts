@@ -103,7 +103,7 @@ describe('EntrySealer tolerant parsing', () => {
   it('reads an unknown expense purpose as cost and warns without amounts', () => {
     const { warn, log } = logger();
     const opened = new EntrySealer(log).open(
-      sealed('expense', { ...base, purpose: 'refund' }),
+      sealed('expense', { ...base, purpose: 'warranty' }),
       cipher,
     );
 
@@ -122,7 +122,7 @@ describe('EntrySealer tolerant parsing', () => {
 
   it('reads an unknown purpose on an entry with no car as general', () => {
     const opened = new EntrySealer().open(
-      sealed('expense', { ...base, purpose: 'refund' }, undefined, null),
+      sealed('expense', { ...base, purpose: 'warranty' }, undefined, null),
       cipher,
     );
     expect(opened.purpose).toBe('general');
@@ -130,7 +130,7 @@ describe('EntrySealer tolerant parsing', () => {
 
   it('refuses to save an entry opened with the fallback purpose', () => {
     const s = new EntrySealer();
-    const opened = s.open(sealed('expense', { ...base, purpose: 'refund' }), cipher);
+    const opened = s.open(sealed('expense', { ...base, purpose: 'warranty' }), cipher);
 
     expect(() => s.seal(opened, cipher)).toThrow(BusinessRuleViolationError);
     expect(() => s.assertWritable(opened)).toThrow(
@@ -148,7 +148,13 @@ describe('EntrySealer tolerant parsing', () => {
     const s = new EntrySealer();
     const leadId = '33333333-3333-4333-8333-000000000001';
     const opened = s.open(
-      sealed('income', { ...base, purpose: 'sale', leadId, extra: { a: [1] } }),
+      sealed('income', {
+        ...base,
+        purpose: 'sale',
+        leadId,
+        leadCarId: SWIFT,
+        extra: { a: [1] },
+      }),
       cipher,
     );
     opened.changeNote('edited', NOW);
@@ -159,7 +165,13 @@ describe('EntrySealer tolerant parsing', () => {
       unknown
     >;
 
-    expect(raw).toMatchObject({ leadId, extra: { a: [1] }, note: 'edited', purpose: 'sale' });
+    expect(raw).toMatchObject({
+      leadId,
+      leadCarId: SWIFT,
+      extra: { a: [1] },
+      note: 'edited',
+      purpose: 'sale',
+    });
     expect(s.open(resealed, cipher).note).toBe('edited');
   });
 
@@ -176,7 +188,7 @@ describe('EntrySealer tolerant parsing', () => {
 
   it('works without a logger', () => {
     const opened = new EntrySealer().open(
-      sealed('expense', { ...base, purpose: 'refund' }),
+      sealed('expense', { ...base, purpose: 'warranty' }),
       cipher,
     );
     expect(opened.purpose).toBe('cost');

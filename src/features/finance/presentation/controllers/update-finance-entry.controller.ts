@@ -27,6 +27,8 @@ export class UpdateFinanceEntryController {
             ...(b.tagIds === undefined ? {} : { tagIds: b.tagIds }),
             ...(b.vehicleId === undefined ? {} : { vehicleId: b.vehicleId }),
             ...(b.purpose === undefined ? {} : { purpose: b.purpose }),
+            ...(b.leadId === undefined ? {} : { leadId: b.leadId }),
+            ...(b.keepLead === undefined ? {} : { keepLead: b.keepLead }),
             ...(b.party === undefined ? {} : { party: b.party }),
             ...(b.note === undefined ? {} : { note: b.note }),
             ...(b.showroomId === undefined ? {} : { showroomId: b.showroomId }),

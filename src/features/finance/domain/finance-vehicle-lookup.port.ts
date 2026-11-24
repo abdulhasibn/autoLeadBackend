@@ -14,6 +14,8 @@ export interface FinanceVehicleFacts {
   readonly deleted: boolean;
   /** Bought outright or sold for a commission. */
   readonly saleModel: SaleModel;
+  /** `vehicles.sold_lead_id`: the lead the car was sold to; null when unsold or unknown. */
+  readonly soldLeadId: LeadId | null;
 }
 
 /**
@@ -29,6 +31,4 @@ export interface IFinanceVehicleLookup {
   listSoldWithoutSale(): Promise<readonly SoldVehicleFacts[]>;
 }
 
-export interface SoldVehicleFacts extends FinanceVehicleFacts {
-  readonly soldLeadId: LeadId | null;
-}
+export type SoldVehicleFacts = FinanceVehicleFacts;

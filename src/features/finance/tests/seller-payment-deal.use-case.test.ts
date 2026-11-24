@@ -16,6 +16,7 @@ import {
   SWIFT,
   TEST_KDF,
   createFinanceTestKit,
+  carBuyers,
   makeCreateEntry,
   makeSetDeal,
   makeUpdateEntry,
@@ -78,6 +79,7 @@ describe('payments to the seller are tied to the deal', () => {
       k.quoteSealer,
       k.tagSealer,
       k.clock,
+      carBuyers(k),
     );
   });
 

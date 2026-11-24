@@ -85,6 +85,9 @@ export class GetFinanceSummaryUseCase {
       owedByBuyers: positiveSum(
         cars.filter((c) => hasDues(c.money)).map((c) => toRupees(c.money.owedByBuyer)),
       ),
+      owedBackToBuyers: positiveSum(
+        cars.flatMap((c) => c.money.refundsOwed.map((r) => r.owed / 100)),
+      ),
       awaitingSalePrice: awaiting.length,
       truncated: false,
     };

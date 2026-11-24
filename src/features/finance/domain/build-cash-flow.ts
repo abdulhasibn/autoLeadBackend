@@ -10,6 +10,8 @@ export interface CashFlowLine {
   readonly inOther: number;
   readonly outToSellers: number;
   readonly outCarCosts: number;
+  /** Money paid back to buyers (`refund` expenses, BE-77). */
+  readonly outRefundsToBuyers: number;
   readonly outBusiness: number;
 }
 
@@ -54,6 +56,8 @@ export class CashFlowTally {
       split.outToSellers += paise;
     } else if (entry.purpose === 'cost') {
       split.outCarCosts += paise;
+    } else if (entry.purpose === 'refund') {
+      split.outRefundsToBuyers += paise;
     } else {
       split.outBusiness += paise;
     }
@@ -72,6 +76,7 @@ export class CashFlowTally {
         inOther: a.inOther + b.inOther,
         outToSellers: a.outToSellers + b.outToSellers,
         outCarCosts: a.outCarCosts + b.outCarCosts,
+        outRefundsToBuyers: a.outRefundsToBuyers + b.outRefundsToBuyers,
         outBusiness: a.outBusiness + b.outBusiness,
       }),
       emptySplit(),
@@ -81,11 +86,19 @@ export class CashFlowTally {
 }
 
 function emptySplit(): { -readonly [K in keyof Split]: number } {
-  return { inFromBuyers: 0, inOther: 0, outToSellers: 0, outCarCosts: 0, outBusiness: 0 };
+  return {
+    inFromBuyers: 0,
+    inOther: 0,
+    outToSellers: 0,
+    outCarCosts: 0,
+    outRefundsToBuyers: 0,
+    outBusiness: 0,
+  };
 }
 
 function toLine(split: Split): CashFlowLine {
   const inTotal = split.inFromBuyers + split.inOther;
-  const outTotal = split.outToSellers + split.outCarCosts + split.outBusiness;
+  const outTotal =
+    split.outToSellers + split.outCarCosts + split.outRefundsToBuyers + split.outBusiness;
   return { ...split, in: inTotal, out: outTotal, net: inTotal - outTotal };
 }

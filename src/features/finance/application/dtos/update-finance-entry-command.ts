@@ -11,6 +11,10 @@ export interface UpdateFinanceEntryCommand {
   /** A car id links or moves the entry; null unlinks it. */
   readonly vehicleId?: string | null;
   readonly purpose?: EntryPurposeValue;
+  /** Puts a `sale` / `refund` entry on a lead; null takes it off (BE-77 §4.2). */
+  readonly leadId?: string | null;
+  /** With a move to another car: keep the entry's lead and purpose (§4.3). */
+  readonly keepLead?: boolean;
   readonly party?: string | null;
   readonly note?: string | null;
   readonly showroomId?: string;

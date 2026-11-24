@@ -36,6 +36,7 @@ import {
   createFinanceTestKit,
   markCarSold,
   type FinanceTestKit,
+  carBuyers,
   makeCreateEntry,
   makeSetDeal,
 } from './fakes';
@@ -106,6 +107,7 @@ describe('car money', () => {
       k.quoteSealer,
       k.tagSealer,
       k.clock,
+      carBuyers(k),
     );
     setDeal = makeSetDeal(k);
     recordSale = new RecordVehicleSaleUseCase(
@@ -127,6 +129,10 @@ describe('car money', () => {
       k.deals,
       k.dealSealer,
       k.clock,
+      k.vehicles,
+      k.entries,
+      k.entries,
+      k.entrySealer,
     );
     addQuote = new AddVehicleQuoteUseCase(
       k.policy,
@@ -163,6 +169,7 @@ describe('car money', () => {
       k.entrySealer,
       k.quoteSealer,
       k.clock,
+      carBuyers(k),
     );
     awaiting = new ListVehiclesAwaitingSalePriceUseCase(k.policy, k.sessionService, k.vehicles);
   });

@@ -51,6 +51,9 @@ export const createFinanceEntryBodySchema = z.object({
   tagIds: tagIdsSchema.default([]),
   vehicleId: uuidSchema('vehicleId').nullable().default(null),
   purpose: purposeSchema.nullable().default(null),
+  leadId: uuidSchema('leadId')
+    .nullish()
+    .transform((v) => v ?? null),
   party: optionalTextSchema.transform((v) => v ?? null),
   note: optionalTextSchema.transform((v) => v ?? null),
   showroomId: uuidSchema('showroomId').nullable().default(null),
@@ -65,6 +68,8 @@ export const updateFinanceEntryBodySchema = z
     tagIds: tagIdsSchema.optional(),
     vehicleId: uuidSchema('vehicleId').nullable().optional(),
     purpose: purposeSchema.optional(),
+    leadId: uuidSchema('leadId').nullable().optional(),
+    keepLead: z.boolean().optional(),
     party: optionalTextSchema,
     note: optionalTextSchema,
     showroomId: uuidSchema('showroomId').optional(),
@@ -72,7 +77,7 @@ export const updateFinanceEntryBodySchema = z
     keepOverpayment: z.boolean().optional(),
   })
   .refine(
-    ({ deal: _deal, keepOverpayment: _keep, ...body }) =>
+    ({ deal: _deal, keepOverpayment: _keep, keepLead: _keepLead, ...body }) =>
       Object.values(body).some((v) => v !== undefined),
     {
       message: 'Send at least one field to change',
@@ -85,6 +90,7 @@ export const listFinanceEntriesQuerySchema = z
     to: calendarDateSchema.optional(),
     kind: z.enum(ENTRY_KINDS).optional(),
     vehicleId: uuidSchema('vehicleId').optional(),
+    leadId: uuidSchema('leadId').optional(),
     unlinked: optionalBooleanQuerySchema,
     showroomId: uuidSchema('showroomId').optional(),
     tagId: optionalCsvSchema('tagId', (raw) => uuidSchema('tagId').parse(raw)),
@@ -95,6 +101,10 @@ export const listFinanceEntriesQuerySchema = z
     sort: z.enum(ENTRY_SORTS).default('date'),
     limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
     offset: z.coerce.number().int().min(0).default(0),
+  })
+  .refine(({ leadId, vehicleId }) => leadId === undefined || vehicleId !== undefined, {
+    message: 'leadId can only be used together with vehicleId',
+    path: ['leadId'],
   })
   .superRefine(refineRange('minAmount', 'maxAmount'))
   .superRefine(refineRange('from', 'to'));

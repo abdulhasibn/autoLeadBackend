@@ -2,10 +2,11 @@ import { BusinessRuleViolationError } from '../../../../domain/errors/business-r
 import { NotFoundError } from '../../../../domain/errors/not-found.error';
 import type { AuthenticatedContext } from '../../../../domain/shared/auth-context';
 import { CalendarDate } from '../../../../domain/shared/calendar-date.value-object';
-import { toLeadId } from '../../../../domain/shared/lead-id';
+import { toLeadId, type LeadId } from '../../../../domain/shared/lead-id';
 import { toVehicleId } from '../../../../domain/shared/vehicle-id';
 import type { Clock } from '../../../../shared/clock/clock';
 import type { IdGenerator } from '../../../../shared/ids/id-generator';
+import type { SealedFinanceEntry } from '../../domain/sealed-finance-records';
 import { toFinanceEntryId } from '../../domain/finance-entry-id';
 import { FinanceEntry } from '../../domain/finance-entry.entity';
 import type { IFinanceEntryQueries } from '../../domain/finance-entry.queries';
@@ -14,6 +15,7 @@ import type { FinanceVehicleFacts } from '../../domain/finance-vehicle-lookup.po
 import type { IFinanceLeadConversion } from '../../domain/finance-lead-conversion.port';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
 import { Money } from '../../domain/money.value-object';
+import { VehicleMoneyTally } from '../../domain/vehicle-money';
 import { VehicleDeal } from '../../domain/vehicle-deal.entity';
 import type { IVehicleDealRepository } from '../../domain/vehicle-deal.repository';
 import type { RecordVehicleSaleCommand } from '../dtos/record-vehicle-sale-command';
@@ -23,7 +25,6 @@ import type { EntrySealer } from '../services/entry.sealer';
 import type { FinanceCipher } from '../../domain/finance-cipher.port';
 import type { FinanceSessionService } from '../services/finance-session.service';
 import type { VehicleDealSealer } from '../services/vehicle-deal.sealer';
-import { tallyVehicleEntries } from '../services/vehicle-entry-tally';
 
 /**
  * Records the finalised price. A sale always closes against a lead:
@@ -33,10 +34,14 @@ import { tallyVehicleEntries } from '../services/vehicle-entry-tally';
  * The conversion runs first so a failed save is finished by repeating the
  * request: the car is sold by then and the price alone is saved.
  *
- * A price below what the buyer has already paid is refused
- * (`SALE_PRICE_BELOW_RECEIVED`) unless `keepOverpayment` says the buyer really
+ * A price below what the sale's lead has already paid (net of refunds, plus the
+ * `buyerPayment`) is refused (`SALE_PRICE_BELOW_RECEIVED`): another lead's
+ * money on the car never counts (BE-77 §4.6). The sale's lead is `leadId`, or
+ * the car's sold lead once it is sold. Unless `keepOverpayment` says the buyer really
  * overpaid, so a lowered price can't leave a phantom overpayment (#31). The
  * check runs before the lead is converted: a refused request changes nothing.
+ * With `buyerPayments: "adjust"` the lead's earlier payments are cut down to fit
+ * instead (newest first), and put back if the sale then fails.
  *
  * A `buyerPayment` is saved as a `sale` income entry in the same request
  * (#32, #33). It is written before the lead is converted, and soft-deleted if
@@ -84,14 +89,29 @@ export class RecordVehicleSaleUseCase {
 
     const payment = command.buyerPayment ?? null;
     const paymentDate = payment === null ? null : CalendarDate.create(payment.paidOn);
-    if (!command.keepOverpayment) {
-      const tally = await tallyVehicleEntries(this.entries, this.entrySealer, cipher, vehicleId);
-      const received = tally.receivedFromBuyerPaise + (payment?.amountPaise ?? 0);
-      if (received > finalisedPrice.paise) {
+    const saleLeadId: LeadId | null =
+      vehicle.status === 'sold'
+        ? vehicle.soldLeadId
+        : command.leadId === null
+          ? null
+          : toLeadId(command.leadId);
+    const mine = await this.leadPayments(vehicle, saleLeadId, cipher);
+    const incoming = payment?.amountPaise ?? 0;
+    let trimmed: TrimmedPayment[] = [];
+    if (mine.net + incoming > finalisedPrice.paise) {
+      if (command.buyerPayments === 'adjust') {
+        trimmed = planTrim(mine.sale, mine.net + incoming - finalisedPrice.paise);
+      }
+      const cut = trimmed.reduce((t, p) => t + (p.entry.amount.paise - p.keepPaise), 0);
+      const left = mine.net + incoming - cut;
+      if (left > finalisedPrice.paise && !command.keepOverpayment) {
         throw new BusinessRuleViolationError(
           'SALE_PRICE_BELOW_RECEIVED',
           'The buyer has already paid more than this price: reduce their payments first, or keep the overpayment',
-          { receivedFromBuyer: received / 100, finalisedPrice: finalisedPrice.paise / 100 },
+          {
+            receivedFromBuyer: left / 100,
+            finalisedPrice: finalisedPrice.paise / 100,
+          },
         );
       }
     }
@@ -103,10 +123,24 @@ export class RecordVehicleSaleUseCase {
       );
     }
 
-    const paymentEntry =
-      payment === null || paymentDate === null
-        ? null
-        : await this.savePayment(vehicle, payment.amountPaise, paymentDate, cipher, ctx);
+    const restore = await this.applyTrim(trimmed, cipher);
+    let paymentEntry: FinanceEntry | null = null;
+    try {
+      paymentEntry =
+        payment === null || paymentDate === null
+          ? null
+          : await this.savePayment(
+              vehicle,
+              payment.amountPaise,
+              paymentDate,
+              saleLeadId,
+              cipher,
+              ctx,
+            );
+    } catch (err) {
+      await this.putBack(restore);
+      throw err;
+    }
 
     try {
       if (vehicle.status !== 'sold' && command.leadId !== null) {
@@ -128,14 +162,64 @@ export class RecordVehicleSaleUseCase {
         paymentEntry.softDelete(this.clock.now());
         await this.entryRepo.save(this.entrySealer.seal(paymentEntry, cipher));
       }
+      await this.putBack(restore);
       throw err;
     }
+  }
+
+  /**
+   * The sale lead's `sale` entries (on a sold car also the unassigned ones,
+   * which count as theirs) and their net after refunds.
+   */
+  private async leadPayments(
+    vehicle: FinanceVehicleFacts,
+    leadId: LeadId | null,
+    cipher: FinanceCipher,
+  ): Promise<{ net: number; sale: PaymentRow[] }> {
+    const tally = new VehicleMoneyTally();
+    const sale: PaymentRow[] = [];
+    const carSold = vehicle.status === 'sold';
+    for await (const page of this.entries.scan({ vehicleId: vehicle.id })) {
+      for (const row of page) {
+        const entry = this.entrySealer.open(row, cipher);
+        tally.add(entry);
+        const theirs = entry.leadId === leadId || (carSold && entry.leadId === null);
+        if (entry.purpose === 'sale' && theirs) sale.push({ entry, row });
+      }
+    }
+    const nets = tally.netByLead({
+      carSold,
+      soldLeadId: carSold ? leadId : null,
+      bookedLeadIds: [],
+    });
+    return { net: nets.get(leadId ?? '') ?? 0, sale };
+  }
+
+  private async putBack(rows: readonly SealedFinanceEntry[]): Promise<void> {
+    for (const row of rows) await this.entryRepo.save(row);
+  }
+
+  /** Writes the trimmed amounts; returns the stored rows to put back if the sale then fails. */
+  private async applyTrim(
+    trimmed: readonly TrimmedPayment[],
+    cipher: FinanceCipher,
+  ): Promise<SealedFinanceEntry[]> {
+    const now = this.clock.now();
+    const originals: SealedFinanceEntry[] = [];
+    for (const { entry, row, keepPaise } of trimmed) {
+      originals.push(row);
+      if (keepPaise === 0) entry.softDelete(now);
+      else entry.changeAmount(Money.ofPaise(keepPaise), now);
+      await this.entryRepo.save(this.entrySealer.seal(entry, cipher));
+    }
+    return originals;
   }
 
   private async savePayment(
     vehicle: FinanceVehicleFacts,
     amountPaise: number,
     paidOn: CalendarDate,
+    leadId: LeadId | null,
     cipher: FinanceCipher,
     ctx: AuthenticatedContext,
   ): Promise<FinanceEntry> {
@@ -147,6 +231,7 @@ export class RecordVehicleSaleUseCase {
       purpose: 'sale',
       tagIds: [],
       vehicleId: vehicle.id,
+      leadId,
       showroomId: vehicle.showroomId,
       party: null,
       note: SALE_PAYMENT_NOTE,
@@ -156,4 +241,32 @@ export class RecordVehicleSaleUseCase {
     await this.entryRepo.save(this.entrySealer.seal(entry, cipher));
     return entry;
   }
+}
+
+interface PaymentRow {
+  readonly entry: FinanceEntry;
+  readonly row: SealedFinanceEntry;
+}
+
+interface TrimmedPayment extends PaymentRow {
+  /** Paise left on the entry; 0 removes it. */
+  readonly keepPaise: number;
+}
+
+/** Cuts `excess` paise off the payments, newest first. */
+function planTrim(payments: readonly PaymentRow[], excess: number): TrimmedPayment[] {
+  const newestFirst = [...payments].sort(
+    (a, b) =>
+      b.entry.entryDate.value.localeCompare(a.entry.entryDate.value) ||
+      b.entry.createdAt.getTime() - a.entry.createdAt.getTime(),
+  );
+  const plan: TrimmedPayment[] = [];
+  let left = excess;
+  for (const payment of newestFirst) {
+    if (left <= 0) break;
+    const paise = payment.entry.amount.paise;
+    plan.push({ ...payment, keepPaise: Math.max(paise - left, 0) });
+    left -= paise;
+  }
+  return plan;
 }

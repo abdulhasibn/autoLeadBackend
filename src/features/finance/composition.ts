@@ -36,6 +36,8 @@ import { SetVehicleDealUseCase } from './application/use-cases/set-vehicle-deal.
 import { RecordVehicleSaleUseCase } from './application/use-cases/record-vehicle-sale.use-case';
 import { ClearVehicleSaleUseCase } from './application/use-cases/clear-vehicle-sale.use-case';
 import { SellerPaymentGuard } from './application/services/seller-payment-guard';
+import { CarBuyers } from './application/services/car-buyers';
+import { RefundGuard } from './application/services/refund-guard';
 import { SaleIncomeGuard } from './application/services/sale-income-guard';
 import { ListVehicleQuotesUseCase } from './application/use-cases/list-vehicle-quotes.use-case';
 import { AddVehicleQuoteUseCase } from './application/use-cases/add-vehicle-quote.use-case';
@@ -162,6 +164,8 @@ export function composeFinance(
   const dealSealer = new VehicleDealSealer();
   const sellerPayments = new SellerPaymentGuard(deals, dealSealer, entryQueries, entrySealer);
   const quoteSealer = new QuoteSealer();
+  const carBuyers = new CarBuyers(leads);
+  const refunds = new RefundGuard(entryQueries, entrySealer, carBuyers);
   const reportData = new FinanceReportData(
     dealQueries,
     entryQueries,
@@ -170,6 +174,7 @@ export function composeFinance(
     dealSealer,
     entrySealer,
     quoteSealer,
+    carBuyers,
   );
 
   const router = createFinanceRouter({
@@ -231,6 +236,7 @@ export function composeFinance(
         vehicles,
         entrySealer,
         tagSealer,
+        leads,
       ),
     ),
     createFinanceEntryController: new CreateFinanceEntryController(
@@ -248,6 +254,8 @@ export function composeFinance(
         sellerPayments,
         deals,
         dealSealer,
+        refunds,
+        leads,
       ),
     ),
     getFinanceEntryController: new GetFinanceEntryController(
@@ -259,6 +267,7 @@ export function composeFinance(
         vehicles,
         entrySealer,
         tagSealer,
+        leads,
       ),
     ),
     updateFinanceEntryController: new UpdateFinanceEntryController(
@@ -275,6 +284,8 @@ export function composeFinance(
         sellerPayments,
         deals,
         dealSealer,
+        refunds,
+        leads,
       ),
     ),
     deleteFinanceEntryController: new DeleteFinanceEntryController(
@@ -295,6 +306,7 @@ export function composeFinance(
         quoteSealer,
         tagSealer,
         deps.clock,
+        carBuyers,
       ),
     ),
     setVehicleDealController: new SetVehicleDealController(
@@ -327,7 +339,17 @@ export function composeFinance(
       ),
     ),
     clearVehicleSaleController: new ClearVehicleSaleController(
-      new ClearVehicleSaleUseCase(policy, sessionService, deals, dealSealer, deps.clock),
+      new ClearVehicleSaleUseCase(
+        policy,
+        sessionService,
+        deals,
+        dealSealer,
+        deps.clock,
+        vehicles,
+        entryQueries,
+        entries,
+        entrySealer,
+      ),
     ),
     listVehicleQuotesController: new ListVehicleQuotesController(
       new ListVehicleQuotesUseCase(policy, sessionService, quoteQueries, leads, quoteSealer),
@@ -359,6 +381,7 @@ export function composeFinance(
         entrySealer,
         quoteSealer,
         deps.clock,
+        carBuyers,
       ),
     ),
     listVehiclesAwaitingSalePriceController: new ListVehiclesAwaitingSalePriceController(

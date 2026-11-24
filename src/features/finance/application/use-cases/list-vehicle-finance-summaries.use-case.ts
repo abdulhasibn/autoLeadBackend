@@ -5,7 +5,7 @@ import type { IFinanceEntryQueries } from '../../domain/finance-entry.queries';
 import type { IFinanceVehicleLookup } from '../../domain/finance-vehicle-lookup.port';
 import { VehicleDeal } from '../../domain/vehicle-deal.entity';
 import type { IVehicleDealQueries } from '../../domain/vehicle-deal.queries';
-import { VehicleMoneyTally } from '../../domain/vehicle-money';
+import { NO_CURRENT_BUYERS, VehicleMoneyTally } from '../../domain/vehicle-money';
 import { compareQuotesNewestFirst, type VehicleQuote } from '../../domain/vehicle-quote.entity';
 import type { IVehicleQuoteQueries } from '../../domain/vehicle-quote.queries';
 import {
@@ -13,6 +13,7 @@ import {
   type VehicleFinanceSummaryDto,
 } from '../dtos/vehicle-finance.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
+import type { CarBuyers } from '../services/car-buyers';
 import type { EntrySealer } from '../services/entry.sealer';
 import type { FinanceSessionService } from '../services/finance-session.service';
 import type { QuoteSealer } from '../services/quote.sealer';
@@ -31,6 +32,7 @@ export class ListVehicleFinanceSummariesUseCase {
     private readonly entrySealer: EntrySealer,
     private readonly quoteSealer: QuoteSealer,
     private readonly clock: Clock,
+    private readonly carBuyers: CarBuyers,
   ) {}
 
   async execute(
@@ -68,13 +70,17 @@ export class ListVehicleFinanceSummariesUseCase {
       }
     }
 
-    const saleModels = new Map(
-      (await this.vehicles.findMany(ids)).map((car) => [car.id as string, car.saleModel]),
+    const cars = new Map((await this.vehicles.findMany(ids)).map((car) => [car.id as string, car]));
+    const { buyers } = await this.carBuyers.resolve(
+      [...cars.values()].map((vehicle) => ({
+        vehicle,
+        tally: tallies.get(vehicle.id) ?? new VehicleMoneyTally(),
+      })),
     );
     const now = this.clock.now();
     return ids.map((vehicleId) => {
       const deal = deals.get(vehicleId) ?? VehicleDeal.empty(vehicleId, null, now);
-      const saleModel = saleModels.get(vehicleId) ?? 'purchase';
+      const saleModel = cars.get(vehicleId)?.saleModel ?? 'purchase';
       return toVehicleFinanceSummaryDto({
         vehicleId,
         saleModel,
@@ -83,6 +89,7 @@ export class ListVehicleFinanceSummariesUseCase {
           saleModel,
           terms: deal.terms,
           finalisedPrice: deal.sale?.finalisedPrice ?? null,
+          buyers: buyers.get(vehicleId) ?? NO_CURRENT_BUYERS,
         }),
         currentQuote: latestQuote.get(vehicleId) ?? null,
       });

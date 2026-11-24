@@ -9,7 +9,7 @@ import { FinanceEntry } from '../domain/finance-entry.entity';
 import { toFinanceTagId } from '../domain/finance-tag-id';
 import { Money } from '../domain/money.value-object';
 import { calculateVehicleMoney } from '../domain/vehicle-money';
-import { bought, onCommission, SHOWROOM_A, SWIFT } from './fakes';
+import { bought, onCommission, SHOWROOM_A, SOLD_NO_LEAD, SWIFT } from './fakes';
 
 let seq = 0;
 function carEntry(
@@ -56,6 +56,7 @@ const rupees = (paise: number | null): number | null => (paise === null ? null :
 describe('calculateVehicleMoney', () => {
   it("matches the client's worked example", () => {
     const money = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       ...bought(Money.fromRupees(500000)),
       finalisedPrice: Money.fromRupees(560000),
       entries: clientExampleEntries(),
@@ -72,6 +73,7 @@ describe('calculateVehicleMoney', () => {
 
   it('groups costs by their first tag without double counting, untagged last bucket', () => {
     const money = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       ...bought(Money.fromRupees(500000)),
       finalisedPrice: null,
       entries: clientExampleEntries(),
@@ -93,6 +95,7 @@ describe('calculateVehicleMoney', () => {
 
   it('leaves profit and buyer dues empty until the sale is recorded', () => {
     const money = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       ...bought(Money.fromRupees(500000)),
       finalisedPrice: null,
       entries: clientExampleEntries(),
@@ -105,6 +108,7 @@ describe('calculateVehicleMoney', () => {
 
   it('without a purchase rate: landing cost is the costs alone, no profit or seller dues', () => {
     const money = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       ...bought(null),
       finalisedPrice: Money.fromRupees(560000),
       entries: clientExampleEntries(),
@@ -118,6 +122,7 @@ describe('calculateVehicleMoney', () => {
 
   it('shows part payments as dues, an overpaid seller as negative, and a loss as negative profit', () => {
     const money = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       ...bought(Money.fromRupees(500000)),
       finalisedPrice: Money.fromRupees(500000),
       entries: [
@@ -134,6 +139,7 @@ describe('calculateVehicleMoney', () => {
 
   it('ignores other income and general entries', () => {
     const money = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       ...bought(Money.fromRupees(100000)),
       finalisedPrice: Money.fromRupees(150000),
       entries: [carEntry('income', 9999, 'other')],
@@ -148,6 +154,7 @@ describe('calculateVehicleMoney', () => {
 describe('calculateVehicleMoney for a commission car', () => {
   it('earns the commission as profit and owes the owner the rest minus costs', () => {
     const money = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       ...onCommission(500), // 5%
       finalisedPrice: Money.fromRupees(600000),
       entries: [
@@ -168,6 +175,7 @@ describe('calculateVehicleMoney for a commission car', () => {
 
   it('rounds the commission to the paisa', () => {
     const money = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       ...onCommission(333), // 3.33%
       finalisedPrice: Money.fromRupees(123457),
       entries: [],
@@ -178,6 +186,7 @@ describe('calculateVehicleMoney for a commission car', () => {
 
   it('has no profit or owner dues until sold, and none without a %', () => {
     const unsold = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       ...onCommission(500),
       finalisedPrice: null,
       entries: [carEntry('expense', 5000, 'cost')],
@@ -187,6 +196,7 @@ describe('calculateVehicleMoney for a commission car', () => {
     expect(rupees(unsold.landingCost)).toBe(5000);
 
     const noTerms = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       ...onCommission(null),
       finalisedPrice: Money.fromRupees(600000),
       entries: [],
@@ -198,6 +208,7 @@ describe('calculateVehicleMoney for a commission car', () => {
 
   it('ignores a purchase rate on a commission car, and a % on a purchase car', () => {
     const asCommission = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       saleModel: 'commission',
       terms: bought(Money.fromRupees(500000)).terms,
       finalisedPrice: Money.fromRupees(600000),
@@ -206,6 +217,7 @@ describe('calculateVehicleMoney for a commission car', () => {
     expect(asCommission.profit).toBeNull();
 
     const asPurchase = calculateVehicleMoney({
+      buyers: SOLD_NO_LEAD,
       saleModel: 'purchase',
       terms: onCommission(500).terms,
       finalisedPrice: Money.fromRupees(600000),

@@ -34,3 +34,7 @@ How the money moves on a commission sale (client's answers):
 ## Amendment (2026-11-24, BE-78): commission cars in Stock
 
 Stock now uses the same cash-paid rule for both models (see the ADR-0015 amendment): money in stock = Σ `purchase` entries + Σ `cost` entries. A commission car's advance to its owner (a `purchase` entry) therefore counts, and the car appears in the Stock report even with no costs (CR-2). A commission car's `landingCost` stays "costs only", as defined above.
+
+## Amendment (2026-11-24, BE-77): buyer money on commission cars
+
+Commission cars settle buyer money exactly like purchase cars: `owedByBuyer` = finalised price − net of the sale lead, and money from a buyer who backed out is a refund owed to them (see the ADR-0015 amendment). The commission and the owner's payout are worked out from the finalised price and costs only, so a refund never changes them; a `refund` entry is not a `cost` and does not enter the owner's payout.

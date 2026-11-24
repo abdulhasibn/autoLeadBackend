@@ -15,8 +15,9 @@ export async function tallyVehicleEntries(
   sealer: EntrySealer,
   cipher: FinanceCipher,
   vehicleId: VehicleId,
+  soldOn: string | null = null,
 ): Promise<VehicleMoneyTally> {
-  const tally = new VehicleMoneyTally();
+  const tally = new VehicleMoneyTally(soldOn);
   for await (const page of entries.scan({ vehicleId })) {
     for (const row of page) tally.add(sealer.open(row, cipher));
   }

@@ -23,10 +23,11 @@ type VehicleListRow = Pick<
   | 'status'
   | 'deleted_at'
   | 'acquisition_type'
+  | 'sold_lead_id'
 >;
 
 const COLUMNS =
-  'id, showroom_id, make_name, model_name, registration_number, status, deleted_at, acquisition_type';
+  'id, showroom_id, make_name, model_name, registration_number, status, deleted_at, acquisition_type, sold_lead_id';
 
 /**
  * Reads car facts from the `vehicle_list` view for finance (ADR-0006
@@ -66,7 +67,7 @@ export class SupabaseFinanceVehicleLookup implements IFinanceVehicleLookup {
   async listSoldWithoutSale(): Promise<readonly SoldVehicleFacts[]> {
     const { data: sold, error } = await this.db
       .from('vehicle_list')
-      .select(`${COLUMNS}, sold_lead_id, updated_at`)
+      .select(`${COLUMNS}, updated_at`)
       .eq('status', 'sold')
       .is('deleted_at', null)
       .order('updated_at', { ascending: false })
@@ -97,9 +98,7 @@ export class SupabaseFinanceVehicleLookup implements IFinanceVehicleLookup {
       if (facts === null || recorded.has(facts.id)) {
         return [];
       }
-      return [
-        { ...facts, soldLeadId: row.sold_lead_id === null ? null : toLeadId(row.sold_lead_id) },
-      ];
+      return [facts];
     });
   }
 }
@@ -119,5 +118,6 @@ function toFacts(row: VehicleListRow): FinanceVehicleFacts | null {
     status: row.status ?? 'open',
     deleted: row.deleted_at !== null,
     saleModel: saleModelOf(row.acquisition_type),
+    soldLeadId: row.sold_lead_id === null ? null : toLeadId(row.sold_lead_id),
   };
 }

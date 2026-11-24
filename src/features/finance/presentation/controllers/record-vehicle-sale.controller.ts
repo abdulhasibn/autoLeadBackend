@@ -25,6 +25,7 @@ export class RecordVehicleSaleController {
             soldOn: body.soldOn,
             leadId: body.leadId,
             keepOverpayment: body.keepOverpayment,
+            buyerPayments: body.buyerPayments,
             buyerPayment:
               body.buyerPayment === null
                 ? null

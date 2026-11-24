@@ -1,3 +1,6 @@
+import type { CurrentBuyers } from '../domain/vehicle-money';
+import { CarBuyers } from '../application/services/car-buyers';
+import { RefundGuard } from '../application/services/refund-guard';
 import { SaleIncomeGuard } from '../application/services/sale-income-guard';
 import { SellerPaymentGuard } from '../application/services/seller-payment-guard';
 import { CreateFinanceEntryUseCase } from '../application/use-cases/create-finance-entry.use-case';
@@ -282,14 +285,59 @@ export const LEAD_DELETED = toLeadId('eeeeeeee-0000-4000-8000-000000000002');
 
 export class FakeFinanceLeadLookup implements IFinanceLeadLookup {
   readonly leads = new Map<string, FinanceLeadFacts>([
-    [LEAD_ANIL, { id: LEAD_ANIL, name: 'Anil Kumar', phone: '+919876500001', deleted: false }],
-    [LEAD_DELETED, { id: LEAD_DELETED, name: 'Old Lead', phone: '+919876500002', deleted: true }],
+    [
+      LEAD_ANIL,
+      {
+        id: LEAD_ANIL,
+        name: 'Anil Kumar',
+        phone: '+919876500001',
+        deleted: false,
+        status: 'new',
+        vehicleId: null,
+      },
+    ],
+    [
+      LEAD_DELETED,
+      {
+        id: LEAD_DELETED,
+        name: 'Old Lead',
+        phone: '+919876500002',
+        deleted: true,
+        status: 'new',
+        vehicleId: null,
+      },
+    ],
   ]);
   /** Booking-confirmed leads per car; tests fill it in. */
   readonly booked = new Map<string, LeadId[]>();
 
   async listBookedForVehicle(vehicleId: VehicleId): Promise<readonly FinanceLeadFacts[]> {
     return this.findMany(this.booked.get(vehicleId) ?? []);
+  }
+
+  async listBookedForVehicles(
+    vehicleIds: readonly VehicleId[],
+  ): Promise<ReadonlyMap<string, readonly FinanceLeadFacts[]>> {
+    return new Map(
+      await Promise.all(
+        vehicleIds.map(async (id) => [id as string, await this.listBookedForVehicle(id)] as const),
+      ),
+    );
+  }
+
+  /** Adds a lead on `vehicleId`; `booked` also confirms its booking on that car. */
+  addLead(
+    id: LeadId,
+    name: string,
+    vehicleId: VehicleId | null,
+    booked = false,
+    status = booked ? 'booking_confirmed' : 'new',
+  ): LeadId {
+    this.leads.set(id, { id, name, phone: null, deleted: false, status, vehicleId });
+    if (booked && vehicleId !== null) {
+      this.booked.set(vehicleId, [...(this.booked.get(vehicleId) ?? []), id]);
+    }
+    return id;
   }
 
   async findMany(ids: readonly LeadId[]): Promise<readonly FinanceLeadFacts[]> {
@@ -307,7 +355,7 @@ function car(
   status: string,
   deleted: boolean,
 ): FinanceVehicleFacts {
-  return { id, showroomId, label, status, deleted, saleModel: 'purchase' };
+  return { id, showroomId, label, status, deleted, saleModel: 'purchase', soldLeadId: null };
 }
 
 export class FakeFinanceVehicleLookup implements IFinanceVehicleLookup {
@@ -339,8 +387,7 @@ export class FakeFinanceVehicleLookup implements IFinanceVehicleLookup {
   async listSoldWithoutSale(): Promise<readonly SoldVehicleFacts[]> {
     return [...this.cars.values()]
       .filter((car) => car.status === 'sold' && !car.deleted)
-      .filter((car) => (this.deals.rows.get(car.id)?.soldOn ?? null) === null)
-      .map((car) => ({ ...car, soldLeadId: null }));
+      .filter((car) => (this.deals.rows.get(car.id)?.soldOn ?? null) === null);
   }
 }
 
@@ -362,7 +409,10 @@ export class FakeFinanceLeadConversion implements IFinanceLeadConversion {
       );
     }
     const car = this.vehicles.cars.get(vehicleId);
-    if (car !== undefined) car.status = 'sold';
+    if (car !== undefined) {
+      car.status = 'sold';
+      car.soldLeadId = leadId;
+    }
     this.leads.booked.set(
       vehicleId,
       booked.filter((id) => id !== leadId),
@@ -554,6 +604,17 @@ export function onCommission(commissionBasisPoints: number | null): {
   };
 }
 
+/** A sold car with no recorded sold lead: unassigned buyer money counts as the buyer's (as before BE-77). */
+export const SOLD_NO_LEAD: CurrentBuyers = { carSold: true, soldLeadId: null, bookedLeadIds: [] };
+
+export function carBuyers(k: FinanceTestKit): CarBuyers {
+  return new CarBuyers(k.leads);
+}
+
+export function refundGuard(k: FinanceTestKit): RefundGuard {
+  return new RefundGuard(k.entries, k.entrySealer, carBuyers(k));
+}
+
 /** The seller-payment guard over the kit's in-memory stores. */
 export function sellerPaymentGuard(k: FinanceTestKit): SellerPaymentGuard {
   return new SellerPaymentGuard(k.deals, k.dealSealer, k.entries, k.entrySealer);
@@ -574,6 +635,8 @@ export function makeCreateEntry(k: FinanceTestKit): CreateFinanceEntryUseCase {
     sellerPaymentGuard(k),
     k.deals,
     k.dealSealer,
+    refundGuard(k),
+    k.leads,
   );
 }
 
@@ -591,6 +654,8 @@ export function makeUpdateEntry(k: FinanceTestKit): UpdateFinanceEntryUseCase {
     sellerPaymentGuard(k),
     k.deals,
     k.dealSealer,
+    refundGuard(k),
+    k.leads,
   );
 }
 

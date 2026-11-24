@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { DatabaseUnavailableError } from '../../../domain/errors/database-unavailable.error';
 import { toLeadId, type LeadId } from '../../../domain/shared/lead-id';
-import type { VehicleId } from '../../../domain/shared/vehicle-id';
+import { toVehicleId, type VehicleId } from '../../../domain/shared/vehicle-id';
 import type { Database } from '../../../infrastructure/supabase/database.types';
 import type { FinanceLeadFacts, IFinanceLeadLookup } from '../domain/finance-lead-lookup.port';
 import { inBatches } from './in-batches';
@@ -10,7 +10,7 @@ import { inBatches } from './in-batches';
 // A lead has either a walk-in contact or a registered buyer (leads.user_id).
 // The users hint is needed: leads also reference users as assignee and creator.
 const COLUMNS =
-  'id, deleted_at, contacts ( full_name, phone ), buyer:users!user_id ( full_name, phone )';
+  'id, deleted_at, status, vehicle_id, contacts ( full_name, phone ), buyer:users!user_id ( full_name, phone )';
 
 interface Person {
   readonly full_name: string | null;
@@ -20,6 +20,8 @@ interface Person {
 interface LeadRow {
   readonly id: string;
   readonly deleted_at: string | null;
+  readonly status: string;
+  readonly vehicle_id: string | null;
   readonly contacts: Person | Person[] | null;
   readonly buyer: Person | Person[] | null;
 }
@@ -55,6 +57,31 @@ export class SupabaseFinanceLeadLookup implements IFinanceLeadLookup {
     }
     return ((data ?? []) as unknown as LeadRow[]).map(toFacts);
   }
+
+  async listBookedForVehicles(
+    vehicleIds: readonly VehicleId[],
+  ): Promise<ReadonlyMap<string, readonly FinanceLeadFacts[]>> {
+    const byCar = new Map<string, FinanceLeadFacts[]>(
+      [...new Set(vehicleIds)].map((id) => [id as string, []]),
+    );
+    for (const batch of inBatches([...byCar.keys()])) {
+      const { data, error } = await this.db
+        .from('leads')
+        .select(COLUMNS)
+        .in('vehicle_id', batch)
+        .eq('status', 'booking_confirmed')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: true });
+      if (error !== null) {
+        throw new DatabaseUnavailableError(`Failed to look up booked leads: ${error.message}`);
+      }
+      for (const row of (data ?? []) as unknown as LeadRow[]) {
+        const facts = toFacts(row);
+        if (facts.vehicleId !== null) byCar.get(facts.vehicleId)?.push(facts);
+      }
+    }
+    return byCar;
+  }
 }
 
 function toFacts(row: LeadRow): FinanceLeadFacts {
@@ -64,6 +91,8 @@ function toFacts(row: LeadRow): FinanceLeadFacts {
     name: person?.full_name ?? null,
     phone: person?.phone ?? null,
     deleted: row.deleted_at !== null,
+    status: row.status,
+    vehicleId: row.vehicle_id === null ? null : toVehicleId(row.vehicle_id),
   };
 }
 

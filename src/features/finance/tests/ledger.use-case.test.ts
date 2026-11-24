@@ -95,6 +95,7 @@ describe('finance ledger', () => {
       k.vehicles,
       k.entrySealer,
       k.tagSealer,
+      k.leads,
     );
     listEntries = new ListFinanceEntriesUseCase(
       k.policy,
@@ -104,6 +105,7 @@ describe('finance ledger', () => {
       k.vehicles,
       k.entrySealer,
       k.tagSealer,
+      k.leads,
     );
     listTags = new ListFinanceTagsUseCase(k.policy, k.sessionService, k.tags, k.tagSealer);
     createTag = new CreateFinanceTagUseCase(
@@ -392,7 +394,7 @@ describe('finance ledger', () => {
         const stored = {
           ...row,
           payload: cipher.seal(
-            JSON.stringify({ ...payload, purpose: 'refund' }),
+            JSON.stringify({ ...payload, purpose: 'warranty' }),
             `finance_entries:${created.id}`,
           ),
         };

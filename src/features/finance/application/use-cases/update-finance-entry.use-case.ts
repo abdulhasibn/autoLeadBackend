@@ -24,6 +24,10 @@ import type { UpdateFinanceEntryCommand } from '../dtos/update-finance-entry-com
 import type { FinancePolicy } from '../policies/finance.policy';
 import type { EntrySealer } from '../services/entry.sealer';
 import type { FinanceSessionService } from '../services/finance-session.service';
+import { toLeadId } from '../../../../domain/shared/lead-id';
+import type { IFinanceLeadLookup } from '../../domain/finance-lead-lookup.port';
+import { leadsOfEntries } from '../services/entry-leads';
+import type { RefundGuard } from '../services/refund-guard';
 import type { SaleIncomeGuard } from '../services/sale-income-guard';
 import { dealTermsFor } from '../services/deal-terms-input';
 import type { SellerPaymentGuard } from '../services/seller-payment-guard';
@@ -56,6 +60,8 @@ export class UpdateFinanceEntryUseCase {
     private readonly sellerPayments: SellerPaymentGuard,
     private readonly deals: Pick<IVehicleDealRepository, 'save'>,
     private readonly dealSealer: VehicleDealSealer,
+    private readonly refunds: RefundGuard,
+    private readonly leads: Pick<IFinanceLeadLookup, 'findMany'>,
   ) {}
 
   async execute(
@@ -73,6 +79,11 @@ export class UpdateFinanceEntryUseCase {
     this.entrySealer.assertWritable(entry);
     const paidSellerOf = isSellerPayment(entry) ? entry.vehicleId : null;
     const now = this.clock.now();
+    const before = {
+      vehicleId: entry.vehicleId,
+      purpose: entry.purpose,
+      amountPaise: entry.amount.paise,
+    };
 
     if (command.amountPaise !== undefined) {
       entry.changeAmount(Money.ofPaise(command.amountPaise), now);
@@ -87,6 +98,7 @@ export class UpdateFinanceEntryUseCase {
       entry.changeNote(command.note, now);
     }
 
+    let vehicle: FinanceVehicleFacts | null = null;
     if (command.vehicleId === null) {
       entry.unlink(
         command.showroomId === undefined ? entry.showroomId : toShowroomId(command.showroomId),
@@ -96,27 +108,40 @@ export class UpdateFinanceEntryUseCase {
         entry.changePurpose(command.purpose, now);
       }
     } else if (command.vehicleId !== undefined) {
-      const vehicle = await this.vehicles.findLinkable(toVehicleId(command.vehicleId));
+      vehicle = await this.vehicles.findLinkable(toVehicleId(command.vehicleId));
       if (vehicle === null) {
         throw new NotFoundError(`Vehicle not found for id ${command.vehicleId}`);
       }
-      entry.linkToVehicle(vehicle.id, vehicle.showroomId, command.purpose ?? null, now);
+      const carriedLead =
+        command.leadId !== undefined
+          ? command.leadId === null
+            ? null
+            : toLeadId(command.leadId)
+          : command.keepLead === true
+            ? entry.leadId
+            : undefined;
+      entry.linkToVehicle(
+        vehicle.id,
+        vehicle.showroomId,
+        command.purpose ?? null,
+        now,
+        carriedLead,
+      );
       if (command.showroomId !== undefined) {
         entry.moveToShowroom(toShowroomId(command.showroomId), now);
       }
-      await this.saleIncome.assertAllowed(entry, vehicle);
     } else {
       if (command.purpose !== undefined) {
         entry.changePurpose(command.purpose, now);
-        if (entry.vehicleId !== null) {
-          const [vehicle] = await this.vehicles.findMany([entry.vehicleId]);
-          await this.saleIncome.assertAllowed(entry, vehicle ?? null);
-        }
       }
       if (command.showroomId !== undefined) {
         entry.moveToShowroom(toShowroomId(command.showroomId), now);
       }
+      if (entry.vehicleId !== null) {
+        [vehicle = null] = await this.vehicles.findMany([entry.vehicleId]);
+      }
     }
+    await this.attributeLead(entry, vehicle, before, command, cipher, now);
 
     const nextTagIds = command.tagIds?.map(toFinanceTagId) ?? entry.tagIds;
     const tags = this.tagSealer.openAll(await this.tags.findByIds(nextTagIds), cipher);
@@ -142,7 +167,68 @@ export class UpdateFinanceEntryUseCase {
 
     const vehicles =
       entry.vehicleId === null ? [] : await this.vehicles.findMany([entry.vehicleId]);
-    return toFinanceEntryDto(entry, tagsById, new Map(vehicles.map((v) => [v.id as string, v])));
+    return toFinanceEntryDto(
+      entry,
+      tagsById,
+      new Map(vehicles.map((v) => [v.id as string, v])),
+      await leadsOfEntries(this.leads, [entry]),
+    );
+  }
+
+  /**
+   * Puts a `sale` / `refund` entry on its lead (BE-77 §4.2-4.3). A new buyer
+   * payment or refund (car, purpose or lead changed) gets the create rules; an
+   * edit that keeps car, purpose and lead is not re-checked, except that a
+   * refund must still fit what the lead paid. A change of lead alone accepts
+   * any existing lead.
+   */
+  private async attributeLead(
+    entry: FinanceEntry,
+    vehicle: FinanceVehicleFacts | null,
+    before: {
+      readonly vehicleId: string | null;
+      readonly purpose: string;
+      readonly amountPaise: number;
+    },
+    command: UpdateFinanceEntryCommand,
+    cipher: FinanceCipher,
+    now: Date,
+  ): Promise<void> {
+    if (vehicle === null || (entry.purpose !== 'sale' && entry.purpose !== 'refund')) {
+      return;
+    }
+    const requested =
+      command.leadId === undefined
+        ? entry.leadId
+        : command.leadId === null
+          ? null
+          : toLeadId(command.leadId);
+    const moved = before.vehicleId !== entry.vehicleId;
+    const created = moved || before.purpose !== entry.purpose;
+    if (entry.purpose === 'sale') {
+      if (created) {
+        await this.saleIncome.attribute(
+          entry,
+          vehicle,
+          {
+            leadId: requested,
+            accepts: moved && before.vehicleId !== null ? 'on-car' : 'current-buyers',
+          },
+          now,
+        );
+      } else if (command.leadId !== undefined) {
+        if (requested !== null) await this.saleIncome.assertLeadExists(requested);
+        entry.assignLead(requested, now);
+      }
+      return;
+    }
+    const raised = entry.amount.paise > before.amountPaise;
+    if (created || command.leadId !== undefined || raised) {
+      if (!created && command.leadId !== undefined && requested !== null) {
+        await this.saleIncome.assertLeadExists(requested);
+      }
+      await this.refunds.attribute(entry, vehicle, requested, cipher, now);
+    }
   }
 
   /** Returns the deal to save with the entry when `deal` supplies missing terms. */
