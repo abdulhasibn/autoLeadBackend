@@ -564,9 +564,27 @@ describe('finance reports', () => {
       expect(s.moneyInStock).toBe(208000 + 50000);
     });
 
-    it('AC5: a sold car is not listed', async () => {
+    it('AC5: a sold car is not listed, even a commission car with only an advance', async () => {
+      const baleno = kit.vehicles.cars.get(BALENO);
+      if (baleno !== undefined) baleno.saleModel = 'commission';
+      await makeSetDeal(kit).execute(
+        {
+          sessionToken: token,
+          vehicleId: BALENO,
+          purchaseRatePaise: null,
+          commissionBasisPoints: 500,
+          purchasedOn: null,
+          ownerExpectedPricePaise: null,
+          minimumSellingPricePaise: null,
+          note: null,
+        },
+        ADMIN,
+      );
+      await entryFor(BALENO, 50_000, 'purchase');
+      markCarSold(kit, BALENO);
       const report = await stock.execute({ sessionToken: token, showroomId: null }, ADMIN);
       expect(report.items.map((i) => i.vehicle.id)).not.toContain(SWIFT);
+      expect(report.items.map((i) => i.vehicle.id)).not.toContain(BALENO);
     });
   });
 
