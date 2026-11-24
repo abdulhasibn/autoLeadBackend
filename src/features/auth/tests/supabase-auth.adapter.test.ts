@@ -41,10 +41,25 @@ interface GetUserResult {
   } | null;
 }
 
-function adapterWithGetUser(result: GetUserResult): SupabaseAuthAdapter {
-  const client = { auth: { getUser: async () => result } };
-  return new SupabaseAuthAdapter(client as unknown as SupabaseClient<Database>);
+function adapterWithGetUser(...results: GetUserResult[]): {
+  verify: (token: string) => Promise<unknown>;
+  calls: () => number;
+} {
+  let calls = 0;
+  const client = {
+    auth: {
+      getUser: async () => {
+        const result = results[Math.min(calls, results.length - 1)];
+        calls += 1;
+        return result;
+      },
+    },
+  };
+  const adapter = new SupabaseAuthAdapter(client as unknown as SupabaseClient<Database>, 0);
+  return { verify: (token) => adapter.verify(token), calls: () => calls };
 }
+
+const NETWORK_ERROR = { data: { user: null }, error: { message: 'fetch failed' } };
 
 describe('SupabaseAuthAdapter.verify', () => {
   it('returns the user id for a valid token', async () => {
@@ -87,5 +102,30 @@ describe('SupabaseAuthAdapter.verify', () => {
   ])('throws AuthRateLimitedError (429) for %s', async (_label, error) => {
     const verifier = adapterWithGetUser({ data: { user: null }, error });
     await expect(verifier.verify('t')).rejects.toBeInstanceOf(AuthRateLimitedError);
+  });
+
+  it('retries once after a network failure and returns the user id', async () => {
+    const verifier = adapterWithGetUser(NETWORK_ERROR, {
+      data: { user: { id: 'user-1' } },
+      error: null,
+    });
+    await expect(verifier.verify('t')).resolves.toBe(toUserId('user-1'));
+    expect(verifier.calls()).toBe(2);
+  });
+
+  it('answers 503 when the retry also fails at the network level', async () => {
+    const verifier = adapterWithGetUser(NETWORK_ERROR, NETWORK_ERROR);
+    await expect(verifier.verify('t')).rejects.toBeInstanceOf(DatabaseUnavailableError);
+    expect(verifier.calls()).toBe(2);
+  });
+
+  it.each([
+    ['a provider 5xx', { message: 'upstream', status: 502 }],
+    ['a 429', { message: 'slow down', status: 429 }],
+    ['an invalid JWT', { message: 'bad', status: 401, code: 'bad_jwt' }],
+  ])('does not retry %s', async (_label, error) => {
+    const verifier = adapterWithGetUser({ data: { user: null }, error });
+    await verifier.verify('t').catch(() => undefined);
+    expect(verifier.calls()).toBe(1);
   });
 });

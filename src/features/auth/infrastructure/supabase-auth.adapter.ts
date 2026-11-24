@@ -6,7 +6,12 @@ import type { Database } from '../../../infrastructure/supabase/database.types';
 import type { AuthSession, SignOutScope } from '../application/ports/auth.port';
 import type { IAuthProvider } from '../application/ports/auth.port';
 import type { ITokenVerifier } from '../application/ports/token-verifier.port';
-import { isProviderFailure, isRateLimited, toUnexpectedAuthError } from './supabase-auth-errors';
+import {
+  isNetworkFailure,
+  isProviderFailure,
+  isRateLimited,
+  toUnexpectedAuthError,
+} from './supabase-auth-errors';
 
 /**
  * Supabase Auth adapter — implements IAuthProvider (email + password) and
@@ -19,7 +24,14 @@ import { isProviderFailure, isRateLimited, toUnexpectedAuthError } from './supab
  * user's JWT explicitly are allowed here (see supabase-client.ts).
  */
 export class SupabaseAuthAdapter implements IAuthProvider, ITokenVerifier {
-  constructor(private readonly anonClient: SupabaseClient<Database>) {}
+  /**
+   * @param verifyRetryDelayMs pause before the one retry of a token check that
+   *   failed at the network level (no HTTP status).
+   */
+  constructor(
+    private readonly anonClient: SupabaseClient<Database>,
+    private readonly verifyRetryDelayMs = 200,
+  ) {}
 
   // ── IAuthProvider ─────────────────────────────────────────────────────────
 
@@ -69,7 +81,14 @@ export class SupabaseAuthAdapter implements IAuthProvider, ITokenVerifier {
   // ── ITokenVerifier ────────────────────────────────────────────────────────
 
   async verify(bearerToken: string): Promise<UserId | null> {
-    const { data, error } = await this.anonClient.auth.getUser(bearerToken);
+    let { data, error } = await this.anonClient.auth.getUser(bearerToken);
+
+    // A dropped connection or DNS blip never reached Auth: try once more before
+    // answering 503. HTTP errors (5xx, 429, 4xx) are answers and are not retried.
+    if (error !== null && isNetworkFailure(error)) {
+      await new Promise((resolve) => setTimeout(resolve, this.verifyRetryDelayMs));
+      ({ data, error } = await this.anonClient.auth.getUser(bearerToken));
+    }
 
     if (error !== null) {
       // An outage or throttle says nothing about the token: surface it as
