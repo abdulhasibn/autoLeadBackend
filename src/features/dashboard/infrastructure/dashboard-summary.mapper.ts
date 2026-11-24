@@ -58,6 +58,8 @@ export interface DashboardSummaryJson {
   readonly inventory: { readonly open: number; readonly linked: number };
   readonly pipeline: {
     readonly new: number;
+    /** Missing until the in_progress migration is applied. */
+    readonly in_progress?: number;
     readonly not_now: number;
     readonly booking_confirmed: number;
   };
@@ -74,7 +76,7 @@ export function toDashboardSummaryReadModel(json: DashboardSummaryJson): Dashboa
     converted: json.converted,
     lost: json.lost,
     inventory: json.inventory,
-    pipeline: json.pipeline,
+    pipeline: { ...json.pipeline, in_progress: json.pipeline.in_progress ?? 0 },
     overdueFollowUps: mapList(json.overdue_follow_ups, toFollowUpItem),
     todayFollowUps: mapList(json.today_follow_ups, toFollowUpItem),
     leadsWithoutFollowUp: mapList(json.leads_without_follow_up, toLeadItem),

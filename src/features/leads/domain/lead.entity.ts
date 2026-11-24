@@ -316,6 +316,18 @@ export class Lead {
   }
 
   /** Another lead bought this lead's vehicle: release the vehicle and park the lead. */
+  /**
+   * The customer was reached on a follow-up: a `new` lead moves to
+   * `in_progress`. Any other status is left alone. Returns whether it moved.
+   */
+  markCustomerReached(at: Date): boolean {
+    if (this.statusValue.value !== 'new') {
+      return false;
+    }
+    this.transitionTo(LeadStatus.inProgress(), at);
+    return true;
+  }
+
   markVehicleUnavailable(at: Date): void {
     this.transitionTo(LeadStatus.vehicleUnavailable(), at);
     this.vehicleIdValue = null;

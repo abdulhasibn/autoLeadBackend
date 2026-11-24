@@ -77,6 +77,7 @@ export interface DashboardSummaryReadModel {
   readonly inventory: { readonly open: number; readonly linked: number };
   readonly pipeline: {
     readonly new: number;
+    readonly in_progress: number;
     readonly not_now: number;
     readonly booking_confirmed: number;
   };

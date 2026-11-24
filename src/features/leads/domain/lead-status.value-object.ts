@@ -1,5 +1,6 @@
 export const LEAD_STATUSES = [
   'new',
+  'in_progress',
   'not_now',
   'booking_confirmed',
   'converted',
@@ -12,6 +13,7 @@ export type LeadStatusValue = (typeof LEAD_STATUSES)[number];
 /** Leads in these statuses keep their vehicle `linked`. */
 export const ACTIVE_LEAD_STATUSES: readonly LeadStatusValue[] = [
   'new',
+  'in_progress',
   'not_now',
   'booking_confirmed',
 ];
@@ -19,6 +21,7 @@ export const ACTIVE_LEAD_STATUSES: readonly LeadStatusValue[] = [
 /** Open leads still shopping for a vehicle: candidates for match suggestions. */
 export const MATCHABLE_LEAD_STATUSES: readonly LeadStatusValue[] = [
   'new',
+  'in_progress',
   'not_now',
   'vehicle_unavailable',
 ];
@@ -30,13 +33,16 @@ const REQUIRES_VEHICLE: readonly LeadStatusValue[] = ['booking_confirmed', 'conv
 // Set only when another lead buys this lead's vehicle.
 const SYSTEM_ONLY: readonly LeadStatusValue[] = ['vehicle_unavailable'];
 
+// Once a lead is `in_progress` it never goes back to `new`: `new` means
+// nobody has reached the customer yet.
 const ALLOWED: Readonly<Record<LeadStatusValue, readonly LeadStatusValue[]>> = {
-  new: ['not_now', 'booking_confirmed', 'lost', 'vehicle_unavailable'],
-  not_now: ['new', 'booking_confirmed', 'lost', 'vehicle_unavailable'],
+  new: ['in_progress', 'not_now', 'booking_confirmed', 'lost', 'vehicle_unavailable'],
+  in_progress: ['not_now', 'booking_confirmed', 'lost', 'vehicle_unavailable'],
+  not_now: ['new', 'in_progress', 'booking_confirmed', 'lost', 'vehicle_unavailable'],
   booking_confirmed: ['converted', 'lost', 'vehicle_unavailable'],
   converted: [],
   lost: [],
-  vehicle_unavailable: ['new', 'not_now', 'booking_confirmed', 'lost'],
+  vehicle_unavailable: ['new', 'in_progress', 'not_now', 'booking_confirmed', 'lost'],
 };
 
 export class LeadStatus {
@@ -52,6 +58,10 @@ export class LeadStatus {
 
   static initial(): LeadStatus {
     return new LeadStatus('new');
+  }
+
+  static inProgress(): LeadStatus {
+    return new LeadStatus('in_progress');
   }
 
   static vehicleUnavailable(): LeadStatus {

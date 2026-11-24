@@ -566,7 +566,7 @@ A min above its max is `422 VALIDATION_ERROR`. Price filters arrive with acquisi
 }
 ```
 
-`linkedLeadCount` is the number of active leads (`new`, `not_now`, `booking_confirmed`) whose `vehicleId` is this vehicle: `0` when none, including `open` / `dropped` / `sold` vehicles. `POST` / `PATCH /vehicles` return `0`.
+`linkedLeadCount` is the number of active leads (`new`, `in_progress`, `not_now`, `booking_confirmed`) whose `vehicleId` is this vehicle: `0` when none, including `open` / `dropped` / `sold` vehicles. `POST` / `PATCH /vehicles` return `0`.
 
 `frontImageUrl` is a short-lived signed URL (about 10 minutes, see `frontImageUrlExpiresAt`) for the cover photo: the vehicle's `front` photo with the lowest `sortOrder` (earliest upload breaks ties). Both fields are `null` when the vehicle has no front photo. Use it for list thumbnails instead of calling `GET /vehicles/:id/media` per car; refetch the list once it expires. `PATCH /vehicles/:id` returns them as `null`.
 
@@ -575,7 +575,7 @@ A min above its max is `422 VALIDATION_ERROR`. Price filters arrive with acquisi
 | Status | Meaning |
 |--------|---------|
 | `open` | In stock with no active lead |
-| `linked` | At least one active lead (`new`, `not_now`, `booking_confirmed`) points at it. Many leads can share one vehicle |
+| `linked` | At least one active lead (`new`, `in_progress`, `not_now`, `booking_confirmed`) points at it. Many leads can share one vehicle |
 | `sold` | A lead converted. `soldLeadId` is that lead |
 | `dropped` | Taken out of stock by an admin |
 
@@ -713,7 +713,7 @@ Omitted lists come back as `[]` and omitted numbers as `null`; empty means "any"
 **Set preference:** `PUT /leads/:id/preference` with the catalog ids and the profile fields above replaces the **whole** preference: anything you omit is cleared, so send the full form every time. An empty body clears it. Same validation as create; closed leads (`converted`, `lost`) answer `422 LEAD_CLOSED`. The budget is edited with `PATCH /leads/:id`.  
 **Vehicle lead matches:** `GET /leads/vehicle-matches/:vehicleId?minScore=60&limit=10` scores leads against one car. Use it on the car detail screen.
 - `linked`: every lead linked to the car (any status), best match first; leads with no preference have `match: null` and come last.
-- `suggested`: open leads (`new`, `not_now`, `vehicle_unavailable`) with no vehicle, in the car's showroom, scoring at least `minScore` (0–100, default 60) on at least two criteria. Best first, at most `limit` (1–50, default 10). Link one with `PATCH /leads/:id/vehicle`.
+- `suggested`: open leads (`new`, `in_progress`, `not_now`, `vehicle_unavailable`) with no vehicle, in the car's showroom, scoring at least `minScore` (0–100, default 60) on at least two criteria. Best first, at most `limit` (1–50, default 10). Link one with `PATCH /leads/:id/vehicle`.
 - A salesperson only gets leads assigned to them. Unknown or deleted car → `404`.
 - `truncated: true` means only the newest 1000 open leads were scored for suggestions.
 
@@ -844,19 +844,21 @@ Closing a follow-up that is already completed or cancelled answers `422 FOLLOW_U
 
 `linkedVehicle` summarises the vehicle in `vehicleId` for pipeline cards, so you do not need `GET /vehicles/:id` per lead. It is `null` when no vehicle is linked. `assignedToName` is the assignee's full name (`null` when unassigned).
 
-New leads start at `new`. Active leads (`new`, `not_now`, `booking_confirmed`) keep their vehicle `linked`. Allowed transitions (anything else → `422 INVALID_LEAD_STATUS_TRANSITION`):
+New leads start at `new`. Active leads (`new`, `in_progress`, `not_now`, `booking_confirmed`) keep their vehicle `linked`. Allowed transitions (anything else → `422 INVALID_LEAD_STATUS_TRANSITION`):
 
 ```text
-new                 → not_now | booking_confirmed | lost
-not_now             → new | booking_confirmed | lost
+new                 → in_progress | not_now | booking_confirmed | lost
+in_progress         → not_now | booking_confirmed | lost
+not_now             → new | in_progress | booking_confirmed | lost
 booking_confirmed   → converted | lost
-vehicle_unavailable → new | not_now | booking_confirmed | lost   (link another vehicle first to book)
+vehicle_unavailable → new | in_progress | not_now | booking_confirmed | lost   (link another vehicle first to book)
 converted / lost    → (terminal)
 ```
 
 - `booking_confirmed` and `converted` need a linked vehicle (`422 LEAD_REQUIRES_VEHICLE`).
 - `vehicle_unavailable` is set only by the system, when another lead buys this lead's vehicle (`422 LEAD_STATUS_SYSTEM_MANAGED` if sent).
 - Losing a lead re-opens its vehicle when no other active lead remains.
+- Completing a follow-up with outcome `reached` moves a `new` lead to `in_progress` (status history note "Customer reached on a follow-up"). Leads in any other status are left alone.
 
 **Follow-up create response**
 
@@ -946,7 +948,7 @@ One call for the home screen: a business snapshot plus today's work list.
     "agedStock":            { "total": 5, "items": [ /* VehicleCard */ ] }
   },
   "today": { "total": 5, "items": [ /* FollowUpCard */ ] },
-  "pipeline":  { "new": 12, "not_now": 9, "booking_confirmed": 4 },
+  "pipeline":  { "new": 12, "in_progress": 3, "not_now": 9, "booking_confirmed": 4 },
   "inventory": { "open": 19, "linked": 12 }
 }
 ```

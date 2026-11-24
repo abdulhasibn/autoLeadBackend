@@ -12,13 +12,29 @@ describe('LeadStatus', () => {
     expect(s('booking_confirmed').canTransitionTo(s('converted'))).toBe(true);
   });
 
+  it('moves into in_progress but never back to new', () => {
+    expect(s('new').canTransitionTo(s('in_progress'))).toBe(true);
+    expect(s('not_now').canTransitionTo(s('in_progress'))).toBe(true);
+    expect(s('vehicle_unavailable').canTransitionTo(s('in_progress'))).toBe(true);
+    expect(s('in_progress').canTransitionTo(s('not_now'))).toBe(true);
+    expect(s('in_progress').canTransitionTo(s('booking_confirmed'))).toBe(true);
+    expect(s('in_progress').canTransitionTo(s('new'))).toBe(false);
+    expect(s('in_progress').canTransitionTo(s('converted'))).toBe(false);
+  });
+
   it('only converts from booking_confirmed', () => {
     expect(s('new').canTransitionTo(s('converted'))).toBe(false);
     expect(s('not_now').canTransitionTo(s('converted'))).toBe(false);
   });
 
   it('can lose any open lead', () => {
-    for (const from of ['new', 'not_now', 'booking_confirmed', 'vehicle_unavailable']) {
+    for (const from of [
+      'new',
+      'in_progress',
+      'not_now',
+      'booking_confirmed',
+      'vehicle_unavailable',
+    ]) {
       expect(s(from).canTransitionTo(s('lost'))).toBe(true);
     }
   });
@@ -35,8 +51,10 @@ describe('LeadStatus', () => {
     expect(s('vehicle_unavailable').canTransitionTo(s('booking_confirmed'))).toBe(true);
   });
 
-  it('counts new, not_now and booking_confirmed as active', () => {
-    expect(['new', 'not_now', 'booking_confirmed'].every((v) => s(v).isActive())).toBe(true);
+  it('counts new, in_progress, not_now and booking_confirmed as active', () => {
+    expect(
+      ['new', 'in_progress', 'not_now', 'booking_confirmed'].every((v) => s(v).isActive()),
+    ).toBe(true);
     expect(['converted', 'lost', 'vehicle_unavailable'].some((v) => s(v).isActive())).toBe(false);
   });
 

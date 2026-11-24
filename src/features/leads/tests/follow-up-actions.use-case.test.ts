@@ -16,6 +16,7 @@ import { toFollowUpId } from '../domain/follow-up-id';
 import { FollowUpTaskType } from '../domain/follow-up-task-type.value-object';
 import { Lead } from '../domain/lead.entity';
 import { LeadSource } from '../domain/lead-source.value-object';
+import { LeadStatus } from '../domain/lead-status.value-object';
 import { FakeClock, FakeIdGenerator, FakeLeadRepository } from './fakes';
 
 const ADMIN: AuthenticatedContext = {
@@ -91,6 +92,42 @@ describe('follow-up actions', () => {
     expect(result.followUp.completedAt).toBe(NOW.toISOString());
     expect(result.next).toBeNull();
     expect(repo.closedFollowUps).toHaveLength(1);
+  });
+
+  it('moves a new lead to in_progress when the customer is reached', async () => {
+    await complete.execute(
+      { leadId: LEAD_ID, followUpId, outcome: 'reached', notes: null, next: null },
+      ADMIN,
+    );
+
+    const lead = await repo.findById(toLeadId(LEAD_ID));
+    expect(lead?.status.value).toBe('in_progress');
+    expect(repo.writes).toEqual([
+      { actorId: ADMIN.userId, statusNotes: 'Customer reached on a follow-up' },
+    ]);
+  });
+
+  it('leaves the status alone for other outcomes', async () => {
+    await complete.execute(
+      { leadId: LEAD_ID, followUpId, outcome: 'no_answer', notes: null, next: null },
+      ADMIN,
+    );
+
+    const lead = await repo.findById(toLeadId(LEAD_ID));
+    expect(lead?.status.value).toBe('new');
+    expect(repo.writes).toHaveLength(0);
+  });
+
+  it('does not move a lead that is past new', async () => {
+    const lead = await repo.findById(toLeadId(LEAD_ID));
+    lead?.changeStatus(LeadStatus.create('not_now'), NOW);
+    await complete.execute(
+      { leadId: LEAD_ID, followUpId, outcome: 'reached', notes: null, next: null },
+      ADMIN,
+    );
+
+    expect(lead?.status.value).toBe('not_now');
+    expect(repo.writes).toHaveLength(0);
   });
 
   it('schedules the next follow-up in the same write', async () => {

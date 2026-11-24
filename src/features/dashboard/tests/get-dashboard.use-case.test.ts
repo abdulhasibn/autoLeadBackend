@@ -41,7 +41,7 @@ function summary(overrides: Partial<DashboardSummaryReadModel> = {}): DashboardS
     converted: { current: 2, previous: 1 },
     lost: { current: 1, previous: 2 },
     inventory: { open: 19, linked: 12 },
-    pipeline: { new: 12, not_now: 9, booking_confirmed: 4 },
+    pipeline: { new: 12, in_progress: 3, not_now: 9, booking_confirmed: 4 },
     overdueFollowUps: {
       total: 6,
       items: [
@@ -136,7 +136,7 @@ describe('GetDashboardUseCase', () => {
         inStock: { value: 31 },
       },
       today: { total: 0, items: [] },
-      pipeline: { new: 12, not_now: 9, booking_confirmed: 4 },
+      pipeline: { new: 12, in_progress: 3, not_now: 9, booking_confirmed: 4 },
       inventory: { open: 19, linked: 12 },
     });
     expect(dashboard.attention.overdueFollowUps.items[0]).toEqual({
@@ -200,7 +200,7 @@ describe('GetDashboardUseCase', () => {
     expect(dashboard).toMatchObject({
       scope: 'mine',
       kpis: { carsSold: { value: 7, previous: 5 }, inStock: null },
-      pipeline: { new: 12, not_now: 9, booking_confirmed: 4 },
+      pipeline: { new: 12, in_progress: 3, not_now: 9, booking_confirmed: 4 },
       inventory: null,
     });
     expect(dashboard.attention.agedStock).toBeNull();
