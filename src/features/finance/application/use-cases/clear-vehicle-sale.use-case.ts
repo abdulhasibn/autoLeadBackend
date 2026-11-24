@@ -16,9 +16,9 @@ import type { VehicleDealSealer } from '../services/vehicle-deal.sealer';
  * Removes a sale recorded by mistake. Idempotent.
  *
  * With `withBuyerPayments` the payments recorded against the sale go too: the
- * sold lead's `sale` entries and the car's unassigned ones (which count as
- * theirs on a sold car). Other leads' payments stay, owed back to them (BE-77
- * §4.7). Payments go first, the sale last, so a failed delete is finished by
+ * sold lead's `sale` and `refund` entries and the car's unassigned ones (which
+ * count as theirs on a sold car). Other leads' payments and refunds stay, owed
+ * back to them (BE-77 §4.7). Payments go first, the sale last, so a failed delete is finished by
  * repeating the request.
  */
 export class ClearVehicleSaleUseCase {
@@ -67,7 +67,7 @@ export class ClearVehicleSaleUseCase {
       for await (const page of this.entries.scan({ vehicleId })) {
         for (const row of page) {
           const entry = this.entrySealer.open(row, cipher);
-          if (entry.purpose !== 'sale') continue;
+          if (entry.purpose !== 'sale' && entry.purpose !== 'refund') continue;
           const theirs =
             (soldLeadId !== null && entry.leadId === soldLeadId) ||
             (entry.leadId === null && carSold);

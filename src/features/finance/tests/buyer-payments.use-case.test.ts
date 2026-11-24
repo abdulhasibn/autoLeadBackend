@@ -595,6 +595,39 @@ describe('buyer payments belong to the lead who paid them (BE-77)', () => {
       expect(m.refundsOwed).toMatchObject([{ lead: { id: A }, owed: 50_000 }]);
     });
 
+    it("deletes the sold lead's refunds too, and leaves other leads' refunds", async () => {
+      await aPaidThenLost();
+      bBooks();
+      await sell(B, 600_000, 100_000);
+      await refund({ leadId: B, amountPaise: rs(20_000) });
+      await refund({ leadId: A, amountPaise: rs(10_000) });
+
+      await clearSale.execute(
+        { sessionToken: token, vehicleId: SWIFT, withBuyerPayments: true },
+        ADMIN,
+      );
+
+      const m = await carMoney();
+      expect(m.buyers).toMatchObject([{ lead: { id: B }, paid: 0, refunded: 0, net: 0 }]);
+      expect(m.refundsOwed).toMatchObject([
+        { lead: { id: A }, paid: 50_000, refunded: 10_000, owed: 40_000 },
+      ]);
+    });
+
+    it('keeps refunds without withBuyerPayments', async () => {
+      bBooks();
+      await sell(B, 600_000, 100_000);
+      await refund({ leadId: B, amountPaise: rs(20_000) });
+
+      await clearSale.execute(
+        { sessionToken: token, vehicleId: SWIFT, withBuyerPayments: false },
+        ADMIN,
+      );
+
+      const m = await carMoney();
+      expect(m.buyers).toMatchObject([{ lead: { id: B }, paid: 100_000, refunded: 20_000 }]);
+    });
+
     it('keeps every payment, and the sold lead as buyer, without it', async () => {
       bBooks();
       await sell(B, 600_000, 100_000);

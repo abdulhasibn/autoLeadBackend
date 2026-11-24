@@ -4931,7 +4931,7 @@
                     }
                   ]
                 },
-                "description": "**Story:** The admin recorded a sale on the wrong car and removes it.\n\nDELETE /finance/vehicles/:vehicleId/sale — removes the recorded sale; the car shows up in Awaiting Sale Price again if it is sold.\n\n**Auth:** Bearer, Admin only.\n\n- Path `vehicleId` (uuid).\n- Always `204` (idempotent).\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.\n- Query `withBuyerPayments=true` (optional, BE-77): first deletes the sold lead's `sale` entries (plus the car's unassigned ones). Other leads' payments stay as refunds owed. Without it every payment stays and the sold lead stays the current buyer."
+                "description": "**Story:** The admin recorded a sale on the wrong car and removes it.\n\nDELETE /finance/vehicles/:vehicleId/sale — removes the recorded sale; the car shows up in Awaiting Sale Price again if it is sold.\n\n**Auth:** Bearer, Admin only.\n\n- Path `vehicleId` (uuid).\n- Always `204` (idempotent).\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.\n- Query `withBuyerPayments=true` (optional, BE-77): first deletes the sold lead's `sale` and `refund` entries (plus the car's unassigned ones). Other leads' payments and refunds stay. Without it every payment and refund stays and the sold lead stays the current buyer."
               },
               "response": [
                 {
