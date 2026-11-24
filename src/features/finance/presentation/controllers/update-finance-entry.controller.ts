@@ -5,6 +5,7 @@ import type { UpdateFinanceEntryUseCase } from '../../application/use-cases/upda
 import { readFinanceSessionToken } from '../finance-session-token';
 import {
   financeEntryIdParamSchema,
+  toDealTermsInput,
   updateFinanceEntryBodySchema,
 } from '../schemas/finance-entry.schemas';
 
@@ -29,6 +30,8 @@ export class UpdateFinanceEntryController {
             ...(b.party === undefined ? {} : { party: b.party }),
             ...(b.note === undefined ? {} : { note: b.note }),
             ...(b.showroomId === undefined ? {} : { showroomId: b.showroomId }),
+            ...(b.deal === undefined ? {} : { deal: toDealTermsInput(b.deal) }),
+            ...(b.keepOverpayment === undefined ? {} : { keepOverpayment: b.keepOverpayment }),
           },
           ctx,
         );

@@ -25,6 +25,11 @@ export class SetVehicleDealController {
             minimumSellingPricePaise: body.minimumSellingPrice,
             note: body.note,
             ...(body.listedPrice === undefined ? {} : { listedPricePaise: body.listedPrice }),
+            sellerPayment:
+              body.sellerPayment === null
+                ? null
+                : { amountPaise: body.sellerPayment.amount, paidOn: body.sellerPayment.paidOn },
+            keepOverpayment: body.keepOverpayment,
           },
           ctx,
         );

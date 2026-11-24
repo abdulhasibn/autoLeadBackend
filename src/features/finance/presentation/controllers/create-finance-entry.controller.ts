@@ -3,7 +3,7 @@ import type { RequestHandler } from 'express';
 import { requireAuth } from '../../../../presentation/http/middleware/require-auth';
 import type { CreateFinanceEntryUseCase } from '../../application/use-cases/create-finance-entry.use-case';
 import { readFinanceSessionToken } from '../finance-session-token';
-import { createFinanceEntryBodySchema } from '../schemas/finance-entry.schemas';
+import { createFinanceEntryBodySchema, toDealTermsInput } from '../schemas/finance-entry.schemas';
 
 export class CreateFinanceEntryController {
   constructor(private readonly createEntry: CreateFinanceEntryUseCase) {}
@@ -25,6 +25,8 @@ export class CreateFinanceEntryController {
             party: body.party,
             note: body.note,
             showroomId: body.showroomId,
+            deal: toDealTermsInput(body.deal),
+            keepOverpayment: body.keepOverpayment,
           },
           ctx,
         );

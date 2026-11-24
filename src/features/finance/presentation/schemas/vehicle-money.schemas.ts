@@ -17,7 +17,7 @@ export const vehicleQuoteParamSchema = z.object({
 });
 
 /** 0 < % ≤ 100, at most two decimals; sent on as basis points. */
-const commissionPercentSchema = z
+export const commissionPercentSchema = z
   .number({ error: 'commissionPercent must be a number' })
   .gt(0, 'commissionPercent must be greater than 0')
   .max(100, 'commissionPercent must be at most 100')
@@ -36,6 +36,13 @@ export const setVehicleDealBodySchema = z.object({
   note: optionalTextSchema.transform((v) => v ?? null),
   /** Omit to keep, null to clear. */
   listedPrice: amountSchema.nullable().optional(),
+  /** Paid to the seller with these terms, saved as a `purchase` expense. */
+  sellerPayment: z
+    .object({ amount: amountSchema, paidOn: calendarDateSchema })
+    .nullish()
+    .transform((v) => v ?? null),
+  /** Save even if the seller ends up paid above the rate. */
+  keepOverpayment: z.boolean().optional().default(false),
 });
 
 export const recordVehicleSaleBodySchema = z.object({

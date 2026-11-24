@@ -3,7 +3,12 @@ import type { FinanceTag } from '../../domain/finance-tag.entity';
 import type { FinanceVehicleFacts } from '../../domain/finance-vehicle-lookup.port';
 import type { VehicleDeal } from '../../domain/vehicle-deal.entity';
 import type { SaleModel } from '../../domain/sale-model';
-import { hasDealTerms, type VehicleMoney } from '../../domain/vehicle-money';
+import {
+  hasDealTerms,
+  sellerPaymentStatus,
+  type SellerPaymentStatus,
+  type VehicleMoney,
+} from '../../domain/vehicle-money';
 import type { VehicleQuote } from '../../domain/vehicle-quote.entity';
 import { toVehicleDealStateDto, type VehicleDealStateDto } from './vehicle-deal.dto';
 import { toVehicleQuoteDto, type VehicleQuoteDto } from './vehicle-quote.dto';
@@ -48,8 +53,20 @@ export interface VehicleFinanceDto extends VehicleDealStateDto {
   readonly owedToSeller: number | null;
   /** Null until the sale is recorded. */
   readonly owedByBuyer: number | null;
-  /** `purchaseRateMissing`: the purchase rate or commission % isn't recorded. */
-  readonly flags: { readonly purchaseRateMissing: boolean; readonly saleRecorded: boolean };
+  /**
+   * How far the payments to the seller (owner) have got: `no_terms` while
+   * "owed to seller" can't be worked out, else none / part / full / overpaid.
+   */
+  readonly sellerPaymentStatus: SellerPaymentStatus;
+  /**
+   * `purchaseRateMissing`: the purchase rate or commission % isn't recorded.
+   * `paidWithoutTerms`: money was paid to the seller but those terms are missing.
+   */
+  readonly flags: {
+    readonly purchaseRateMissing: boolean;
+    readonly saleRecorded: boolean;
+    readonly paidWithoutTerms: boolean;
+  };
 }
 
 export interface BookedLeadDto {
@@ -97,6 +114,7 @@ export function toVehicleFinanceDto(input: {
 }): VehicleFinanceDto {
   const { deal, money } = input;
   const quotes = input.quotes.map((quote) => toVehicleQuoteDto(quote, input.leadsById));
+  const hasTerms = hasDealTerms(input.vehicle.saleModel, deal.terms);
   return {
     ...toVehicleDealStateDto(deal),
     vehicle: {
@@ -129,9 +147,11 @@ export function toVehicleFinanceDto(input: {
     profit: maybeRupees(money.profit),
     owedToSeller: maybeRupees(money.owedToSeller),
     owedByBuyer: maybeRupees(money.owedByBuyer),
+    sellerPaymentStatus: sellerPaymentStatus(money),
     flags: {
-      purchaseRateMissing: !hasDealTerms(input.vehicle.saleModel, deal.terms),
+      purchaseRateMissing: !hasTerms,
       saleRecorded: deal.sale !== null,
+      paidWithoutTerms: !hasTerms && money.paidToSeller > 0,
     },
   };
 }

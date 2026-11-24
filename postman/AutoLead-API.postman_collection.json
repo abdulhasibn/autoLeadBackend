@@ -4046,6 +4046,123 @@
               ]
             },
             {
+              "name": "Create Seller Payment With Deal",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                      "if (pm.response.code === 201) {",
+                      "  pm.collectionVariables.set('financeEntryId', pm.response.json().id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Finance-Session",
+                    "value": "{{financeSessionToken}}"
+                  }
+                ],
+                "url": "{{baseUrl}}/finance/entries",
+                "description": "Payment to the seller on a car with no deal yet: the deal terms are saved with it. Without `deal` this is 422 DEAL_TERMS_REQUIRED; above the purchase rate it is 422 SELLER_PAID_ABOVE_RATE unless keepOverpayment is true.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"kind\": \"expense\",\n  \"amount\": 880000,\n  \"entryDate\": \"2026-11-22\",\n  \"tagIds\": [],\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"purpose\": \"purchase\",\n  \"party\": null,\n  \"note\": null,\n  \"showroomId\": null,\n  \"deal\": {\n    \"purchaseRate\": 880000,\n    \"purchasedOn\": \"2026-11-20\"\n  },\n  \"keepOverpayment\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [
+                {
+                  "id": "6fb655ef-d9b9-49c5-ae56-66bef56dbef6",
+                  "name": "201 Created — car cost",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/entries",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"kind\": \"expense\",\n  \"amount\": 5000,\n  \"entryDate\": \"2026-10-20\",\n  \"tagIds\": [\n    \"{{financeTagId}}\"\n  ],\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"purpose\": null,\n  \"party\": \"Ace Paints\",\n  \"note\": \"Bonnet and bumper\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"id\": \"3a4b5c6d-7e8f-4a9b-8c0d-1e2f3a4b5c6d\",\n  \"kind\": \"expense\",\n  \"amount\": 5000,\n  \"entryDate\": \"2026-10-20\",\n  \"purpose\": \"cost\",\n  \"tags\": [\n    {\n      \"id\": \"7c1e2a9b-4d3f-4e8a-9b1c-2d3e4f5a6b7c\",\n      \"name\": \"Painting\",\n      \"color\": \"#E53935\",\n      \"archived\": false,\n      \"createdAt\": \"2026-11-02T10:00:00.000Z\",\n      \"updatedAt\": \"2026-11-02T10:00:00.000Z\"\n    }\n  ],\n  \"vehicle\": {\n    \"id\": \"9f8e7d6c-5b4a-4c3d-8e2f-1a0b9c8d7e6f\",\n    \"label\": \"Maruti Swift \\u00b7 KA01AB1234\"\n  },\n  \"party\": \"Ace Paints\",\n  \"note\": \"Bonnet and bumper\",\n  \"showroomId\": \"b0000000-0000-4000-8000-000000000001\",\n  \"recordedBy\": \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\",\n  \"createdAt\": \"2026-11-02T10:05:00.000Z\",\n  \"updatedAt\": \"2026-11-02T10:05:00.000Z\"\n}"
+                },
+                {
+                  "id": "42d120b9-bd1d-4c32-947a-3b622adcb960",
+                  "name": "422 — INVALID_ENTRY_PURPOSE",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "X-Finance-Session",
+                        "value": "{{financeSessionToken}}"
+                      }
+                    ],
+                    "url": "{{baseUrl}}/finance/entries",
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"kind\": \"expense\",\n  \"amount\": 5000,\n  \"entryDate\": \"2026-10-20\",\n  \"tagIds\": [\n    \"{{financeTagId}}\"\n  ],\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"purpose\": null,\n  \"party\": \"Ace Paints\",\n  \"note\": \"Bonnet and bumper\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    }
+                  },
+                  "status": "Unprocessable Entity",
+                  "code": 422,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    }
+                  ],
+                  "body": "{\n  \"error\": {\n    \"code\": \"INVALID_ENTRY_PURPOSE\",\n    \"message\": \"A car-linked expense can only have purpose purchase or cost\"\n  }\n}"
+                }
+              ]
+            },
+            {
               "name": "Get Entry",
               "event": [
                 {
@@ -4382,7 +4499,7 @@
                 "description": "**Story:** After agreeing a price with the seller, the admin records the purchase rate (and optionally the public asking price).\n\nPUT /finance/vehicles/:vehicleId — sets the deal fields. Never touches the sale.\n\n**Auth:** Bearer, Admin only.\n\n- `purchaseRate` (number, required): rupees agreed with the seller.\n- `purchasedOn` (YYYY-MM-DD), `ownerExpectedPrice`, `minimumSellingPrice` (rupees), `note` (≤ 1000): optional; omitted means cleared (full replace).\n- `listedPrice` (rupees or null): public asking price, plaintext, used by lead matching. Omit to keep, null to clear.\n- `200` `{ vehicleId, deal, sale, listedPrice }`. `404` unknown or deleted car; `422 VALIDATION_ERROR` / `INVALID_AMOUNT`.\n\n- Needs `X-Finance-Session`; without a live one → `423 FINANCE_LOCKED`. Admin only (`403` otherwise).\n- Amounts are rupees. See docs/api.md#finance--car-money.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"purchaseRate\": 500000,\n  \"purchasedOn\": \"2026-10-01\",\n  \"ownerExpectedPrice\": 520000,\n  \"minimumSellingPrice\": 550000,\n  \"note\": \"Bought from Mr Rao\",\n  \"listedPrice\": 585000\n}",
+                  "raw": "{\n  \"purchaseRate\": 500000,\n  \"purchasedOn\": \"2026-10-01\",\n  \"ownerExpectedPrice\": 520000,\n  \"minimumSellingPrice\": 550000,\n  \"note\": \"Bought from Mr Rao\",\n  \"listedPrice\": 585000,\n  \"sellerPayment\": {\n    \"amount\": 300000,\n    \"paidOn\": \"2026-11-21\"\n  },\n  \"keepOverpayment\": false\n}",
                   "options": {
                     "raw": {
                       "language": "json"
