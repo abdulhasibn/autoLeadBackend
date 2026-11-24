@@ -7,6 +7,7 @@ import {
   refineRange,
 } from '../../../../presentation/validation/search.schemas';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../../../../shared/pagination/pagination';
+import type { DealTermsInput } from '../../application/services/deal-terms-input';
 import { ENTRY_SORTS } from '../../application/dtos/list-finance-entries-query';
 import { ENTRY_KINDS } from '../../domain/entry-kind.value-object';
 import { ENTRY_PURPOSES, EntryPurpose } from '../../domain/entry-purpose.value-object';
@@ -18,6 +19,20 @@ import {
   optionalTextSchema,
   uuidSchema,
 } from './finance-fields.schemas';
+import { commissionPercentSchema } from './vehicle-money.schemas';
+
+/**
+ * Minimal deal terms sent with a payment to the seller on a car with no deal:
+ * the field matching the car's sale model is required (checked server-side).
+ */
+const entryDealSchema = z
+  .object({
+    purchaseRate: amountSchema.nullable().default(null),
+    commissionPercent: commissionPercentSchema.nullable().default(null),
+    purchasedOn: calendarDateSchema.nullable().default(null),
+  })
+  .nullish()
+  .transform((v) => v ?? null);
 
 export const financeEntryIdParamSchema = z.object({ id: uuidSchema('id') });
 
@@ -39,6 +54,8 @@ export const createFinanceEntryBodySchema = z.object({
   party: optionalTextSchema.transform((v) => v ?? null),
   note: optionalTextSchema.transform((v) => v ?? null),
   showroomId: uuidSchema('showroomId').nullable().default(null),
+  deal: entryDealSchema,
+  keepOverpayment: z.boolean().optional().default(false),
 });
 
 export const updateFinanceEntryBodySchema = z
@@ -51,10 +68,16 @@ export const updateFinanceEntryBodySchema = z
     party: optionalTextSchema,
     note: optionalTextSchema,
     showroomId: uuidSchema('showroomId').optional(),
+    deal: entryDealSchema.optional(),
+    keepOverpayment: z.boolean().optional(),
   })
-  .refine((body) => Object.values(body).some((v) => v !== undefined), {
-    message: 'Send at least one field to change',
-  });
+  .refine(
+    ({ deal: _deal, keepOverpayment: _keep, ...body }) =>
+      Object.values(body).some((v) => v !== undefined),
+    {
+      message: 'Send at least one field to change',
+    },
+  );
 
 export const listFinanceEntriesQuerySchema = z
   .object({
@@ -75,3 +98,14 @@ export const listFinanceEntriesQuerySchema = z
   })
   .superRefine(refineRange('minAmount', 'maxAmount'))
   .superRefine(refineRange('from', 'to'));
+
+/** Maps the parsed `deal` body field onto the use-case input. */
+export function toDealTermsInput(deal: z.output<typeof entryDealSchema>): DealTermsInput | null {
+  return deal === null
+    ? null
+    : {
+        purchaseRatePaise: deal.purchaseRate,
+        commissionBasisPoints: deal.commissionPercent,
+        purchasedOn: deal.purchasedOn,
+      };
+}

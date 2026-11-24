@@ -1,4 +1,3 @@
-import { SaleIncomeGuard } from '../application/services/sale-income-guard';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
@@ -35,6 +34,8 @@ import {
   type FinanceTestKit,
   LEAD_ANIL,
   markCarSold,
+  makeCreateEntry,
+  makeUpdateEntry,
 } from './fakes';
 
 const ADMIN_IN_A: AuthenticatedContext = { ...ADMIN, showroomId: SHOWROOM_A };
@@ -77,29 +78,8 @@ describe('finance ledger', () => {
       k.clock,
       k.tagSeeder,
     );
-    createEntry = new CreateFinanceEntryUseCase(
-      k.policy,
-      k.sessionService,
-      k.entries,
-      k.tags,
-      k.vehicles,
-      k.entrySealer,
-      k.tagSealer,
-      k.clock,
-      k.ids,
-      new SaleIncomeGuard(k.leads),
-    );
-    updateEntry = new UpdateFinanceEntryUseCase(
-      k.policy,
-      k.sessionService,
-      k.entries,
-      k.tags,
-      k.vehicles,
-      k.entrySealer,
-      k.tagSealer,
-      k.clock,
-      new SaleIncomeGuard(k.leads),
-    );
+    createEntry = makeCreateEntry(k);
+    updateEntry = makeUpdateEntry(k);
     deleteEntry = new DeleteFinanceEntryUseCase(
       k.policy,
       k.sessionService,
@@ -330,7 +310,13 @@ describe('finance ledger', () => {
       const created = await newEntry();
 
       const linked = await updateEntry.execute(
-        { sessionToken: token, entryId: created.id, vehicleId: SWIFT, purpose: 'purchase' },
+        {
+          sessionToken: token,
+          entryId: created.id,
+          vehicleId: SWIFT,
+          purpose: 'purchase',
+          deal: { purchaseRatePaise: 50_000_000, commissionBasisPoints: null, purchasedOn: null },
+        },
         ADMIN,
       );
       expect(linked).toMatchObject({ purpose: 'purchase', showroomId: SHOWROOM_A });
@@ -444,7 +430,12 @@ describe('finance ledger', () => {
         tagIds: [painting],
         party: 'Ace Paints',
       });
-      await newEntry({ amountPaise: 1_000_000, vehicleId: SWIFT, purpose: 'purchase' });
+      await newEntry({
+        amountPaise: 1_000_000,
+        vehicleId: SWIFT,
+        purpose: 'purchase',
+        deal: { purchaseRatePaise: 50_000_000, commissionBasisPoints: null, purchasedOn: null },
+      });
       kit.leads.booked.set(SWIFT, [LEAD_ANIL]);
       await newEntry({ kind: 'income', amountPaise: 5_000_000, vehicleId: SWIFT });
       await newEntry({ amountPaise: 300_000, note: 'Electricity bill' });
@@ -567,7 +558,13 @@ describe('finance ledger', () => {
   it("handles the client's worked example on one car", async () => {
     const t = (name: string) => [tagIds[name] ?? ''];
     const car = { vehicleId: SWIFT };
-    await newEntry({ ...car, amountPaise: 20_000_000, purpose: 'purchase', tagIds: t('Purchase') });
+    await newEntry({
+      ...car,
+      amountPaise: 20_000_000,
+      purpose: 'purchase',
+      tagIds: t('Purchase'),
+      deal: { purchaseRatePaise: 50_000_000, commissionBasisPoints: null, purchasedOn: null },
+    });
     await newEntry({ ...car, amountPaise: 30_000_000, purpose: 'purchase', tagIds: t('Purchase') });
     await newEntry({ ...car, amountPaise: 1_000_000, tagIds: t('Mediator commission') });
     await newEntry({ ...car, amountPaise: 500_000, tagIds: t('Painting') });

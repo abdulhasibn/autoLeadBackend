@@ -1,3 +1,8 @@
+import { SaleIncomeGuard } from '../application/services/sale-income-guard';
+import { SellerPaymentGuard } from '../application/services/seller-payment-guard';
+import { CreateFinanceEntryUseCase } from '../application/use-cases/create-finance-entry.use-case';
+import { SetVehicleDealUseCase } from '../application/use-cases/set-vehicle-deal.use-case';
+import { UpdateFinanceEntryUseCase } from '../application/use-cases/update-finance-entry.use-case';
 import type { AuthenticatedContext } from '../../../domain/shared/auth-context';
 import type { Money } from '../domain/money.value-object';
 import type { SaleModel } from '../domain/sale-model';
@@ -547,4 +552,59 @@ export function onCommission(commissionBasisPoints: number | null): {
     saleModel: 'commission',
     terms: commissionBasisPoints === null ? null : dealTerms({ commissionBasisPoints }),
   };
+}
+
+/** The seller-payment guard over the kit's in-memory stores. */
+export function sellerPaymentGuard(k: FinanceTestKit): SellerPaymentGuard {
+  return new SellerPaymentGuard(k.deals, k.dealSealer, k.entries, k.entrySealer);
+}
+
+export function makeCreateEntry(k: FinanceTestKit): CreateFinanceEntryUseCase {
+  return new CreateFinanceEntryUseCase(
+    k.policy,
+    k.sessionService,
+    k.entries,
+    k.tags,
+    k.vehicles,
+    k.entrySealer,
+    k.tagSealer,
+    k.clock,
+    k.ids,
+    new SaleIncomeGuard(k.leads),
+    sellerPaymentGuard(k),
+    k.deals,
+    k.dealSealer,
+  );
+}
+
+export function makeUpdateEntry(k: FinanceTestKit): UpdateFinanceEntryUseCase {
+  return new UpdateFinanceEntryUseCase(
+    k.policy,
+    k.sessionService,
+    k.entries,
+    k.tags,
+    k.vehicles,
+    k.entrySealer,
+    k.tagSealer,
+    k.clock,
+    new SaleIncomeGuard(k.leads),
+    sellerPaymentGuard(k),
+    k.deals,
+    k.dealSealer,
+  );
+}
+
+export function makeSetDeal(k: FinanceTestKit): SetVehicleDealUseCase {
+  return new SetVehicleDealUseCase(
+    k.policy,
+    k.sessionService,
+    k.vehicles,
+    k.deals,
+    k.dealSealer,
+    k.clock,
+    sellerPaymentGuard(k),
+    k.entries,
+    k.entrySealer,
+    k.ids,
+  );
 }

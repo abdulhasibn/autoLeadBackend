@@ -34,6 +34,7 @@ import { GetVehicleFinanceUseCase } from './application/use-cases/get-vehicle-fi
 import { SetVehicleDealUseCase } from './application/use-cases/set-vehicle-deal.use-case';
 import { RecordVehicleSaleUseCase } from './application/use-cases/record-vehicle-sale.use-case';
 import { ClearVehicleSaleUseCase } from './application/use-cases/clear-vehicle-sale.use-case';
+import { SellerPaymentGuard } from './application/services/seller-payment-guard';
 import { SaleIncomeGuard } from './application/services/sale-income-guard';
 import { ListVehicleQuotesUseCase } from './application/use-cases/list-vehicle-quotes.use-case';
 import { AddVehicleQuoteUseCase } from './application/use-cases/add-vehicle-quote.use-case';
@@ -156,6 +157,7 @@ export function composeFinance(
   const quotes = new SupabaseVehicleQuoteRepository(infraClient);
   const quoteQueries = new SupabaseVehicleQuoteQueries(infraClient);
   const dealSealer = new VehicleDealSealer();
+  const sellerPayments = new SellerPaymentGuard(deals, dealSealer, entryQueries, entrySealer);
   const quoteSealer = new QuoteSealer();
   const reportData = new FinanceReportData(
     dealQueries,
@@ -240,6 +242,9 @@ export function composeFinance(
         deps.clock,
         ids,
         saleIncome,
+        sellerPayments,
+        deals,
+        dealSealer,
       ),
     ),
     getFinanceEntryController: new GetFinanceEntryController(
@@ -264,6 +269,9 @@ export function composeFinance(
         tagSealer,
         deps.clock,
         saleIncome,
+        sellerPayments,
+        deals,
+        dealSealer,
       ),
     ),
     deleteFinanceEntryController: new DeleteFinanceEntryController(
@@ -287,7 +295,18 @@ export function composeFinance(
       ),
     ),
     setVehicleDealController: new SetVehicleDealController(
-      new SetVehicleDealUseCase(policy, sessionService, vehicles, deals, dealSealer, deps.clock),
+      new SetVehicleDealUseCase(
+        policy,
+        sessionService,
+        vehicles,
+        deals,
+        dealSealer,
+        deps.clock,
+        sellerPayments,
+        entries,
+        entrySealer,
+        ids,
+      ),
     ),
     recordVehicleSaleController: new RecordVehicleSaleController(
       new RecordVehicleSaleUseCase(

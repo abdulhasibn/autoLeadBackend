@@ -11,4 +11,8 @@ export interface SetVehicleDealCommand {
   readonly note: string | null;
   /** Paise; omitted = keep, null = clear. */
   readonly listedPricePaise?: number | null;
+  /** Paid to the seller with these terms; saved as a `purchase` expense. */
+  readonly sellerPayment?: { readonly amountPaise: number; readonly paidOn: string } | null;
+  /** Save even if the seller ends up paid above the rate. */
+  readonly keepOverpayment?: boolean;
 }

@@ -166,3 +166,32 @@ export class VehicleMoneyTally {
     };
   }
 }
+
+/**
+ * How far the payments to the seller (owner, for commission cars) have got:
+ * `no_terms` until the terms the limit depends on are known (commission cars:
+ * also the sale), else none / part / full / overpaid.
+ */
+export type SellerPaymentStatus = 'no_terms' | 'none' | 'part' | 'full' | 'overpaid';
+
+export function sellerPaymentStatus(money: VehicleMoney): SellerPaymentStatus {
+  const owed = money.owedToSeller;
+  if (owed === null) return 'no_terms';
+  if (owed < 0) return 'overpaid';
+  if (owed === 0) return 'full';
+  return money.paidToSeller === 0 ? 'none' : 'part';
+}
+
+/** Paise paid to the seller beyond what they're owed; 0 when not overpaid or unknown. */
+export function sellerOverpaymentPaise(money: VehicleMoney): number {
+  return money.owedToSeller === null ? 0 : Math.max(0, -money.owedToSeller);
+}
+
+/** A payment to the car's seller (owner, for commission cars): a car-linked `purchase` expense. */
+export function isSellerPayment(entry: {
+  readonly kind: string;
+  readonly purpose: string;
+  readonly vehicleId: string | null;
+}): boolean {
+  return entry.kind === 'expense' && entry.purpose === 'purchase' && entry.vehicleId !== null;
+}

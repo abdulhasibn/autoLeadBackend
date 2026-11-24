@@ -169,6 +169,8 @@ Follow-up reminders stay hidden until `dueAt` (same as `scheduledAt`). For local
 | 422 | `VEHICLE_SOLD` | `PATCH /vehicles/:id` changing `acquisitionType` on a sold car |
 | 422 | `SALE_NOT_RECORDED` | A payment from the buyer (income with purpose `sale`) on a car that isn't sold and has no booking-confirmed lead: `POST /finance/entries`, or `PATCH` that links the entry to such a car or changes its purpose to `sale`. Confirm a booking or record the sale first, or use purpose `other` |
 | 422 | `SALE_PRICE_BELOW_RECEIVED` | `POST /finance/vehicles/:id/sale` with a price below what the buyer has paid; `error.details` has `receivedFromBuyer` and `finalisedPrice` (rupees). Reduce the payments or resend with `keepOverpayment: true` |
+| 422 | `DEAL_TERMS_REQUIRED` | A payment to the seller (expense, purpose `purchase`, on a car) when the car has no purchase rate (commission car: no commission %): `POST /finance/entries`, or `PATCH` that turns an entry into such a payment. Send the terms as `deal` in the same request, or set the deal first |
+| 422 | `SELLER_PAID_ABOVE_RATE` | A payment to the seller, an edit of one, or `PUT /finance/vehicles/:id` (lower rate or `sellerPayment`) that would pay the seller more than the purchase rate (commission car: more than they're owed from the sale), or more than they're already overpaid. `error.details` has `paidToSeller`, `owedLimit`, `overpaidBy` (rupees). Fix the amount, or resend with `keepOverpayment: true` |
 | 422 | `OWNER_HAS_UNSOLD_VEHICLES` | `DELETE /owners/:id` while the owner has cars that are `open` or `linked` (dropped and sold cars don't block); `error.details.unsoldVehicleCount` says how many |
 | 422 | `LEAD_REQUIRES_VEHICLE` | Moving a lead with no vehicle to `booking_confirmed` or `converted`, or removing the vehicle of a `booking_confirmed` lead |
 | 422 | `LEAD_STATUS_SYSTEM_MANAGED` | Setting `vehicle_unavailable` by hand |
@@ -1196,7 +1198,9 @@ Every request below needs `X-Finance-Session` (else `423 FINANCE_LOCKED`).
   "purpose": null,
   "party": "Ace Paints",
   "note": "Bonnet and bumper",
-  "showroomId": null
+  "showroomId": null,
+  "deal": null,
+  "keepOverpayment": false
 }
 ```
 
@@ -1210,6 +1214,7 @@ Every request below needs `X-Finance-Session` (else `423 FINANCE_LOCKED`).
   - no car: always `general`.
   Linking, moving or unlinking resets the purpose to the default unless the same request sends one.
   A `sale` payment needs a buyer: the car is `sold`, or a lead on it has its booking confirmed (a token advance). Otherwise `POST`, or a `PATCH` that links the entry to the car or sets purpose `sale`, is `422 SALE_NOT_RECORDED`. Because car income defaults to `sale`, income on a car with no buyer must be sent as `other`. Edits that keep the car and purpose (amount, date, note…) are always allowed. Suggested UI: preselect `purchase` when the admin picks the "Purchase" tag.
+- **Payments to the seller need the deal.** A `purchase` expense on a car whose purchase rate (commission car: commission %) isn't recorded is `422 DEAL_TERMS_REQUIRED`. Send the terms in the same request as `deal: { purchaseRate | commissionPercent, purchasedOn? }` (`POST` or `PATCH`); they're saved as the car's deal together with the entry, and ignored if the car already has terms. If the deal save fails, the entry is removed (or put back as it was), so the two never come apart. Editing a payment that is already on the car (note, date…) is always allowed, even on an older car with no deal. A payment that would take the seller above the rate is `422 SELLER_PAID_ABOVE_RATE`; resend with `keepOverpayment: true` if they really were paid more.
 
 `FinanceEntry` = `{ id, kind, amount, entryDate, purpose, tags: FinanceTag[], vehicle: { id, label } | null, party, note, showroomId, recordedBy, createdAt, updatedAt }`. `label` reads like `Maruti Swift · KA01AB1234`.
 
@@ -1237,7 +1242,7 @@ One car's buy-and-sell numbers (ADR-0015). Every request needs `X-Finance-Sessio
 | Method | Path | Body / query | Success |
 |--------|------|--------------|---------|
 | GET | `/finance/vehicles/:vehicleId` | — | `200` car money (below) |
-| PUT | `/finance/vehicles/:vehicleId` | `{ purchaseRate? \| commissionPercent?, purchasedOn?, ownerExpectedPrice?, minimumSellingPrice?, note?, listedPrice? }` | `200` `{ vehicleId, deal, sale, listedPrice }` |
+| PUT | `/finance/vehicles/:vehicleId` | `{ purchaseRate? \| commissionPercent?, purchasedOn?, ownerExpectedPrice?, minimumSellingPrice?, note?, listedPrice?, sellerPayment?: { amount, paidOn }, keepOverpayment? }` | `200` `{ vehicleId, deal, sale, listedPrice }` |
 | POST | `/finance/vehicles/:vehicleId/sale` | `{ finalisedPrice, soldOn, leadId?, keepOverpayment?, buyerPayment?: { amount, paidOn } }` | `200` same shape |
 | DELETE | `/finance/vehicles/:vehicleId/sale` | — | `204` |
 | GET | `/finance/vehicles/:vehicleId/quotes` | — | `200` quotes, newest first |
@@ -1252,7 +1257,7 @@ All amounts are rupees.
 
 For a commission car: `profit` = `commission` = % × finalised price. Its `cost` entries are recovered from the owner, so `owedToSeller` = finalised − commission − costs − payouts to the owner (`purchase` expenses), and is `null` until the sale is recorded. `landingCost` is the costs alone. `flags.purchaseRateMissing` means the purchase rate or the commission % is missing.
 
-- **Deal (`PUT`).** The purchase rate agreed with the seller, plus optional purchase date, owner's expected price, minimum selling price and note. `PUT` replaces these fields; it never touches the sale. `listedPrice` is the public asking price (plaintext, used by lead matching): omit it to keep the current one, send `null` to clear it.
+- **Deal (`PUT`).** The purchase rate agreed with the seller, plus optional purchase date, owner's expected price, minimum selling price and note. `PUT` replaces these fields; it never touches the sale. `listedPrice` is the public asking price (plaintext, used by lead matching): omit it to keep the current one, send `null` to clear it. **`sellerPayment`** (money paid to the seller with these terms) is saved in the same request as a `purchase` expense with the note "Paid to the seller, recorded with the deal"; if the deal save fails it is removed again. Terms or a payment that leave the seller paid above the rate are `422 SELLER_PAID_ABOVE_RATE` (nothing is saved) unless `keepOverpayment: true`.
 - **Sale.** `POST …/sale` records the finalised price and date, and always closes against a lead. If the car is already `sold` (its lead was converted from the CRM), only the price is saved and `leadId` is ignored. Otherwise send `leadId`: one of the car's `bookedLeads`. That lead is converted first, which marks the car sold and moves its other active leads to `vehicle_unavailable` (ADR-0011), then the price is saved; repeating a failed request finishes the job. Without `leadId` it is `422 SALE_NEEDS_BOOKED_LEAD`; a lead that isn't linked to this car with its booking confirmed is `422 SALE_LEAD_NOT_BOOKED`. The price is checked before anything is converted. It can be recorded before the deal. **A price below what the buyer has already paid** (the car's `sale` entries) is `422 SALE_PRICE_BELOW_RECEIVED`, with `error.details` `{ receivedFromBuyer, finalisedPrice }` in rupees, and nothing is saved or converted. Either reduce the buyer's payments in Entries first (the payment was entered wrong), or resend with `keepOverpayment: true` (the buyer really paid more, e.g. before a discount; the car then shows a negative `owedByBuyer`, which Dues lists as owed back to them). **`buyerPayment`** (money the buyer paid at the sale, rupees and `YYYY-MM-DD`) is saved in the same request as a `sale` income entry with the note "Received from the buyer when the sale was recorded". It counts towards the `SALE_PRICE_BELOW_RECEIVED` check. If the conversion or the price save fails, the entry is removed again, so a failed sale never leaves its payment behind and a repeated request doesn't save it twice. `DELETE …/sale` removes a sale recorded by mistake; it doesn't un-sell the car or reopen the lead.
 - **Quotes** are prices offered to a lead. `leadId` is **required** and must be a live lead (else `404 NOT_FOUND`); it doesn't have to be the car's linked lead. `quotedTo` (display name) and `note` stay optional. Every quote comes back with `lead: { id, name, phone }` (the lead's contact, or registered buyer), so no per-quote lead lookup is needed; it is `null` only for older quotes recorded without a lead. The newest quote is the current one.
 - **Awaiting sale price** lists cars whose status is `sold` but whose finalised price isn't recorded yet. Show it as a to-do after converting a lead.
@@ -1271,7 +1276,8 @@ For a commission car: `profit` = `commission` = % × finalised price. Its `cost`
   "costBreakdown": [ { "tag": { "id": "…", "name": "Insurance" }, "amount": 15000, "count": 1 }, … ],
   "paidToSeller": 500000, "receivedFromBuyer": 560000,
   "profit": 15000, "owedToSeller": 0, "owedByBuyer": 0,
-  "flags": { "purchaseRateMissing": false, "saleRecorded": true }
+  "sellerPaymentStatus": "full",
+  "flags": { "purchaseRateMissing": false, "saleRecorded": true, "paidWithoutTerms": false }
 }
 ```
 
@@ -1279,6 +1285,7 @@ For a commission car: `profit` = `commission` = % × finalised price. Its `cost`
 
 - `landingCost` = purchase rate + entries with purpose `cost`. `profit` = finalised price − landing cost (negative is a loss; `null` until both are known).
 - `owedToSeller` = purchase rate − `purchase` payments (negative means overpaid; `null` without a purchase rate). `owedByBuyer` = finalised price − `sale` payments (`null` until the sale is recorded).
+- `sellerPaymentStatus`: `no_terms` while `owedToSeller` is `null`, else `none` / `part` / `full` / `overpaid`, worked out from the `purchase` entries (never stored). `flags.paidWithoutTerms`: money was paid to the seller but the purchase rate (commission %) is missing, as on cars recorded before payments needed a deal; offer to set the rate.
 - `costBreakdown` groups cost entries by their **first** tag (so an entry with several tags is counted once); `tag: null` means untagged.
 - The car's entries themselves come from `GET /finance/entries?vehicleId=…`.
 

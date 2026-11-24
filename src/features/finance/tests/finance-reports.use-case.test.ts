@@ -1,4 +1,3 @@
-import { SaleIncomeGuard } from '../application/services/sale-income-guard';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { ForbiddenActionError } from '../../../domain/errors/forbidden-action.error';
@@ -7,7 +6,6 @@ import type { CreateFinanceEntryCommand } from '../application/dtos/create-finan
 import { FinanceLockedError } from '../application/errors/finance-locked.error';
 import { FinanceReportData } from '../application/services/finance-report-data';
 import { ConfirmVaultUseCase } from '../application/use-cases/confirm-vault.use-case';
-import { CreateFinanceEntryUseCase } from '../application/use-cases/create-finance-entry.use-case';
 import { GetCashFlowUseCase } from '../application/use-cases/get-cash-flow.use-case';
 import { GetDuesReportUseCase } from '../application/use-cases/get-dues-report.use-case';
 import { GetFinanceSummaryUseCase } from '../application/use-cases/get-finance-summary.use-case';
@@ -15,7 +13,6 @@ import { GetProfitAndLossUseCase } from '../application/use-cases/get-profit-and
 import { GetStockReportUseCase } from '../application/use-cases/get-stock-report.use-case';
 import { GetVehicleProfitReportUseCase } from '../application/use-cases/get-vehicle-profit-report.use-case';
 import { RecordVehicleSaleUseCase } from '../application/use-cases/record-vehicle-sale.use-case';
-import { SetVehicleDealUseCase } from '../application/use-cases/set-vehicle-deal.use-case';
 import { SetupVaultUseCase } from '../application/use-cases/setup-vault.use-case';
 import { UnlockVaultUseCase } from '../application/use-cases/unlock-vault.use-case';
 import { toFinanceEntryId } from '../domain/finance-entry-id';
@@ -35,6 +32,8 @@ import {
   createFinanceTestKit,
   markCarSold,
   type FinanceTestKit,
+  makeCreateEntry,
+  makeSetDeal,
 } from './fakes';
 
 const ADMIN_IN_A = { ...ADMIN, showroomId: SHOWROOM_A };
@@ -107,26 +106,8 @@ describe('finance reports', () => {
 
   async function seed(): Promise<void> {
     const k = kit;
-    const create = new CreateFinanceEntryUseCase(
-      k.policy,
-      k.sessionService,
-      k.entries,
-      k.tags,
-      k.vehicles,
-      k.entrySealer,
-      k.tagSealer,
-      k.clock,
-      k.ids,
-      new SaleIncomeGuard(k.leads),
-    );
-    const setDeal = new SetVehicleDealUseCase(
-      k.policy,
-      k.sessionService,
-      k.vehicles,
-      k.deals,
-      k.dealSealer,
-      k.clock,
-    );
+    const create = makeCreateEntry(k);
+    const setDeal = makeSetDeal(k);
     const recordSale = new RecordVehicleSaleUseCase(
       k.policy,
       k.sessionService,
@@ -316,14 +297,7 @@ describe('finance reports', () => {
   it("'Sales' means purchased cars on every screen; a commission car's price is shown apart", async () => {
     const baleno = kit.vehicles.cars.get(BALENO);
     if (baleno !== undefined) baleno.saleModel = 'commission';
-    await new SetVehicleDealUseCase(
-      kit.policy,
-      kit.sessionService,
-      kit.vehicles,
-      kit.deals,
-      kit.dealSealer,
-      kit.clock,
-    ).execute(
+    await makeSetDeal(kit).execute(
       {
         sessionToken: token,
         vehicleId: BALENO,

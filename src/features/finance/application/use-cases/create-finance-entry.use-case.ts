@@ -18,18 +18,31 @@ import type {
   IFinanceVehicleLookup,
 } from '../../domain/finance-vehicle-lookup.port';
 import { Money } from '../../domain/money.value-object';
+import { VehicleDeal } from '../../domain/vehicle-deal.entity';
+import type { IVehicleDealRepository } from '../../domain/vehicle-deal.repository';
+import { hasDealTerms, isSellerPayment } from '../../domain/vehicle-money';
+import type { FinanceCipher } from '../../domain/finance-cipher.port';
 import type { CreateFinanceEntryCommand } from '../dtos/create-finance-entry-command';
 import { toFinanceEntryDto, type FinanceEntryDto } from '../dtos/finance-entry.dto';
 import type { FinancePolicy } from '../policies/finance.policy';
 import type { EntrySealer } from '../services/entry.sealer';
 import type { FinanceSessionService } from '../services/finance-session.service';
 import type { SaleIncomeGuard } from '../services/sale-income-guard';
+import { dealTermsFor } from '../services/deal-terms-input';
+import type { SellerPaymentGuard } from '../services/seller-payment-guard';
 import type { TagSealer } from '../services/tag.sealer';
+import type { VehicleDealSealer } from '../services/vehicle-deal.sealer';
 
 /**
  * Records money in or out. With a car it lands in the car's showroom with the
  * car's default purpose; without one it's a business entry. Money from a
  * buyer on a car with no buyer is refused (`SALE_NOT_RECORDED`).
+ *
+ * A payment to the seller needs the car's deal terms: sent as `deal` when
+ * the car has none, they're saved with it (`DEAL_TERMS_REQUIRED` otherwise).
+ * The entry is written first and soft-deleted if the deal save fails. Paying
+ * the seller above the rate is refused (`SELLER_PAID_ABOVE_RATE`) unless
+ * `keepOverpayment` is set.
  */
 export class CreateFinanceEntryUseCase {
   constructor(
@@ -43,6 +56,9 @@ export class CreateFinanceEntryUseCase {
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
     private readonly saleIncome: SaleIncomeGuard,
+    private readonly sellerPayments: SellerPaymentGuard,
+    private readonly deals: Pick<IVehicleDealRepository, 'save'>,
+    private readonly dealSealer: VehicleDealSealer,
   ) {}
 
   async execute(
@@ -90,9 +106,52 @@ export class CreateFinanceEntryUseCase {
       now: this.clock.now(),
     });
     await this.saleIncome.assertAllowed(entry, vehicle);
+    const newDeal =
+      vehicle !== null && isSellerPayment(entry)
+        ? await this.checkSellerPayment(entry, vehicle, command, cipher)
+        : null;
+
     await this.entries.save(this.entrySealer.seal(entry, cipher));
+    if (newDeal !== null) {
+      try {
+        await this.deals.save(this.dealSealer.seal(newDeal, cipher));
+      } catch (err) {
+        entry.softDelete(this.clock.now());
+        await this.entries.save(this.entrySealer.seal(entry, cipher));
+        throw err;
+      }
+    }
 
     const vehiclesById = new Map(vehicle === null ? [] : [[vehicle.id as string, vehicle]]);
     return toFinanceEntryDto(entry, tagsById, vehiclesById);
+  }
+
+  /** Returns the deal to save with the entry when `deal` supplies missing terms. */
+  private async checkSellerPayment(
+    entry: FinanceEntry,
+    vehicle: FinanceVehicleFacts,
+    command: CreateFinanceEntryCommand,
+    cipher: FinanceCipher,
+  ): Promise<VehicleDeal | null> {
+    const current = await this.sellerPayments.loadDeal(vehicle.id, cipher);
+    const terms = current?.terms ?? null;
+    const finalisedPrice = current?.sale?.finalisedPrice ?? null;
+    let newDeal: VehicleDeal | null = null;
+    if (!hasDealTerms(vehicle.saleModel, terms) && command.deal != null) {
+      newDeal = current ?? VehicleDeal.empty(vehicle.id, null, this.clock.now());
+      newDeal.setTerms(dealTermsFor(vehicle.saleModel, command.deal), this.clock.now());
+    }
+    const nextTerms = newDeal?.terms ?? terms;
+    this.sellerPayments.assertTerms(vehicle, nextTerms);
+    await this.sellerPayments.assertNotOverpaid({
+      vehicle,
+      cipher,
+      terms,
+      nextTerms,
+      finalisedPrice,
+      changed: [entry],
+      keepOverpayment: command.keepOverpayment ?? false,
+    });
+    return newDeal;
   }
 }

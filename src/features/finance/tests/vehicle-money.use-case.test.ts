@@ -1,4 +1,3 @@
-import { SaleIncomeGuard } from '../application/services/sale-income-guard';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
@@ -37,6 +36,8 @@ import {
   createFinanceTestKit,
   markCarSold,
   type FinanceTestKit,
+  makeCreateEntry,
+  makeSetDeal,
 } from './fakes';
 
 describe('car money', () => {
@@ -90,18 +91,7 @@ describe('car money', () => {
     ).execute({ sessionToken: token, includeArchived: false }, ADMIN);
     tagIds = Object.fromEntries(tags.map((t) => [t.name, t.id]));
 
-    createEntry = new CreateFinanceEntryUseCase(
-      k.policy,
-      k.sessionService,
-      k.entries,
-      k.tags,
-      k.vehicles,
-      k.entrySealer,
-      k.tagSealer,
-      k.clock,
-      k.ids,
-      new SaleIncomeGuard(k.leads),
-    );
+    createEntry = makeCreateEntry(k);
     getFinance = new GetVehicleFinanceUseCase(
       k.policy,
       k.sessionService,
@@ -117,14 +107,7 @@ describe('car money', () => {
       k.tagSealer,
       k.clock,
     );
-    setDeal = new SetVehicleDealUseCase(
-      k.policy,
-      k.sessionService,
-      k.vehicles,
-      k.deals,
-      k.dealSealer,
-      k.clock,
-    );
+    setDeal = makeSetDeal(k);
     recordSale = new RecordVehicleSaleUseCase(
       k.policy,
       k.sessionService,
