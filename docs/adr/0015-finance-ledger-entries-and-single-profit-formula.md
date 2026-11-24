@@ -34,6 +34,15 @@ The client (requirements of 2026-10-26 and 2026-11-02) only buys cars outright a
 
 A `purchase` expense on a car whose purchase rate (commission car: commission %) isn't recorded left "owed to seller", landing cost and profit unknown while the money had already gone out. Such a payment is now refused (`DEAL_TERMS_REQUIRED`) unless the request carries the terms (`deal`), which are saved with it; the entry is written first and removed if the deal save fails. The seller's paid status is derived from the `purchase` entries (`sellerPaymentStatus`), never stored, so editing or deleting an entry can't leave it stale. A change that pays the seller beyond the rate, or beyond an existing overpayment, is refused (`SELLER_PAID_ABOVE_RATE`) unless `keepOverpayment` is sent. The check reads the sealed entries rather than summing under a lock, so two simultaneous saves can still overpay; the money tab then shows it.
 
+## Amendment (2026-11): tolerant reading of entry payloads
+
+Entry payloads are read forward-compatibly so a release can be rolled back after a newer build has written new data (e.g. the `refund` purpose).
+
+- **Unknown purpose:** read as `cost` (car-linked expense), `other` (car-linked income) or `general` (no car), never `sale` or `purchase`, so it can't settle a buyer or seller balance. This is not the kind's default for new entries (`sale` for income). It is logged as a warning (`finance.entry.unknown_purpose`, entry id, kind and fallback only).
+- **Read-only on this build:** an entry read through that fallback can't be edited or deleted; both answer 422 `ENTRY_FROM_NEWER_VERSION`, so the stored purpose is never overwritten with the fallback.
+- **Unknown extra keys** (e.g. `leadId`) are ignored on read and written back unchanged whenever the entry is saved.
+- A corrupt payload (bad JSON, not an object, missing or invalid amount, wrong types) still fails as a data-integrity error.
+
 ## Amendment (2026-11-24, BE-78): stock is cash paid, not landing cost
 
 The Stock report and the finance summary's stock figure showed landing cost (agreed purchase rate + costs). The owner asked for the cash that has actually left their pocket (QA 2026-11-24, CR-1). For an unsold car, **money in stock = Σ `purchase` expenses (payments to the seller) + Σ `cost` expenses**, in the pure domain function `cashPaidOnCar`. The agreed rate is not part of it: a car with a rate and no payments shows 0. Landing cost and profit are unchanged; stock rows still carry `purchaseRate` and `landingCost` as separate fields, and add `paidToSeller` and a per-row `moneyInStock`. `totals.moneyInStock` (report) and `moneyInStock` (summary) are the sum of the rows. A car is listed when it has a landing cost or any seller payment; the seller-payment condition is new (a commission car with only an advance has no landing cost). Rejected: showing max(rate, paid) or both figures in one total (the total would no longer match what was paid out).

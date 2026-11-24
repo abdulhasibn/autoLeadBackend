@@ -29,6 +29,7 @@ export class DeleteFinanceEntryUseCase {
       throw new NotFoundError(`Finance entry not found for id ${command.entryId}`);
     }
     const entry = this.sealer.open(sealed, cipher);
+    this.sealer.assertWritable(entry);
     entry.softDelete(this.clock.now());
     await this.entries.save(this.sealer.seal(entry, cipher));
   }

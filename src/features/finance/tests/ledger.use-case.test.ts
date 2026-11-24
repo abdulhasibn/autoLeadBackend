@@ -380,6 +380,53 @@ describe('finance ledger', () => {
       expect((await list()).total).toBe(0);
     });
 
+    describe('an entry saved by a newer version (unknown purpose)', () => {
+      async function newerEntry() {
+        const created = await newEntry({ vehicleId: SWIFT, purpose: 'cost' });
+        const { cipher } = await kit.sessionService.open(ADMIN, token);
+        const row = kit.entries.rows.get(created.id);
+        if (row === undefined) {
+          throw new Error('entry not stored');
+        }
+        const payload = JSON.parse(cipher.open(row.payload, `finance_entries:${created.id}`));
+        const stored = {
+          ...row,
+          payload: cipher.seal(
+            JSON.stringify({ ...payload, purpose: 'refund' }),
+            `finance_entries:${created.id}`,
+          ),
+        };
+        kit.entries.rows.set(created.id, stored);
+        return { id: created.id, stored };
+      }
+
+      it('is read-only: edit answers ENTRY_FROM_NEWER_VERSION and stores nothing', async () => {
+        const { id, stored } = await newerEntry();
+
+        await expect(
+          updateEntry.execute({ sessionToken: token, entryId: id, note: 'x' }, ADMIN),
+        ).rejects.toMatchObject({ code: 'ENTRY_FROM_NEWER_VERSION' });
+        expect(kit.entries.rows.get(id)).toBe(stored);
+      });
+
+      it('is read-only: delete answers ENTRY_FROM_NEWER_VERSION and keeps the entry', async () => {
+        const { id, stored } = await newerEntry();
+
+        await expect(
+          deleteEntry.execute({ sessionToken: token, entryId: id }, ADMIN),
+        ).rejects.toMatchObject({ code: 'ENTRY_FROM_NEWER_VERSION' });
+        expect(kit.entries.rows.get(id)).toBe(stored);
+      });
+
+      it('can still be read', async () => {
+        const { id } = await newerEntry();
+
+        const got = await getEntry.execute({ sessionToken: token, entryId: id }, ADMIN);
+
+        expect(got.purpose).toBe('cost');
+      });
+    });
+
     it('is locked without a session and admin-only', async () => {
       await expect(
         listTags.execute({ sessionToken: null, includeArchived: false }, ADMIN),

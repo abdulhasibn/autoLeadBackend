@@ -1,3 +1,4 @@
+import { BusinessRuleViolationError } from '../../../../domain/errors/business-rule-violation.error';
 import { DataIntegrityError } from '../../../../domain/errors/data-integrity.error';
 import { CalendarDate } from '../../../../domain/shared/calendar-date.value-object';
 import type { FinanceCipher } from '../../domain/finance-cipher.port';
@@ -6,6 +7,8 @@ import { ENTRY_PURPOSES, type EntryPurposeValue } from '../../domain/entry-purpo
 import { toFinanceTagId } from '../../domain/finance-tag-id';
 import { Money } from '../../domain/money.value-object';
 import type { SealedFinanceEntry } from '../../domain/sealed-finance-records';
+import type { Logger } from '../../../../shared/logging/logger.port';
+import type { EntryKindValue } from '../../domain/entry-kind.value-object';
 
 interface EntryPayload {
   readonly amount: number;
@@ -18,10 +21,37 @@ interface EntryPayload {
 /**
  * Seals a ledger entry's private fields (amount, purpose, tags, party, note)
  * into one payload bound to `finance_entries:<id>`, and opens it again.
+ *
+ * Opening is tolerant of newer builds' data (so a rollback is safe):
+ * - an unknown `purpose` is read as `cost` (car-linked expense), `other`
+ *   (car-linked income) or `general` (no car), never `sale`/`purchase`, so it
+ *   can't settle a buyer or seller balance. Such an entry is read-only on this
+ *   build: sealing it again throws ENTRY_FROM_NEWER_VERSION, so the real
+ *   purpose is never overwritten. It is logged as a warning.
+ * - unknown extra keys (e.g. `leadId`) are ignored on read and written back
+ *   unchanged on the next save.
+ * A corrupt payload still throws DataIntegrityError.
  */
 export class EntrySealer {
+  private readonly fromNewerVersion = new WeakSet<FinanceEntry>();
+  private readonly unknownKeys = new WeakMap<FinanceEntry, Readonly<Record<string, unknown>>>();
+
+  constructor(private readonly logger?: Logger) {}
+
+  /** Throws ENTRY_FROM_NEWER_VERSION for an entry opened with the fallback purpose. */
+  assertWritable(entry: FinanceEntry): void {
+    if (this.fromNewerVersion.has(entry)) {
+      throw new BusinessRuleViolationError(
+        'ENTRY_FROM_NEWER_VERSION',
+        'This entry was saved by a newer version of the app; update before changing it',
+      );
+    }
+  }
+
   seal(entry: FinanceEntry, cipher: FinanceCipher): SealedFinanceEntry {
+    this.assertWritable(entry);
     const payload: EntryPayload = {
+      ...this.unknownKeys.get(entry),
       amount: entry.amount.paise,
       purpose: entry.purpose,
       tagIds: entry.tagIds,
@@ -44,8 +74,12 @@ export class EntrySealer {
   }
 
   open(record: SealedFinanceEntry, cipher: FinanceCipher): FinanceEntry {
-    const payload = parsePayload(cipher.open(record.payload, aad(record.id)), record.id);
-    return FinanceEntry.reconstitute({
+    const { payload, extra, downgraded } = parsePayload(
+      cipher.open(record.payload, aad(record.id)),
+      record,
+      this.logger,
+    );
+    const entry = FinanceEntry.reconstitute({
       id: record.id,
       kind: record.kind,
       amount: Money.ofPaise(payload.amount),
@@ -61,6 +95,13 @@ export class EntrySealer {
       updatedAt: record.updatedAt,
       deletedAt: record.deletedAt,
     });
+    if (Object.keys(extra).length > 0) {
+      this.unknownKeys.set(entry, extra);
+    }
+    if (downgraded) {
+      this.fromNewerVersion.add(entry);
+    }
+    return entry;
   }
 }
 
@@ -68,7 +109,21 @@ function aad(id: string): string {
   return `finance_entries:${id}`;
 }
 
-function parsePayload(json: string, id: string): EntryPayload {
+const KNOWN_KEYS: ReadonlySet<string> = new Set(['amount', 'purpose', 'tagIds', 'party', 'note']);
+
+interface ParsedPayload {
+  readonly payload: EntryPayload;
+  /** Keys this build doesn't know, kept so a save writes them back. */
+  readonly extra: Readonly<Record<string, unknown>>;
+  readonly downgraded: boolean;
+}
+
+function parsePayload(
+  json: string,
+  record: Pick<SealedFinanceEntry, 'id' | 'kind' | 'vehicleId'>,
+  logger: Logger | undefined,
+): ParsedPayload {
+  const id = record.id;
   let value: unknown;
   try {
     value = JSON.parse(json);
@@ -83,7 +138,6 @@ function parsePayload(json: string, id: string): EntryPayload {
     Number.isSafeInteger(p.amount) &&
     p.amount > 0 &&
     typeof p.purpose === 'string' &&
-    (ENTRY_PURPOSES as readonly string[]).includes(p.purpose) &&
     Array.isArray(p.tagIds) &&
     p.tagIds.every((t) => typeof t === 'string') &&
     (p.party === null || typeof p.party === 'string') &&
@@ -91,5 +145,25 @@ function parsePayload(json: string, id: string): EntryPayload {
   if (!valid) {
     throw new DataIntegrityError(`Finance entry ${id} has an invalid payload`);
   }
-  return value as EntryPayload;
+  const payload = value as EntryPayload;
+  const extra = Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).filter(([key]) => !KNOWN_KEYS.has(key)),
+  );
+  if ((ENTRY_PURPOSES as readonly string[]).includes(payload.purpose)) {
+    return { payload, extra, downgraded: false };
+  }
+  // Written by a newer build (e.g. `refund`). Never log the raw purpose or any sealed field.
+  const fallback = fallbackPurpose(record.kind, record.vehicleId);
+  logger?.warn(
+    { event: 'finance.entry.unknown_purpose', entryId: id, kind: record.kind, fallback },
+    'Finance entry has an unknown purpose; reading it as a fallback and keeping it read-only',
+  );
+  return { payload: { ...payload, purpose: fallback }, extra, downgraded: true };
+}
+
+function fallbackPurpose(kind: EntryKindValue, vehicleId: string | null): EntryPurposeValue {
+  if (vehicleId === null) {
+    return 'general';
+  }
+  return kind === 'expense' ? 'cost' : 'other';
 }

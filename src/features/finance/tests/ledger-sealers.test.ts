@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import type { Logger } from '../../../shared/logging/logger.port';
+
+import { BusinessRuleViolationError } from '../../../domain/errors/business-rule-violation.error';
 import { DataIntegrityError } from '../../../domain/errors/data-integrity.error';
 import { CalendarDate } from '../../../domain/shared/calendar-date.value-object';
 import { toUserId } from '../../../domain/shared/user-id';
@@ -69,6 +72,166 @@ describe('EntrySealer', () => {
     const moved = { ...a, id: toFinanceEntryId('11111111-1111-4111-8111-000000000002') };
 
     expect(() => sealer.open(moved, cipher)).toThrow(DataIntegrityError);
+  });
+});
+
+describe('EntrySealer tolerant parsing', () => {
+  const ID = toFinanceEntryId('11111111-1111-4111-8111-000000000009');
+  const base = { amount: 500000, tagIds: [], party: null, note: null };
+
+  function logger() {
+    const warn = vi.fn();
+    return { warn, log: { warn } as unknown as Logger };
+  }
+
+  function sealed(
+    kind: 'expense' | 'income',
+    payload: unknown,
+    raw?: string,
+    vehicleId: string | null = SWIFT,
+  ) {
+    const template = new EntrySealer().seal(mediatorPayment(), cipher);
+    return {
+      ...template,
+      id: ID,
+      kind,
+      vehicleId: vehicleId as typeof SWIFT | null,
+      payload: cipher.seal(raw ?? JSON.stringify(payload), `finance_entries:${ID}`),
+    };
+  }
+
+  it('reads an unknown expense purpose as cost and warns without amounts', () => {
+    const { warn, log } = logger();
+    const opened = new EntrySealer(log).open(
+      sealed('expense', { ...base, purpose: 'refund' }),
+      cipher,
+    );
+
+    expect(opened.purpose).toBe('cost');
+    expect(opened.amount.paise).toBe(500000);
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      {
+        event: 'finance.entry.unknown_purpose',
+        entryId: ID,
+        kind: 'expense',
+        fallback: 'cost',
+      },
+      expect.any(String),
+    );
+  });
+
+  it('reads an unknown purpose on an entry with no car as general', () => {
+    const opened = new EntrySealer().open(
+      sealed('expense', { ...base, purpose: 'refund' }, undefined, null),
+      cipher,
+    );
+    expect(opened.purpose).toBe('general');
+  });
+
+  it('refuses to save an entry opened with the fallback purpose', () => {
+    const s = new EntrySealer();
+    const opened = s.open(sealed('expense', { ...base, purpose: 'refund' }), cipher);
+
+    expect(() => s.seal(opened, cipher)).toThrow(BusinessRuleViolationError);
+    expect(() => s.assertWritable(opened)).toThrow(
+      expect.objectContaining({ code: 'ENTRY_FROM_NEWER_VERSION' }),
+    );
+  });
+
+  it('lets an entry with a known purpose be saved', () => {
+    const s = new EntrySealer();
+    const opened = s.open(sealed('income', { ...base, purpose: 'sale' }), cipher);
+    expect(() => s.seal(opened, cipher)).not.toThrow();
+  });
+
+  it('writes unknown keys back unchanged when an entry is saved', () => {
+    const s = new EntrySealer();
+    const leadId = '33333333-3333-4333-8333-000000000001';
+    const opened = s.open(
+      sealed('income', { ...base, purpose: 'sale', leadId, extra: { a: [1] } }),
+      cipher,
+    );
+    opened.changeNote('edited', NOW);
+
+    const resealed = s.seal(opened, cipher);
+    const raw = JSON.parse(cipher.open(resealed.payload, `finance_entries:${ID}`)) as Record<
+      string,
+      unknown
+    >;
+
+    expect(raw).toMatchObject({ leadId, extra: { a: [1] }, note: 'edited', purpose: 'sale' });
+    expect(s.open(resealed, cipher).note).toBe('edited');
+  });
+
+  it('reads an unknown income purpose as other', () => {
+    const { warn, log } = logger();
+    const opened = new EntrySealer(log).open(
+      sealed('income', { ...base, purpose: 'deposit' }),
+      cipher,
+    );
+
+    expect(opened.purpose).toBe('other');
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('works without a logger', () => {
+    const opened = new EntrySealer().open(
+      sealed('expense', { ...base, purpose: 'refund' }),
+      cipher,
+    );
+    expect(opened.purpose).toBe('cost');
+  });
+
+  it('leaves known purposes unchanged and silent', () => {
+    const { warn, log } = logger();
+    for (const [kind, purpose] of [
+      ['expense', 'purchase'],
+      ['expense', 'cost'],
+      ['income', 'sale'],
+      ['income', 'other'],
+    ] as const) {
+      expect(new EntrySealer(log).open(sealed(kind, { ...base, purpose }), cipher).purpose).toBe(
+        purpose,
+      );
+    }
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('ignores extra keys such as leadId', () => {
+    const opened = new EntrySealer().open(
+      sealed('income', {
+        ...base,
+        purpose: 'sale',
+        leadId: '33333333-3333-4333-8333-000000000001',
+        somethingNew: { a: 1 },
+      }),
+      cipher,
+    );
+
+    expect(opened.purpose).toBe('sale');
+    expect(opened.amount.paise).toBe(500000);
+  });
+
+  it.each([
+    ['missing amount', { ...base, amount: undefined, purpose: 'cost' }],
+    ['zero amount', { ...base, amount: 0, purpose: 'cost' }],
+    ['fractional amount', { ...base, amount: 1.5, purpose: 'cost' }],
+    ['non-string purpose', { ...base, purpose: 7 }],
+    ['bad tagIds', { ...base, tagIds: [1], purpose: 'cost' }],
+    ['bad note', { ...base, note: 5, purpose: 'cost' }],
+    ['bad party', { ...base, party: 5, purpose: 'cost' }],
+    ['non-object', 42],
+    ['null', null],
+  ])('still throws for a corrupt payload: %s', (_name, payload) => {
+    expect(() => new EntrySealer().open(sealed('expense', payload), cipher)).toThrow(
+      DataIntegrityError,
+    );
+  });
+
+  it('still throws for unparseable JSON', () => {
+    expect(() => new EntrySealer().open(sealed('expense', null, '{nope'), cipher)).toThrow(
+      DataIntegrityError,
+    );
   });
 });
 
