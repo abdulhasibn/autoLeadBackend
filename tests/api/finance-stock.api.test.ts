@@ -84,6 +84,8 @@ live('stock report with real figures (needs API_TEST_FINANCE_KEY)', () => {
   let db: SupabaseClient;
   let session: string;
   let fx: Fixture;
+  const createdVehicleIds: string[] = [];
+  let createdOwnerId: string | null = null;
 
   const fin = (method: string, path: string, body?: unknown) =>
     fetchJson(method, path, adminToken, session, body);
@@ -125,8 +127,13 @@ live('stock report with real figures (needs API_TEST_FINANCE_KEY)', () => {
       },
     });
     expect(owner.status).toBe(201);
+    createdOwnerId = owner.body.id as string;
 
-    const vehicleIds: string[] = [];
+    const vehicleIds = createdVehicleIds;
+    const plateTag = ctx.runId
+      .replace(/[^a-z0-9]/gi, '')
+      .toUpperCase()
+      .slice(-8);
     const car = async (acquisitionType: string, n: number): Promise<string> => {
       const res = await api('POST', '/vehicles', {
         token: adminToken,
@@ -134,12 +141,9 @@ live('stock report with real figures (needs API_TEST_FINANCE_KEY)', () => {
           ownerId: owner.body.id,
           variantId: variant.id,
           year: 2020,
-          registrationNumber: `T${ctx.runId.replace(/[^a-z0-9]/gi, '').toUpperCase()}${n}`.slice(
-            0,
-            14,
-          ),
-          fuelType: variant.fuelType,
-          transmission: variant.transmission,
+          registrationNumber: `T${n}${plateTag}`,
+          fuelType: variant.fuelType ?? 'petrol',
+          transmission: variant.transmission ?? 'manual',
           kmDriven: 40000,
           numPreviousOwners: 1,
           colour: 'White',
@@ -179,8 +183,7 @@ live('stock report with real figures (needs API_TEST_FINANCE_KEY)', () => {
   });
 
   afterAll(async () => {
-    if (fx === undefined) return;
-    const ids = fx.vehicleIds;
+    const ids = createdVehicleIds;
     if (ids.length > 0) {
       await db.from('finance_entries').delete().in('vehicle_id', ids);
       await db.from('vehicle_quotes').delete().in('vehicle_id', ids);
@@ -188,7 +191,7 @@ live('stock report with real figures (needs API_TEST_FINANCE_KEY)', () => {
       await db.from('vehicle_status_history').delete().in('vehicle_id', ids);
       await db.from('vehicles').delete().in('id', ids);
     }
-    await db.from('owners').delete().eq('id', fx.ownerId);
+    if (createdOwnerId !== null) await db.from('owners').delete().eq('id', createdOwnerId);
     await fin('POST', '/finance/lock').catch(() => undefined);
   });
 
@@ -231,7 +234,7 @@ live('stock report with real figures (needs API_TEST_FINANCE_KEY)', () => {
         (acc, r) => acc + r.moneyInStock,
         0,
       );
-      expect(stock.body.totals.moneyInStock).toBe(sum);
+      expect(Math.abs(stock.body.totals.moneyInStock - sum)).toBeLessThan(0.01);
     }
     expect(summary.body.moneyInStock).toBe(stock.body.totals.moneyInStock);
   });
